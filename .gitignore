@@ -9,5 +9,6 @@ data/segmentations/
 data/synthetic_corpus_dev/
 out/rom/runs/
 out/transport/u_cache.npz
+out/sync_log.jsonl
 *.glb
 *.png

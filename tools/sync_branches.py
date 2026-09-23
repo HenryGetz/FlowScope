@@ -12,6 +12,7 @@ Usage:
 Flow:
     1. ``git fetch origin``; refuse to run on a dirty tracked tree (this tool never
        stashes, discards, or force-cleans user work -- clean the tree manually).
+       Its own outputs (``out/sync_log.jsonl``, ``--json PATH``) are exempt.
     2. Temporary worktree with local ``<to>`` checked out; when no local ``<to>``
        exists it is created at ``origin/<to>`` (covers detached CI checkouts).
     3. ``git merge --no-edit origin/<from>`` inside the worktree.
@@ -266,11 +267,34 @@ def main(argv: list[str]) -> int:
         return finish(EXIT_PRECONDITION)
 
     status = _git(root, "status", "--porcelain")
-    dirty = [
-        line
-        for line in status.stdout.splitlines()
-        if not line.startswith("??") and not line.startswith("!!")
+
+    # This tool's own outputs are not dirt: it appends to out/sync_log.jsonl on
+    # every run (by design) and --json PATH is written here too; neither may
+    # block a re-run once committed.
+    own_outputs = {"out/sync_log.jsonl"}
+    if args.json_path:
+        try:
+            rel = Path(args.json_path).resolve().relative_to(root.resolve()).as_posix()
+            own_outputs.add(rel)
+        except ValueError:
+            pass  # outside the repository: cannot be repository dirt
+
+    def is_dirt(line: str) -> bool:
+        if line.startswith("??") or line.startswith("!!"):
+            return False
+        path = line[3:].split(" -> ")[-1].strip('"')
+        return path not in own_outputs
+
+    lines = status.stdout.splitlines()
+    dirty = [line for line in lines if is_dirt(line)]
+    exempt = [
+        line for line in lines
+        if line and not is_dirt(line) and not line.startswith(("??", "!!"))
     ]
+    if exempt:
+        print("note: ignoring this tool's own output files in the clean-tree check:")
+        for line in exempt:
+            print(f"  {line}")
     if dirty:
         print(
             "refusing: the tracked tree is dirty and this tool will not stash or "
