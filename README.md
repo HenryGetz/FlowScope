@@ -69,6 +69,17 @@ export HF_TOKEN="hf_your_token_here"
 
 ```
 
+**TotalSegmentator academic license (required — `heartchambers_highres` won't run without one):** grab a free non-commercial key (`aca_…`) at <https://backend.totalsegmentator.com/license-academic/>, then register it once. `totalseg_set_license` is **not** a global command — it lives only in the Python env where `totalsegmentator` was installed (the project's `.venv` here), so activate that env first or call it by full path:
+
+```bash
+source .venv/bin/activate
+totalseg_set_license -l aca_XXXXXXXXXXXXXX
+# without activating: .venv/bin/totalseg_set_license -l aca_XXXXXXXXXXXXXX
+# → "License has been successfully saved."  (the key is validated online)
+```
+
+One-time setup: the key lands machine-wide in `~/.totalsegmentator/config.json`, so every later `TotalSegmentator -ta heartchambers_highres …` run (including `tools/run_heartchambers.py`) finds it with no `-l` flag.
+
 ### 2. Crunch the Meshes
 
 ```bash
