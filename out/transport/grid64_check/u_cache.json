@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "tool": "phase2/transport/decoupled_transport.py",
+  "tool_version": "1.0.0",
+  "command": "phase2/transport/compare.py --grid 64 --volumes 5,20 --rates 1,5 --diffusivities 1e-9 --out out/transport/grid64_check",
+  "created": "2026-09-23T15:33:31",
+  "grid": 64,
+  "geometry": {
+    "kind": "stenosed_curved_tube",
+    "length_m": 0.12,
+    "width_m": 0.016,
+    "diameter_m": 0.008,
+    "stenosis_a": 0.25,
+    "stenosis_x0": 0.5,
+    "stenosis_w": 0.1,
+    "curv_c": 0.05
+  },
+  "modulation": {
+    "heart_rate_bpm": 72.0,
+    "amp": 0.2,
+    "omega_rad_s": 7.5398223686155035
+  },
+  "mu_pas": 0.0035,
+  "rho_kgm3": 1060.0,
+  "u_mean_target_ms": 0.3,
+  "q_target_m3s": 1.5079644737231007e-05,
+  "q_achieved_m3s": 1.2349149245630353e-05,
+  "k_q_m3s_per_pam": 2.352218903929591e-08,
+  "f_body_pam3": 525.0,
+  "solver_residual": 1.164044573227398e-12,
+  "cg_info": 0,
+  "assemble_s": 0.6722145588137209,
+  "factor_s": 253.93428259389475,
+  "cg_s": 46.241243122145534,
+  "note": "u(x,t) = u_face * (1 + amp*sin(omega*t)). Steady Stokes linearity: flow-rate changes rescale u exactly (verified in out/transport/report.json)."
+}

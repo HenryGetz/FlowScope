@@ -6,5 +6,8 @@ dist/
 certs/
 data/raw/
 data/segmentations/
+data/synthetic_corpus_dev/
+out/rom/runs/
+out/transport/u_cache.npz
 *.glb
 *.png
