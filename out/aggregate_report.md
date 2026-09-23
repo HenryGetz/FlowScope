@@ -1,6 +1,6 @@
 # Aggregate batch report (Flowscope Track 1)
 
-- generated: 2026-09-23T12:34:48+00:00 by `tools/aggregate_report.py` v1
+- generated: 2026-09-23T19:52:12+00:00 by `tools/aggregate_report.py` v1
 - command: `/home/wavy/ai/flowscope/.venv/bin/python tools/aggregate_report.py`
 - batches: 4 | cases: 355
 - triangle budget: 120,000 (hard window 100,000-150,000)
@@ -12,9 +12,46 @@
 | cases in 100,000-150,000 window | 207/355 |
 | final triangles min / max / mean | 39,836 / 120,000 / 96,939.3 |
 | reduction % min / max / mean | 0 / 53.73 / 13.33 |
-| volume drift % max | 100 |
+| volume drift % (case max) min / median / mean / p90 / p95 / p99 / max | 0.1141 / 0.5443 / 2.120291 / 0.5833 / 0.9734 / 94.3085 / 100 |
+| cases over 0.5% / 1% / 5% volume drift | 206 (68.44%) / 15 (4.98%) / 5 (1.66%) |
 | GLB bytes min / max / mean | 424,240 / 1,267,532 / 1,024,124.55 |
 | runtime total s | 4,250.24 |
+
+## Volume drift distribution (355 measured scans)
+
+Case-level max per-structure drift (`volume_drift_pct_max`) over anomaly-free case rows (n = 301 measured, 54 null of 355 rows; 0 anomaly rows excluded):
+
+| n | null | min | median | mean | p90 | p95 | p99 | max |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 301 | 54 | 0.1141 | 0.5443 | 2.120291 | 0.5833 | 0.9734 | 94.3085 | 100 |
+
+| threshold | cases exceeding | % of measured cases |
+| --- | --- | --- |
+| > 0.5% | 206 | 68.44% |
+| > 1% | 15 | 4.98% |
+| > 5% | 5 | 1.66% |
+
+Per-structure drift (`volume_drift_pct`) over measured structure rows (n = 1,119; 641 open/FOV-truncated rows with null metrics and 577 skipped rows counted separately):
+
+| n | null-metric (open/FOV) | skipped | min | median | mean | p90 | p95 | p99 | max |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1,119 | 641 | 577 | 0.001 | 0.2718 | 0.753454 | 0.55408 | 0.5722 | 1.01801 | 100 |
+
+| threshold | structures exceeding | % of measured structures |
+| --- | --- | --- |
+| > 0.5% | 242 | 21.63% |
+| > 1% | 15 | 1.34% |
+| > 5% | 5 | 0.45% |
+
+Signed drift (`(volume_smoothed_mm3 - volume_raw_mm3) / volume_raw_mm3 * 100`) over the same measured structure rows (n = 1,119):
+
+| n | min | median | mean | max | shrink (< 0) | unchanged (= 0) | grow (> 0) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1,119 | -100 | -0.271802 | -0.753032 | 0.034399 | 1,104 (98.66%) | 0 | 15 (1.34%) |
+
+Taubin non-shrinking does NOT hold strictly (no-volume-loss holds only approximately): median signed drift -0.271802%, 98.66% of structures shrink (signed drift range -100% to 0.034399%).
+
+- percentile method: numpy.percentile with linear interpolation.
 
 ## Per-batch
 

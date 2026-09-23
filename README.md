@@ -10,7 +10,7 @@
 
 ## What Actually Works
 
-* **Headless Mesh Decimator (`pipeline/build_cardiac_glb.py`):** Runs Flying Edges extraction and Taubin smoothing without Blender, locking volume loss under 0.5%.
+* **Headless Mesh Decimator (`pipeline/build_cardiac_glb.py`):** Runs Flying Edges extraction and Taubin smoothing without Blender — and tells the volume story straight. Measured over 355 real cardiac CT scans, per-structure Taubin drift is median 0.27%, IQR 0.18-0.45%, p95 0.57%, p99 1.02%; 206/355 cases exceeded 0.5% max-per-structure drift (dominated by the whole-heart envelope at a consistent ~0.55%). Plain verdict: "non-shrinking / no volume loss" does NOT hold strictly — smoothing systematically shrinks volume slightly (98.7% of structures, median -0.27%) — it holds only approximately/directionally for normal structures, and before the fix it failed outright (up to -100% volume) on degenerate small volumes. The pipeline now enforces **per-structure Taubin drift capped at 1% for watertight structures (measured)** via an iteration ladder (25→12→6→3→1 iters, else the raw Flying Edges mesh is kept unsmoothed): geometry is never discarded, and each structure reports its iters used plus capped/uncapped drift. One honest footnote: open FOV-truncated surfaces (641 rows) have no meaningful volume metric, so drift is unmeasured/uncapped there.
 * **Sub-120k Poly Diets:** Cuts 1.5M–5M triangle isosurfaces by 90–95%, consistently hitting the 100k–120k mobile GPU sweet spot across 5 test sets.
 * **Browser-Native WebXR Viewer (`viewer/`):** Three.js scene with 6DOF grab/rotate, two-handed scaling, per-structure visibility toggles, and live FPS telemetry.
 * **Zero-Sideload Delivery:** Served directly over local HTTPS to the Meta Quest Browser—no ADB installs or developer modes.
@@ -30,7 +30,7 @@ flowchart TD
     subgraph engine ["&nbsp;FlowScope Mesh Engine&nbsp;"]
         direction LR
         seg("<b>🫀 TotalSegmentator</b><br><small>14 Chambers</small>"):::process
-        smooth("<b>✨ Taubin Smoothing</b><br><small>Preserves Volume</small>"):::process
+        smooth("<b>✨ Taubin Smoothing</b><br><small>Drift Capped (&le;1%)</small>"):::process
         diet("<b>✂️ Poly Decimation</b><br><small>&lt;150k Triangles</small>"):::process
         glb("<b>📦 Asset Packaging</b><br><small>Binary .GLB</small>"):::process
 

@@ -1,6 +1,6 @@
 {
   "batch_id": "aggregate",
-  "created": "2026-09-23T12:34:48+00:00",
+  "created": "2026-09-23T19:52:12+00:00",
   "n_cases": 355,
   "cases": [
     {
@@ -9247,6 +9247,80 @@
     "reduction_min": 0.0,
     "reduction_max": 53.725,
     "reduction_mean": 13.33
+  },
+  "drift_distribution": {
+    "percentile_method": "numpy.percentile with linear interpolation",
+    "case_level": {
+      "n_cases": 355,
+      "null_count": 54,
+      "excluded_anomaly_count": 0,
+      "n": 301,
+      "min": 0.1141,
+      "median": 0.5443,
+      "mean": 2.1202910299003324,
+      "p90": 0.5833,
+      "p95": 0.9734,
+      "p99": 94.3085,
+      "max": 100.0,
+      "exceeds": {
+        "0.5%": {
+          "threshold_pct": 0.5,
+          "count": 206,
+          "pct": 68.43853820598007
+        },
+        "1%": {
+          "threshold_pct": 1.0,
+          "count": 15,
+          "pct": 4.983388704318937
+        },
+        "5%": {
+          "threshold_pct": 5.0,
+          "count": 5,
+          "pct": 1.6611295681063123
+        }
+      }
+    },
+    "per_structure": {
+      "n": 1119,
+      "min": 0.001,
+      "median": 0.2718,
+      "mean": 0.7534536193029491,
+      "p90": 0.55408,
+      "p95": 0.5722,
+      "p99": 1.0180099999999994,
+      "max": 100.0,
+      "null_metric_count": 641,
+      "skipped_count": 577,
+      "exceeds": {
+        "0.5%": {
+          "threshold_pct": 0.5,
+          "count": 242,
+          "pct": 21.62645218945487
+        },
+        "1%": {
+          "threshold_pct": 1.0,
+          "count": 15,
+          "pct": 1.3404825737265416
+        },
+        "5%": {
+          "threshold_pct": 5.0,
+          "count": 5,
+          "pct": 0.44682752457551383
+        }
+      }
+    },
+    "signed_drift": {
+      "n": 1119,
+      "min": -100.0,
+      "median": -0.27180186610893736,
+      "mean": -0.7530322257613085,
+      "max": 0.03439945400249099,
+      "shrink_count": 1104,
+      "shrink_pct": 98.65951742627345,
+      "unchanged_count": 0,
+      "grow_count": 15,
+      "grow_pct": 1.3404825737265416
+    }
   },
   "batches": [
     {

@@ -5,7 +5,8 @@ Measures the 90-95% reduction claim on 1.5M-5M triangle RAW meshes built from
 REAL segmentation masks (TotalSegmentator CT case s0004). Per row: the binary
 masks are ROI-cropped, linearly upsampled (scipy ``zoom(order=1)`` at zoom 3),
 re-extracted with Flying Edges and merged into one multi-component raw mesh,
-then run through the pipeline's Taubin smoothing (25 iters, pass band 0.1) and
+then run through the pipeline's Taubin smoothing (25 iters, pass band 0.1,
+1% volume-drift cap with iteration-ladder fallback) and
 ``decimate_pro`` decimation toward the 120,000-triangle budget (the exact
 ``pipeline/build_cardiac_glb.py`` functions are reused). Each row records the
 achieved reduction %, volume drift and GLB integrity in
@@ -205,7 +206,7 @@ def run_row(row: dict, args, cache: dict, glb_dir: Path) -> dict:
     raw_tris = int(merged.n_faces)
     watertight = bool(merged.is_manifold and merged.n_open_edges == 0)
 
-    smoothed, vol_raw, vol_smoothed, drift_pct = B._smooth(
+    smoothed, vol_raw, vol_smoothed, drift_pct, smooth_rec = B._smooth(
         merged, SMOOTH_ITERS, PASS_BAND, watertight
     )
     final, achieved = B.decimate_toward(smoothed, args.budget, B.FLOOR_TRIS, DECIMATOR)
@@ -251,8 +252,12 @@ def run_row(row: dict, args, cache: dict, glb_dir: Path) -> dict:
         'smooth': {
             'method': 'Taubin smooth_taubin (pipeline/_smooth)',
             'n_iter': SMOOTH_ITERS,
+            'iters_used': smooth_rec['iters_used'],
             'pass_band': PASS_BAND,
             'boundary_smoothing': False,
+            'drift_cap_pct': B.DRIFT_CAP_PCT,
+            'note': smooth_rec['note'],
+            'volume_drift_uncapped_pct': smooth_rec['volume_drift_uncapped_pct'],
         },
         'decimator': DECIMATOR,
         'glb': {'path': _display_path(glb_path), 'glb_bytes': info['glb_bytes']},

@@ -18,9 +18,15 @@ Per-structure chain (contract order):
                    is_manifold/n_open_edges); masks: pv.ImageData + multithreaded
                    Flying Edges (vtkFlyingEdges3D, iso 0.5), FE index-space
                    points mapped to mm RAS with the nibabel affine
-  2. Taubin        non-shrinking smooth_taubin (vtkWindowedSinc,
+  2. Taubin        drift-capped smooth_taubin (vtkWindowedSinc,
                    boundary_smoothing=False so open/truncated rims are not
-                   slid); volume metrics (raw/smoothed/final/drift) recorded
+                   slid): an iteration ladder (n, n/2, n/4, n/8, max(1, n/16))
+                   falls back toward the unsmoothed input until the raw ->
+                   smoothed volume drift fits DRIFT_CAP_PCT (rung 0 = keep the
+                   input). Measured Taubin smoothing shrinks volume slightly
+                   (median ~-0.27%, 98.7% of structures shrink across 355
+                   scans), so the cap bounds rather than eliminates volume
+                   change. Volume metrics (raw/smoothed/final/drift) recorded
                    per structure and emitted null + volume_note on open
                    (non-watertight) surfaces where the divergence-theorem
                    volume is meaningless
@@ -61,6 +67,9 @@ from vtkmodules.vtkFiltersCore import vtkFlyingEdges3D
 import glb_writer
 import structures
 
+# per-structure abs % volume-drift cap (measured healthy band: p95 0.572%, p99 1.018%)
+DRIFT_CAP_PCT = 1.0
+
 WINDOW_LO = 100000
 WINDOW_HI = 150000
 FLOOR_TRIS = 1200
@@ -91,6 +100,10 @@ class _Work:
     volume_smoothed_mm3: float | None
     volume_drift_pct: float | None
     volume_final_mm3: float | None
+    smooth_iters_requested: int
+    smooth_iters_used: int
+    volume_drift_uncapped_pct: float | None
+    smoothing_note: str | None
     smoothed: object
     mesh: object
     achieved: int
@@ -324,19 +337,74 @@ def _ingest(spec, volumes):
 def _smooth(mesh, n_iter, pass_band, watertight):
     """Taubin smooth with boundary_smoothing off (open rims are not slid).
 
+    Drift-capped per structure: an iteration ladder (n_iter, //2, //4, //8,
+    max(1, //16)) is tried and the first rung whose raw -> smoothed signed
+    volume drift stays within DRIFT_CAP_PCT is applied; if no rung qualifies
+    the input mesh is kept unsmoothed (rung 0). Measured Taubin smoothing
+    shrinks volume slightly (median ~-0.27%, 98.7% of structures shrink
+    across 355 scans), so the cap bounds rather than eliminates volume
+    change.
+
     Volume metrics are only computed for watertight meshes; the
     divergence-theorem volume of an open (FOV-truncated) surface is
     origin-dependent garbage.
+
+    Returns (smoothed, vol_raw, vol_smoothed, drift_pct, record): drift_pct
+    is abs percent raw -> applied smoothing (0.0 when the input is kept);
+    record = {'iters_requested', 'iters_used', 'volume_drift_uncapped_pct',
+    'note'}.
     """
-    before = float(mesh.volume) if watertight else None
-    smoothed = mesh.smooth_taubin(
-        n_iter=n_iter, pass_band=pass_band, boundary_smoothing=False
-    )
-    if before is None:
-        return smoothed, None, None, None
-    after = float(smoothed.volume)
-    drift = abs(after - before) / before if before else 0.0
-    return smoothed, before, after, drift * 100.0
+    record = {
+        'iters_requested': n_iter,
+        'iters_used': n_iter,
+        'volume_drift_uncapped_pct': None,
+        'note': None,
+    }
+    if not watertight:
+        smoothed = mesh.smooth_taubin(
+            n_iter=n_iter, pass_band=pass_band, boundary_smoothing=False
+        )
+        record['note'] = (
+            'drift unmeasured: open surface (FOV-truncated); smoothing uncapped'
+        )
+        return smoothed, None, None, None, record
+
+    before = float(mesh.volume)
+    if not np.isfinite(before) or before <= 0.0:
+        record['iters_used'] = 0
+        record['note'] = f'smoothing skipped: raw volume {before:.3f} mm3, drift unmeasurable'
+        return mesh, before, before, 0.0, record
+
+    ladder = (n_iter, n_iter // 2, n_iter // 4, n_iter // 8, max(1, n_iter // 16))
+    rungs = sorted({rung for rung in ladder if rung >= 1}, reverse=True)
+    applied, applied_signed, applied_after = mesh, 0.0, before  # rung 0: keep input
+    uncapped_signed = 0.0  # drift at rung n_iter (unsmoothed rung 0 = 0%)
+    iters_used = 0
+    for rung in rungs:
+        candidate = mesh.smooth_taubin(
+            n_iter=rung, pass_band=pass_band, boundary_smoothing=False
+        )
+        after = float(candidate.volume)
+        signed = (after - before) / before * 100.0
+        if rung == n_iter:
+            uncapped_signed = signed
+        if abs(signed) <= DRIFT_CAP_PCT:
+            applied, applied_signed, applied_after, iters_used = candidate, signed, after, rung
+            break
+    record['iters_used'] = iters_used
+    if iters_used != n_iter:
+        record['volume_drift_uncapped_pct'] = abs(uncapped_signed)
+        if iters_used:
+            record['note'] = (
+                f'drift cap {DRIFT_CAP_PCT:g}%: {n_iter} iters drift '
+                f'{uncapped_signed:+.2f}% -> used {iters_used} iters ({applied_signed:+.2f}%)'
+            )
+        else:
+            record['note'] = (
+                f'drift cap {DRIFT_CAP_PCT:g}%: kept unsmoothed '
+                f'({n_iter} iters drift {uncapped_signed:+.2f}%)'
+            )
+    return applied, before, applied_after, abs(applied_signed), record
 
 
 def _allocate_targets(names, raws, budget) -> list[int]:
@@ -505,6 +573,14 @@ def _row_for(result, decimator) -> dict:
         'input_triangles': w.input_triangles,
         'post_fe_triangles': w.post_fe_triangles,
         **volumes,
+        'smooth_iters_requested': w.smooth_iters_requested,
+        'smooth_iters_used': w.smooth_iters_used,
+        'volume_drift_uncapped_pct': (
+            round(w.volume_drift_uncapped_pct, 4)
+            if w.volume_drift_uncapped_pct is not None
+            else None
+        ),
+        'smoothing_note': w.smoothing_note,
         'final_triangles': w.achieved,
         'target_triangles': w.target,
         'reduction_pct': round(reduction, 3),
@@ -575,7 +651,7 @@ def main(argv=None) -> int:
             )
             continue
         watertight = bool(mesh.is_manifold and mesh.n_open_edges == 0)
-        smoothed, vol_raw, vol_smoothed, drift_pct = _smooth(
+        smoothed, vol_raw, vol_smoothed, drift_pct, smooth_rec = _smooth(
             mesh, args.smooth_iters, args.pass_band, watertight
         )
         record = _Work(
@@ -589,6 +665,10 @@ def main(argv=None) -> int:
             volume_smoothed_mm3=vol_smoothed,
             volume_drift_pct=drift_pct,
             volume_final_mm3=None,
+            smooth_iters_requested=smooth_rec['iters_requested'],
+            smooth_iters_used=smooth_rec['iters_used'],
+            volume_drift_uncapped_pct=smooth_rec['volume_drift_uncapped_pct'],
+            smoothing_note=smooth_rec['note'],
             smoothed=smoothed,
             mesh=smoothed,
             achieved=int(smoothed.n_faces),

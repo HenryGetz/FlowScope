@@ -1,0 +1,8 @@
+data/raw/totalseg_ct/s0011/segmentations
+data/raw/totalseg_ct/s0109/segmentations
+data/raw/totalseg_ct/s0120/segmentations
+data/raw/totalseg_ct/s0166/segmentations
+data/raw/totalseg_ct/s0189/segmentations
+data/raw/totalseg_ct/s0236/segmentations
+data/raw/totalseg_ct/s0382/segmentations
+data/raw/totalseg_ct/s0386/segmentations
