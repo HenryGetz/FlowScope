@@ -1,0 +1,29 @@
+{
+  "created": "2026-09-23T18:21:59.835117+00:00",
+  "tier": "quick",
+  "host": {
+    "name": "large-tailor",
+    "platform": "Linux",
+    "machine": "x86_64",
+    "python": "/home/wavy/ai/flowscope/.venv/bin/python"
+  },
+  "gates": [
+    {
+      "name": "import-smokes",
+      "tier": "quick",
+      "status": "PASS",
+      "detail": "6 scripts --help ok; node import ok"
+    },
+    {
+      "name": "seg-backend",
+      "tier": "quick",
+      "status": "PASS",
+      "detail": "device=cpu bin=/home/wavy/ai/flowscope/.venv/bin/TotalSegmentator"
+    }
+  ],
+  "passed": [
+    "import-smokes",
+    "seg-backend"
+  ],
+  "failed": []
+}

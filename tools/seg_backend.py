@@ -13,6 +13,7 @@ import json
 import os
 import platform
 import shutil
+import sys
 
 
 def is_apple_silicon():
@@ -42,6 +43,9 @@ def resolve_bin():
     venv_bin = os.path.join(repo_root, ".venv", "bin", "TotalSegmentator")
     if os.path.exists(venv_bin):
         return venv_bin
+    next_to_python = os.path.join(os.path.dirname(sys.executable), "TotalSegmentator")
+    if os.path.exists(next_to_python):
+        return next_to_python
     on_path = shutil.which("TotalSegmentator")
     if on_path:
         return on_path

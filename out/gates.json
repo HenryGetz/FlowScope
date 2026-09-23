@@ -1,0 +1,39 @@
+{
+  "created": "2026-09-23T18:08:51.015374+00:00",
+  "tier": "full",
+  "host": "large-tailor",
+  "gates": [
+    {
+      "name": "import-smokes",
+      "tier": "quick",
+      "status": "PASS",
+      "detail": "6 scripts --help ok; node import ok"
+    },
+    {
+      "name": "seg-backend",
+      "tier": "quick",
+      "status": "PASS",
+      "detail": "device=cpu bin=/home/wavy/ai/flowscope/.venv/bin/TotalSegmentator"
+    },
+    {
+      "name": "artifact-presence",
+      "tier": "full",
+      "status": "PASS",
+      "detail": "11 artifacts present and non-empty"
+    },
+    {
+      "name": "data-sanity",
+      "tier": "full",
+      "status": "PASS",
+      "detail": "manifest rows 1452; n_cases 355; n_train 400 n_val 50 samples 450"
+    },
+    {
+      "name": "pipeline-probe",
+      "tier": "full",
+      "status": "PASS",
+      "detail": "--help ok"
+    }
+  ],
+  "passed": 5,
+  "failed": 0
+}
