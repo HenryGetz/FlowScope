@@ -1,0 +1,34 @@
+{
+  "structures": [
+    {
+      "name": "coronary_arteries",
+      "source_file": "data/raw/imagecas/700/label.nii.gz",
+      "mode": "multilabel",
+      "watertight": true,
+      "input_triangles": 127076,
+      "post_fe_triangles": 127076,
+      "volume_raw_mm3": 5259.487,
+      "volume_smoothed_mm3": 5246.903,
+      "volume_final_mm3": 5247.039,
+      "volume_drift_pct": 0.2393,
+      "final_triangles": 119998,
+      "target_triangles": 120000,
+      "reduction_pct": 5.57,
+      "decimator": "decimate_pro"
+    }
+  ],
+  "totals": {
+    "aggregate_input_triangles": 127076,
+    "aggregate_final_triangles": 119998,
+    "aggregate_reduction_pct": 5.57,
+    "budget": 120000,
+    "window": [
+      100000,
+      150000
+    ],
+    "within_window": true,
+    "glb_bytes": 1261268,
+    "quantized": true,
+    "decimator": "decimate_pro"
+  }
+}

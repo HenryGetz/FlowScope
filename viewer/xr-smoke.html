@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlowScope — XR smoke</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: #0a0d12;
+      }
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+      #app canvas {
+        display: block;
+      }
+      #status {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 5;
+        max-width: 70ch;
+        white-space: pre-wrap;
+        background: rgba(13, 16, 22, 0.88);
+        color: #dfe5ee;
+        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="overlay"><div id="status">XR smoke booting&hellip;</div></div>
+    <script type="module">
+      // Dev-only XR smoke page: boots the Immersive Web Emulation Runtime
+      // (emulated immersive-vr + two controllers) and reuses src/scene.js and
+      // src/interaction.js UNCHANGED, exposing window.__XRTEST__ for automated
+      // grab-rotate / two-hand-scale checks.
+      import { XRDevice, metaQuest3 } from 'immersive-web-emulation-runtime';
+      import { createStage } from './src/scene.js';
+      import { loadModel, collectStructures, modelURL } from './src/loader.js';
+      import { createInteraction } from './src/interaction.js';
+      import { enterVR } from './src/xr.js';
+
+      const statusEl = document.getElementById('status');
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
+
+      // --- emulated WebXR device --------------------------------------------
+      // Identity grip offset => the grip pose equals the target-ray pose, so
+      // poseGrip(i, ...) sets grip poses exactly. Gamepad buttons follow the
+      // xr-standard layout consumed by src/interaction.js (0=trigger,
+      // 1=squeeze); IWER synthesizes select*/squeeze* session events from
+      // their state, which three re-dispatches on the controller objects.
+      const IDENTITY_16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+      const smokeGamepad = {
+        mapping: 'xr-standard',
+        buttons: [
+          { id: 'trigger', type: 'analog', eventTrigger: 'select' },
+          { id: 'squeeze', type: 'analog', eventTrigger: 'squeeze' },
+          null,
+          { id: 'thumbstick', type: 'binary' },
+        ],
+        axes: [
+          null,
+          null,
+          { id: 'thumbstick', type: 'x-axis' },
+          { id: 'thumbstick', type: 'y-axis' },
+        ],
+      };
+      const smokeControllers = {
+        profileId: 'generic-trigger-squeeze-thumbstick',
+        fallbackProfileIds: [],
+        layout: {
+          left: { gamepad: smokeGamepad, gripOffsetMatrix: IDENTITY_16, numHapticActuators: 0 },
+          right: { gamepad: smokeGamepad, gripOffsetMatrix: IDENTITY_16, numHapticActuators: 0 },
+        },
+      };
+      const device = new XRDevice({
+        ...metaQuest3,
+        name: 'FlowScope XR Smoke',
+        controllerConfig: smokeControllers,
+      });
+      device.installRuntime();
+
+      // --- shared viewer stack (src/scene.js + src/interaction.js) ----------
+      const stage = createStage(document.getElementById('app'));
+      const interaction = createInteraction({
+        renderer: stage.renderer,
+        scene: stage.scene,
+        modelRoot: stage.modelRoot,
+      });
+      stage.onFrame(() => interaction.update());
+
+      const ready = loadModel(modelURL()).then((gltf) => {
+        stage.setModel(gltf.scene);
+        interaction.setStructures(collectStructures(gltf.scene));
+        setStatus(`model loaded (${modelURL()}) — __XRTEST__ ready`);
+        return true;
+      });
+      ready.catch((err) => setStatus(`MODEL LOAD FAILED: ${err.message}`));
+
+      // Hand index mapping: 0 = left controller, 1 = right controller.
+      const HANDS = ['left', 'right'];
+      function handDevice(index) {
+        const controller = device.controllers[HANDS[index]];
+        if (!controller) throw new Error(`poseGrip/squeeze/select: hand index must be 0 (left) or 1 (right), got ${index}`);
+        return controller;
+      }
+
+      let session = null;
+
+      window.__XRTEST__ = {
+        /** Boot the emulated immersive-vr session (waits for the GLB). */
+        async startXR() {
+          await ready;
+          if (!session) {
+            session = await enterVR(stage.renderer, stage);
+            session.addEventListener('end', () => {
+              session = null;
+            });
+            // let frames run so both controllers connect
+            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          }
+          return true;
+        },
+        /** Set the pose of grip i: position [x,y,z], quaternion [x,y,z,w]. */
+        poseGrip(index, position, quaternion) {
+          const controller = handDevice(index);
+          controller.position.set(position[0], position[1], position[2]);
+          controller.quaternion.set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+        },
+        /** Press/release the grip squeeze of hand i. */
+        squeeze(index, on) {
+          handDevice(index).updateButtonValue('squeeze', on ? 1 : 0);
+        },
+        /** Press/release the trigger of hand i (ray-picks on press). */
+        select(index, on) {
+          handDevice(index).updateButtonValue('trigger', on ? 1 : 0);
+        },
+        /** Read back the model transform and structure visibility. */
+        modelState() {
+          const model = stage.modelRoot;
+          return {
+            position: [model.position.x, model.position.y, model.position.z],
+            quaternion: [model.quaternion.x, model.quaternion.y, model.quaternion.z, model.quaternion.w],
+            scale: [model.scale.x, model.scale.y, model.scale.z],
+            visible: interaction.visibleNames(),
+          };
+        },
+      };
+
+      setStatus(`__XRTEST__ installed — call startXR() (${modelURL()})`);
+    </script>
+  </body>
+</html>

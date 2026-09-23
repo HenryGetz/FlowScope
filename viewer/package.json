@@ -1,0 +1,20 @@
+{
+  "name": "flowscope-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "cert": "node gen-cert.mjs",
+    "serve:https": "node serve-https.mjs --host"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.3",
+    "immersive-web-emulation-runtime": "npm:iwer@^0.0.2"
+  }
+}

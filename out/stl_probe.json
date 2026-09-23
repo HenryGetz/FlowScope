@@ -1,0 +1,63 @@
+{
+  "structures": [
+    {
+      "name": "aorta",
+      "source_file": "/tmp/stl_probe/aorta.stl",
+      "mode": "stl",
+      "watertight": true,
+      "input_triangles": 43352,
+      "post_fe_triangles": 43352,
+      "volume_raw_mm3": 57088.042,
+      "volume_smoothed_mm3": 56917.045,
+      "volume_drift_pct": 0.2995,
+      "final_triangles": 43352,
+      "target_triangles": 43352,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "heart",
+      "source_file": "/tmp/stl_probe/heart.stl",
+      "mode": "stl",
+      "watertight": true,
+      "input_triangles": 65656,
+      "post_fe_triangles": 65656,
+      "volume_raw_mm3": 151170.958,
+      "volume_smoothed_mm3": 150371.983,
+      "volume_drift_pct": 0.5285,
+      "final_triangles": 65656,
+      "target_triangles": 65656,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "pulmonary_veins",
+      "source_file": "/tmp/stl_probe/pulmonary_vein.stl",
+      "mode": "stl",
+      "watertight": true,
+      "input_triangles": 9404,
+      "post_fe_triangles": 9404,
+      "volume_raw_mm3": 5912.625,
+      "volume_smoothed_mm3": 5901.614,
+      "volume_drift_pct": 0.1862,
+      "final_triangles": 9404,
+      "target_triangles": 9404,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    }
+  ],
+  "totals": {
+    "aggregate_input_triangles": 118412,
+    "aggregate_final_triangles": 118412,
+    "aggregate_reduction_pct": 0.0,
+    "budget": 120000,
+    "window": [
+      100000,
+      150000
+    ],
+    "within_window": true,
+    "glb_bytes": 1246444,
+    "quantized": true,
+    "decimator": "decimate_pro"
+  }
+}

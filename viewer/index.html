@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlowScope — Cardiac WebXR</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: #0a0d12;
+      }
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+      #app canvas {
+        display: block;
+      }
+      #boot {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 5;
+        background: rgba(13, 16, 22, 0.88);
+        color: #dfe5ee;
+        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="overlay">
+      <div id="boot">Loading <code>assets/cardiac.glb</code>&hellip;</div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

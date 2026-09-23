@@ -1,0 +1,16 @@
+[
+  {
+    "task": "heartchambers_highres",
+    "case_id": "s0004",
+    "command": "/home/wavy/ai/flowscope/.venv/bin/TotalSegmentator -i data/raw/totalseg_ct/s0004/ct.nii.gz -o data/segmentations/s0004_heartchambers_highres -ta heartchambers_highres",
+    "input": "data/raw/totalseg_ct/s0004/ct.nii.gz",
+    "output_dir": "data/segmentations/s0004_heartchambers_highres",
+    "output_alias_symlink": "data/segmentations/s0004",
+    "runtime_s": 47.5,
+    "device": "cpu",
+    "returncode": 1,
+    "outputs": [],
+    "stdout_tail": "No GPU detected. Running on CPU. This can be very slow. The '--fast' or the `--roi_subset` option can help to reduce runtime.\n\nIf you use this tool please cite: https://pubs.rsna.org/doi/10.1148/ryai.230024\n\nTotalSegmentator sends anonymous usage statistics. If you want to disable it check the documentation.\nIn contrast to the other tasks this task is not openly available.\nIt requires a license. For non-commercial usage a free license can be\nacquired here:\nhttps://backend.totalsegmentator.com/license-academic/\n\nFor commercial usage contact: jakob.wasserthal@usb.ch\n\n",
+    "stderr_tail": "Matplotlib is building the font cache; this may take a moment.\n"
+  }
+]

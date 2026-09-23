@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+certs/
+data/raw/
+data/segmentations/
+*.glb
+*.png

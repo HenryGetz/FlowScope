@@ -1,0 +1,16 @@
+{
+  "1": "coronary_arteries",
+  "2": "heart_myocardium",
+  "3": "heart_atrium_left",
+  "4": "heart_ventricle_left",
+  "5": "heart_atrium_right",
+  "6": "heart_ventricle_right",
+  "7": "aorta",
+  "8": "pulmonary_artery",
+  "9": "pericardial_fat",
+  "10": "epicardial_fat",
+  "11": "pulmonary_veins",
+  "12": "vena_cava_superior",
+  "13": "vena_cava_inferior",
+  "14": "heart_atrial_appendage_left"
+}
