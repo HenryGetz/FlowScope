@@ -1,0 +1,223 @@
+{
+  "tool": "tools/raw_scale_check.py",
+  "tool_version": 1,
+  "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/raw_scale_check.py",
+  "created": "2026-09-23T12:01:42+00:00",
+  "pipeline": "pipeline/build_cardiac_glb.py (Flying Edges, Taubin _smooth, decimate_pro decimate_toward, glb_writer reused verbatim)",
+  "budget": 120000,
+  "window": [
+    100000,
+    150000
+  ],
+  "raw_range_target": [
+    1500000,
+    5000000
+  ],
+  "units": "volumes mm^3 (RAS affine), triangles dimensionless, SI elsewhere",
+  "summary": {
+    "rows_in_raw_range": "2/3",
+    "in_range_reduction_pct_min": 92.345,
+    "in_range_reduction_pct_max": 95.0,
+    "volume_drift_pct_max": 0.6674,
+    "integrity_all_ok": true
+  },
+  "rows": [
+    {
+      "id": "s0004_heart_aorta",
+      "synthetic_derived": true,
+      "note": "brief's example mask pair (s0004 heart + aorta); native Flying Edges output is only ~109k triangles, so even at zoom 3 this row lands below the 1.5M raw target (recorded for reference)",
+      "source_masks": [
+        "data/raw/totalseg_ct/s0004/segmentations/heart.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/aorta.nii.gz"
+      ],
+      "source_dataset": "TotalSegmentator CT s0004 (real masks)",
+      "upsample": "scipy.ndimage.zoom order=1 (linear) on ROI-cropped binary masks at zoom 3.0, threshold 0.5",
+      "zoom": 3.0,
+      "combine": "per-mask Flying Edges, merged multi-component mesh",
+      "raw_components": 2,
+      "raw_triangles": 997320,
+      "raw_range_target": [
+        1500000,
+        5000000
+      ],
+      "in_raw_range": false,
+      "watertight": true,
+      "target_triangles": 120000,
+      "final_triangles": 120000,
+      "achieved_reduction_pct": 87.968,
+      "volume_raw_mm3": 721997.786,
+      "volume_smoothed_mm3": 717179.081,
+      "volume_final_mm3": 716552.356,
+      "volume_drift_pct": 0.6674,
+      "volume_drift_total_pct": 0.7542,
+      "volume_note": "merged multi-component volume = sum over components (overlapping components double-count their intersection); drift is measured consistently raw -> smoothed -> final",
+      "smooth": {
+        "method": "Taubin smooth_taubin (pipeline/_smooth)",
+        "n_iter": 25,
+        "pass_band": 0.1,
+        "boundary_smoothing": false
+      },
+      "decimator": "decimate_pro",
+      "glb": {
+        "path": "out/raw_scale/s0004_heart_aorta.glb",
+        "glb_bytes": 1261256
+      },
+      "integrity_ok": true,
+      "integrity_checks": {
+        "glTF_magic": true,
+        "glTF_version_2": true,
+        "declared_length_matches": true,
+        "chunks_4byte_aligned": true,
+        "chunk_layout_json_bin": true,
+        "json_chunk_parses": true,
+        "KHR_mesh_quantization": true,
+        "trimesh_load": true,
+        "triangle_count_matches_report": true
+      },
+      "integrity_reason": null,
+      "runtime_s": 52.64
+    },
+    {
+      "id": "s0004_cardiovascular",
+      "synthetic_derived": true,
+      "note": "heart + aorta + cardiac vessels/LAA + great vessels, merged multi-component raw mesh (in the 1.5M-5M raw range at zoom 3)",
+      "source_masks": [
+        "data/raw/totalseg_ct/s0004/segmentations/heart.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/aorta.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/pulmonary_vein.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/superior_vena_cava.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/inferior_vena_cava.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/atrial_appendage_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/brachiocephalic_trunk.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/brachiocephalic_vein_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/brachiocephalic_vein_right.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/common_carotid_artery_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/common_carotid_artery_right.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/subclavian_artery_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/subclavian_artery_right.nii.gz"
+      ],
+      "source_dataset": "TotalSegmentator CT s0004 (real masks)",
+      "upsample": "scipy.ndimage.zoom order=1 (linear) on ROI-cropped binary masks at zoom 3.0, threshold 0.5",
+      "zoom": 3.0,
+      "combine": "per-mask Flying Edges, merged multi-component mesh",
+      "raw_components": 13,
+      "raw_triangles": 1567680,
+      "raw_range_target": [
+        1500000,
+        5000000
+      ],
+      "in_raw_range": true,
+      "watertight": true,
+      "target_triangles": 120000,
+      "final_triangles": 120000,
+      "achieved_reduction_pct": 92.345,
+      "volume_raw_mm3": 896375.349,
+      "volume_smoothed_mm3": 890575.094,
+      "volume_final_mm3": 888625.796,
+      "volume_drift_pct": 0.6471,
+      "volume_drift_total_pct": 0.8645,
+      "volume_note": "merged multi-component volume = sum over components (overlapping components double-count their intersection); drift is measured consistently raw -> smoothed -> final",
+      "smooth": {
+        "method": "Taubin smooth_taubin (pipeline/_smooth)",
+        "n_iter": 25,
+        "pass_band": 0.1,
+        "boundary_smoothing": false
+      },
+      "decimator": "decimate_pro",
+      "glb": {
+        "path": "out/raw_scale/s0004_cardiovascular.glb",
+        "glb_bytes": 1261540
+      },
+      "integrity_ok": true,
+      "integrity_checks": {
+        "glTF_magic": true,
+        "glTF_version_2": true,
+        "declared_length_matches": true,
+        "chunks_4byte_aligned": true,
+        "chunk_layout_json_bin": true,
+        "json_chunk_parses": true,
+        "KHR_mesh_quantization": true,
+        "trimesh_load": true,
+        "triangle_count_matches_report": true
+      },
+      "integrity_reason": null,
+      "runtime_s": 86.8
+    },
+    {
+      "id": "s0004_cardiothoracic",
+      "synthetic_derived": true,
+      "note": "cardiovascular set + sternum, costal cartilages, ribs 1-4 (in the 1.5M-5M raw range at zoom 3)",
+      "source_masks": [
+        "data/raw/totalseg_ct/s0004/segmentations/heart.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/aorta.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/pulmonary_vein.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/superior_vena_cava.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/inferior_vena_cava.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/atrial_appendage_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/brachiocephalic_trunk.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/brachiocephalic_vein_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/brachiocephalic_vein_right.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/common_carotid_artery_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/common_carotid_artery_right.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/subclavian_artery_left.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/subclavian_artery_right.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/sternum.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/costal_cartilages.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_left_1.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_left_2.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_left_3.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_left_4.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_right_1.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_right_2.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_right_3.nii.gz",
+        "data/raw/totalseg_ct/s0004/segmentations/rib_right_4.nii.gz"
+      ],
+      "source_dataset": "TotalSegmentator CT s0004 (real masks)",
+      "upsample": "scipy.ndimage.zoom order=1 (linear) on ROI-cropped binary masks at zoom 3.0, threshold 0.5",
+      "zoom": 3.0,
+      "combine": "per-mask Flying Edges, merged multi-component mesh",
+      "raw_components": 23,
+      "raw_triangles": 2982464,
+      "raw_range_target": [
+        1500000,
+        5000000
+      ],
+      "in_raw_range": true,
+      "watertight": true,
+      "target_triangles": 120000,
+      "final_triangles": 149122,
+      "achieved_reduction_pct": 95.0,
+      "volume_raw_mm3": 1183236.902,
+      "volume_smoothed_mm3": 1175921.331,
+      "volume_final_mm3": 1169177.53,
+      "volume_drift_pct": 0.6183,
+      "volume_drift_total_pct": 1.1882,
+      "volume_note": "merged multi-component volume = sum over components (overlapping components double-count their intersection); drift is measured consistently raw -> smoothed -> final",
+      "smooth": {
+        "method": "Taubin smooth_taubin (pipeline/_smooth)",
+        "n_iter": 25,
+        "pass_band": 0.1,
+        "boundary_smoothing": false
+      },
+      "decimator": "decimate_pro",
+      "glb": {
+        "path": "out/raw_scale/s0004_cardiothoracic.glb",
+        "glb_bytes": 2462320
+      },
+      "integrity_ok": true,
+      "integrity_checks": {
+        "glTF_magic": true,
+        "glTF_version_2": true,
+        "declared_length_matches": true,
+        "chunks_4byte_aligned": true,
+        "chunk_layout_json_bin": true,
+        "json_chunk_parses": true,
+        "KHR_mesh_quantization": true,
+        "trimesh_load": true,
+        "triangle_count_matches_report": true
+      },
+      "integrity_reason": null,
+      "runtime_s": 140.72
+    }
+  ]
+}

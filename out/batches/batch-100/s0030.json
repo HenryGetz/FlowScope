@@ -1,0 +1,109 @@
+{
+  "structures": [
+    {
+      "name": "aorta",
+      "source_file": "data/raw/totalseg_ct/s0030/segmentations/aorta.nii.gz",
+      "mode": "mask",
+      "watertight": false,
+      "input_triangles": 27290,
+      "post_fe_triangles": 27290,
+      "volume_raw_mm3": null,
+      "volume_smoothed_mm3": null,
+      "volume_final_mm3": null,
+      "volume_drift_pct": null,
+      "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
+      "final_triangles": 27290,
+      "target_triangles": 27290,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "heart_atrial_appendage_left",
+      "source_file": "data/raw/totalseg_ct/s0030/segmentations/atrial_appendage_left.nii.gz",
+      "mode": "mask",
+      "skipped": "empty/1-voxel mask (0 nonzero voxels)",
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "heart",
+      "source_file": "data/raw/totalseg_ct/s0030/segmentations/heart.nii.gz",
+      "mode": "mask",
+      "watertight": false,
+      "input_triangles": 54260,
+      "post_fe_triangles": 54260,
+      "volume_raw_mm3": null,
+      "volume_smoothed_mm3": null,
+      "volume_final_mm3": null,
+      "volume_drift_pct": null,
+      "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
+      "final_triangles": 54260,
+      "target_triangles": 54260,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "vena_cava_inferior",
+      "source_file": "data/raw/totalseg_ct/s0030/segmentations/inferior_vena_cava.nii.gz",
+      "mode": "mask",
+      "watertight": true,
+      "input_triangles": 22832,
+      "post_fe_triangles": 22832,
+      "volume_raw_mm3": 90359.719,
+      "volume_smoothed_mm3": 90164.769,
+      "volume_final_mm3": 90164.769,
+      "volume_drift_pct": 0.2157,
+      "final_triangles": 22832,
+      "target_triangles": 22832,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "pulmonary_veins",
+      "source_file": "data/raw/totalseg_ct/s0030/segmentations/pulmonary_vein.nii.gz",
+      "mode": "mask",
+      "watertight": false,
+      "input_triangles": 6990,
+      "post_fe_triangles": 6990,
+      "volume_raw_mm3": null,
+      "volume_smoothed_mm3": null,
+      "volume_final_mm3": null,
+      "volume_drift_pct": null,
+      "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
+      "final_triangles": 6990,
+      "target_triangles": 6990,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "vena_cava_superior",
+      "source_file": "data/raw/totalseg_ct/s0030/segmentations/superior_vena_cava.nii.gz",
+      "mode": "mask",
+      "watertight": false,
+      "input_triangles": 36,
+      "post_fe_triangles": 36,
+      "volume_raw_mm3": null,
+      "volume_smoothed_mm3": null,
+      "volume_final_mm3": null,
+      "volume_drift_pct": null,
+      "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
+      "final_triangles": 36,
+      "target_triangles": 36,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    }
+  ],
+  "totals": {
+    "aggregate_input_triangles": 111408,
+    "aggregate_final_triangles": 111408,
+    "aggregate_reduction_pct": 0.0,
+    "budget": 120000,
+    "window": [
+      100000,
+      150000
+    ],
+    "within_window": true,
+    "glb_bytes": 1178740,
+    "quantized": true,
+    "decimator": "decimate_pro"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "structures": [
+    {
+      "name": "aorta",
+      "source_file": "data/raw/totalseg_ct/s0153/segmentations/aorta.nii.gz",
+      "mode": "mask",
+      "watertight": true,
+      "input_triangles": 20068,
+      "post_fe_triangles": 20068,
+      "volume_raw_mm3": 78767.157,
+      "volume_smoothed_mm3": 78638.827,
+      "volume_final_mm3": 78638.827,
+      "volume_drift_pct": 0.1629,
+      "final_triangles": 20068,
+      "target_triangles": 20068,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "heart_atrial_appendage_left",
+      "source_file": "data/raw/totalseg_ct/s0153/segmentations/atrial_appendage_left.nii.gz",
+      "mode": "mask",
+      "skipped": "empty/1-voxel mask (0 nonzero voxels)",
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "heart",
+      "source_file": "data/raw/totalseg_ct/s0153/segmentations/heart.nii.gz",
+      "mode": "mask",
+      "watertight": false,
+      "input_triangles": 35454,
+      "post_fe_triangles": 35454,
+      "volume_raw_mm3": null,
+      "volume_smoothed_mm3": null,
+      "volume_final_mm3": null,
+      "volume_drift_pct": null,
+      "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
+      "final_triangles": 35454,
+      "target_triangles": 35454,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "vena_cava_inferior",
+      "source_file": "data/raw/totalseg_ct/s0153/segmentations/inferior_vena_cava.nii.gz",
+      "mode": "mask",
+      "watertight": true,
+      "input_triangles": 26992,
+      "post_fe_triangles": 26992,
+      "volume_raw_mm3": 126494.72,
+      "volume_smoothed_mm3": 126075.911,
+      "volume_final_mm3": 126075.911,
+      "volume_drift_pct": 0.3311,
+      "final_triangles": 26992,
+      "target_triangles": 26992,
+      "reduction_pct": 0.0,
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "pulmonary_veins",
+      "source_file": "data/raw/totalseg_ct/s0153/segmentations/pulmonary_vein.nii.gz",
+      "mode": "mask",
+      "skipped": "empty/1-voxel mask (0 nonzero voxels)",
+      "decimator": "decimate_pro"
+    },
+    {
+      "name": "vena_cava_superior",
+      "source_file": "data/raw/totalseg_ct/s0153/segmentations/superior_vena_cava.nii.gz",
+      "mode": "mask",
+      "skipped": "empty/1-voxel mask (0 nonzero voxels)",
+      "decimator": "decimate_pro"
+    }
+  ],
+  "totals": {
+    "aggregate_input_triangles": 82514,
+    "aggregate_final_triangles": 82514,
+    "aggregate_reduction_pct": 0.0,
+    "budget": 120000,
+    "window": [
+      100000,
+      150000
+    ],
+    "within_window": false,
+    "glb_bytes": 870136,
+    "quantized": true,
+    "decimator": "decimate_pro"
+  }
+}
