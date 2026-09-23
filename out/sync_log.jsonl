@@ -1,0 +1,2 @@
+{"from": "main", "to": "mlx", "merged_sha": "c6f7aeb06add9a45a5ef22794d8b4448893a9f12", "pre_sha": "5a226e777b79bc2c80555060cd42c40f47e7ff7f", "gates_passed": ["import-smokes", "seg-backend", "artifact-presence", "data-sanity", "pipeline-probe"], "gates_failed": [], "pushed": false}
+{"from": "main", "to": "mlx", "merged_sha": "c6f7aeb06add9a45a5ef22794d8b4448893a9f12", "pre_sha": "5a226e777b79bc2c80555060cd42c40f47e7ff7f", "gates_passed": ["import-smokes", "seg-backend", "artifact-presence", "data-sanity", "pipeline-probe"], "gates_failed": [], "pushed": true}
