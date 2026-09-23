@@ -1,0 +1,1091 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-23T11:46:39+00:00",
+  "tool": {
+    "name": "tools/hw_precheck.py",
+    "version": "1.0.0",
+    "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/hw_precheck.py",
+    "python": "3.12.14"
+  },
+  "endpoint": "https://192.168.1.229:8444",
+  "budget_window": [
+    100000,
+    150000
+  ],
+  "target_hardware": {
+    "device": "Meta Quest 2",
+    "soc": "Qualcomm Snapdragon XR2 (Adreno 650-class tile-based GPU, unified memory)",
+    "assumptions_only": true,
+    "note": "planning assumptions for pre-staging; no on-device measurement performed"
+  },
+  "glbs": [
+    {
+      "path": "out/coronary_601.glb",
+      "name": "coronary_601",
+      "served_url": "/assets/coronary_601.glb",
+      "structures": [
+        {
+          "name": "coronary_arteries",
+          "triangles": 119998,
+          "vertices": 60003,
+          "index_bytes": 719988,
+          "vertex_bytes": 540027,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 1260015,
+          "f32_vertex_bytes": 1440072,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        }
+      ],
+      "total_draw_calls": 1,
+      "total_bytes": 1260015,
+      "load_ms": 88.891,
+      "file_bytes": 1261272,
+      "total_triangles": 119998,
+      "total_vertices": 60003,
+      "quantized_ratio_vs_f32": 0.375,
+      "extensions_used": [
+        "KHR_mesh_quantization"
+      ],
+      "within_window": true
+    },
+    {
+      "path": "out/coronary_700.glb",
+      "name": "coronary_700",
+      "served_url": "/assets/coronary_700.glb",
+      "structures": [
+        {
+          "name": "coronary_arteries",
+          "triangles": 119998,
+          "vertices": 60003,
+          "index_bytes": 719988,
+          "vertex_bytes": 540027,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 1260015,
+          "f32_vertex_bytes": 1440072,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        }
+      ],
+      "total_draw_calls": 1,
+      "total_bytes": 1260015,
+      "load_ms": 90.639,
+      "file_bytes": 1261268,
+      "total_triangles": 119998,
+      "total_vertices": 60003,
+      "quantized_ratio_vs_f32": 0.375,
+      "extensions_used": [
+        "KHR_mesh_quantization"
+      ],
+      "within_window": true
+    },
+    {
+      "path": "out/coronary_798.glb",
+      "name": "coronary_798",
+      "served_url": "/assets/coronary_798.glb",
+      "structures": [
+        {
+          "name": "coronary_arteries",
+          "triangles": 119998,
+          "vertices": 59993,
+          "index_bytes": 719988,
+          "vertex_bytes": 539937,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 1259925,
+          "f32_vertex_bytes": 1439832,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        }
+      ],
+      "total_draw_calls": 1,
+      "total_bytes": 1259925,
+      "load_ms": 55.684,
+      "file_bytes": 1261176,
+      "total_triangles": 119998,
+      "total_vertices": 59993,
+      "quantized_ratio_vs_f32": 0.375,
+      "extensions_used": [
+        "KHR_mesh_quantization"
+      ],
+      "within_window": true
+    },
+    {
+      "path": "out/cardiac_s0004.glb",
+      "name": "cardiac_s0004",
+      "served_url": "/assets/cardiac.glb",
+      "structures": [
+        {
+          "name": "aorta",
+          "triangles": 34810,
+          "vertices": 17407,
+          "index_bytes": 208860,
+          "vertex_bytes": 156663,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 365523,
+          "f32_vertex_bytes": 417768,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        },
+        {
+          "name": "heart_atrial_appendage_left",
+          "triangles": 3574,
+          "vertices": 1789,
+          "index_bytes": 21444,
+          "vertex_bytes": 16101,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 37545,
+          "f32_vertex_bytes": 42936,
+          "quantized_ratio_vs_f32_all_buffers": 0.5832
+        },
+        {
+          "name": "heart",
+          "triangles": 36000,
+          "vertices": 17996,
+          "index_bytes": 216000,
+          "vertex_bytes": 161964,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 2,
+          "primitives": 1,
+          "alpha_modes": [
+            "BLEND"
+          ],
+          "buffer_bytes": 377964,
+          "f32_vertex_bytes": 431904,
+          "quantized_ratio_vs_f32_all_buffers": 0.5834
+        },
+        {
+          "name": "vena_cava_inferior",
+          "triangles": 16678,
+          "vertices": 8341,
+          "index_bytes": 100068,
+          "vertex_bytes": 75069,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 175137,
+          "f32_vertex_bytes": 200184,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        },
+        {
+          "name": "pulmonary_veins",
+          "triangles": 7550,
+          "vertices": 3781,
+          "index_bytes": 45300,
+          "vertex_bytes": 34029,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 79329,
+          "f32_vertex_bytes": 90744,
+          "quantized_ratio_vs_f32_all_buffers": 0.5831
+        },
+        {
+          "name": "vena_cava_superior",
+          "triangles": 4662,
+          "vertices": 2333,
+          "index_bytes": 27972,
+          "vertex_bytes": 20997,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 48969,
+          "f32_vertex_bytes": 55992,
+          "quantized_ratio_vs_f32_all_buffers": 0.5832
+        }
+      ],
+      "total_draw_calls": 7,
+      "total_bytes": 1084467,
+      "load_ms": 51.345,
+      "file_bytes": 1090456,
+      "total_triangles": 103274,
+      "total_vertices": 51647,
+      "quantized_ratio_vs_f32": 0.375,
+      "extensions_used": [
+        "KHR_mesh_quantization"
+      ],
+      "within_window": true,
+      "note": "served under the viewer default asset name assets/cardiac.glb; byte-identical to out/cardiac_s0004.glb (md5 384cc1145161ce0f9f69967d358df0b8)"
+    },
+    {
+      "path": "out/cardiac_s0015.glb",
+      "name": "cardiac_s0015",
+      "served_url": "/assets/cardiac_s0015.glb",
+      "structures": [
+        {
+          "name": "aorta",
+          "triangles": 33532,
+          "vertices": 16806,
+          "index_bytes": 201192,
+          "vertex_bytes": 151254,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 352446,
+          "f32_vertex_bytes": 403344,
+          "quantized_ratio_vs_f32_all_buffers": 0.583
+        },
+        {
+          "name": "heart_atrial_appendage_left",
+          "triangles": 1551,
+          "vertices": 797,
+          "index_bytes": 9306,
+          "vertex_bytes": 7173,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 16479,
+          "f32_vertex_bytes": 19128,
+          "quantized_ratio_vs_f32_all_buffers": 0.5796
+        },
+        {
+          "name": "heart",
+          "triangles": 54881,
+          "vertices": 27512,
+          "index_bytes": 329286,
+          "vertex_bytes": 247608,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 2,
+          "primitives": 1,
+          "alpha_modes": [
+            "BLEND"
+          ],
+          "buffer_bytes": 576894,
+          "f32_vertex_bytes": 660288,
+          "quantized_ratio_vs_f32_all_buffers": 0.583
+        },
+        {
+          "name": "vena_cava_inferior",
+          "triangles": 18780,
+          "vertices": 9392,
+          "index_bytes": 112680,
+          "vertex_bytes": 84528,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 197208,
+          "f32_vertex_bytes": 225408,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        },
+        {
+          "name": "pulmonary_veins",
+          "triangles": 9272,
+          "vertices": 4663,
+          "index_bytes": 55632,
+          "vertex_bytes": 41967,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 97599,
+          "f32_vertex_bytes": 111912,
+          "quantized_ratio_vs_f32_all_buffers": 0.5825
+        },
+        {
+          "name": "vena_cava_superior",
+          "triangles": 1978,
+          "vertices": 1005,
+          "index_bytes": 11868,
+          "vertex_bytes": 9045,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 20913,
+          "f32_vertex_bytes": 24120,
+          "quantized_ratio_vs_f32_all_buffers": 0.5811
+        }
+      ],
+      "total_draw_calls": 7,
+      "total_bytes": 1261539,
+      "load_ms": 65.912,
+      "file_bytes": 1267532,
+      "total_triangles": 119994,
+      "total_vertices": 60175,
+      "quantized_ratio_vs_f32": 0.375,
+      "extensions_used": [
+        "KHR_mesh_quantization"
+      ],
+      "within_window": true
+    },
+    {
+      "path": "out/single_aorta.glb",
+      "name": "single_aorta",
+      "served_url": "/assets/single_aorta.glb",
+      "structures": [
+        {
+          "name": "aorta",
+          "triangles": 43352,
+          "vertices": 21678,
+          "index_bytes": 260112,
+          "vertex_bytes": 195102,
+          "quantized_ratio_vs_f32": 0.375,
+          "draw_calls_estimate": 1,
+          "primitives": 1,
+          "alpha_modes": [
+            "OPAQUE"
+          ],
+          "buffer_bytes": 455214,
+          "f32_vertex_bytes": 520272,
+          "quantized_ratio_vs_f32_all_buffers": 0.5833
+        }
+      ],
+      "total_draw_calls": 1,
+      "total_bytes": 455214,
+      "load_ms": 27.66,
+      "file_bytes": 456428,
+      "total_triangles": 43352,
+      "total_vertices": 21678,
+      "quantized_ratio_vs_f32": 0.375,
+      "extensions_used": [
+        "KHR_mesh_quantization"
+      ],
+      "within_window": false
+    }
+  ],
+  "combos": [
+    {
+      "name": "solo_cardiac_s0004",
+      "label": "combo (a): cardiac_s0004 alone",
+      "glbs": [
+        "out/cardiac_s0004.glb"
+      ],
+      "total_triangles": 103274,
+      "within_budget": true,
+      "budget_window": [
+        100000,
+        150000
+      ],
+      "total_draw_calls": 7,
+      "total_bytes": 1084467,
+      "over_budget": false,
+      "flag": null,
+      "rebudget": null
+    },
+    {
+      "name": "solo_cardiac_s0015",
+      "label": "combo (b): cardiac_s0015 alone",
+      "glbs": [
+        "out/cardiac_s0015.glb"
+      ],
+      "total_triangles": 119994,
+      "within_budget": true,
+      "budget_window": [
+        100000,
+        150000
+      ],
+      "total_draw_calls": 7,
+      "total_bytes": 1261539,
+      "over_budget": false,
+      "flag": null,
+      "rebudget": null
+    },
+    {
+      "name": "solo_coronary_601",
+      "label": "combo (c): coronary_601 alone",
+      "glbs": [
+        "out/coronary_601.glb"
+      ],
+      "total_triangles": 119998,
+      "within_budget": true,
+      "budget_window": [
+        100000,
+        150000
+      ],
+      "total_draw_calls": 1,
+      "total_bytes": 1260015,
+      "over_budget": false,
+      "flag": null,
+      "rebudget": null
+    },
+    {
+      "name": "worst_case_cardiac_s0004+coronary_601",
+      "label": "combo (d): cardiac_s0004 + coronary_601 loaded together (the brief's named worst case)",
+      "glbs": [
+        "out/cardiac_s0004.glb",
+        "out/coronary_601.glb"
+      ],
+      "total_triangles": 223272,
+      "within_budget": false,
+      "budget_window": [
+        100000,
+        150000
+      ],
+      "total_draw_calls": 8,
+      "total_bytes": 2344482,
+      "over_budget": true,
+      "flag": "exceeds the 150,000 triangle scene ceiling by 73,272 triangles (48.8% over) \u2014 scene-level re-budgeting required before on-headset validation",
+      "rebudget": {
+        "combined_target_triangles": 150000,
+        "rule": "per-model split proportional to current triangle share of the combo, floored to whole thousands; residual assigned to the largest model so the split sums exactly to 150000",
+        "per_model": [
+          {
+            "name": "cardiac_s0004",
+            "current_triangles": 103274,
+            "share_pct": 46.25,
+            "recommended_budget": 69000
+          },
+          {
+            "name": "coronary_601",
+            "current_triangles": 119998,
+            "share_pct": 53.75,
+            "recommended_budget": 81000
+          }
+        ],
+        "command_hint": "re-run pipeline/build_cardiac_glb.py per model with --budget 69000 (for cardiac_s0004) and --budget 81000 (for coronary_601)",
+        "caveat": "build_cardiac_glb.py hard-clamps every output into its per-file window [100000, 150000] (WINDOW_LO/WINDOW_HI), so any per-model budget below the floor additionally requires parameterizing that window (or one combined run over the union of the combo structures with --budget 150000)"
+      }
+    },
+    {
+      "name": "all_coronary_cases",
+      "label": "combo (e): coronary_601 + coronary_700 + coronary_798 loaded together",
+      "glbs": [
+        "out/coronary_601.glb",
+        "out/coronary_700.glb",
+        "out/coronary_798.glb"
+      ],
+      "total_triangles": 359994,
+      "within_budget": false,
+      "budget_window": [
+        100000,
+        150000
+      ],
+      "total_draw_calls": 3,
+      "total_bytes": 3779955,
+      "over_budget": true,
+      "flag": "exceeds the 150,000 triangle scene ceiling by 209,994 triangles (140.0% over) \u2014 scene-level re-budgeting required before on-headset validation",
+      "rebudget": {
+        "combined_target_triangles": 150000,
+        "rule": "per-model split proportional to current triangle share of the combo, floored to whole thousands; residual assigned to the largest model so the split sums exactly to 150000",
+        "per_model": [
+          {
+            "name": "coronary_601",
+            "current_triangles": 119998,
+            "share_pct": 33.33,
+            "recommended_budget": 50000
+          },
+          {
+            "name": "coronary_700",
+            "current_triangles": 119998,
+            "share_pct": 33.33,
+            "recommended_budget": 50000
+          },
+          {
+            "name": "coronary_798",
+            "current_triangles": 119998,
+            "share_pct": 33.33,
+            "recommended_budget": 50000
+          }
+        ],
+        "command_hint": "re-run pipeline/build_cardiac_glb.py per model with --budget 50000 (for coronary_601) and --budget 50000 (for coronary_700) and --budget 50000 (for coronary_798)",
+        "caveat": "build_cardiac_glb.py hard-clamps every output into its per-file window [100000, 150000] (WINDOW_LO/WINDOW_HI), so any per-model budget below the floor additionally requires parameterizing that window (or one combined run over the union of the combo structures with --budget 150000)"
+      }
+    }
+  ],
+  "loadtime": {
+    "schema_version": 1,
+    "tool": {
+      "name": "tools/loadtime_probe.mjs",
+      "version": "1.0.0",
+      "command": "node /home/wavy/ai/flowscope/tools/loadtime_probe.mjs --base https://192.168.1.229:8444 --samples 3",
+      "node": "v26.0.0"
+    },
+    "generated": "2026-09-23T11:46:38.995Z",
+    "base": "https://192.168.1.229:8444",
+    "samples_per_resource": 3,
+    "method": {
+      "transport": "HTTP(S) GET via node:https/node:http (no browser, no renderer)",
+      "tls": "self-signed certificate accepted (rejectUnauthorized: false) \u2014 LAN WebXR delivery path",
+      "connection": "fresh TLS connection per sample (cold-connection timing), connection: close",
+      "encoding": "accept-encoding: identity (byte counts are uncompressed wire payload)",
+      "sequencing": "resources and samples fetched sequentially (no request contention)",
+      "ttfb_ms": "request start -> response headers (first byte of the HTTP response)",
+      "download_ms": "response headers -> last body byte (transfer)",
+      "total_ms": "request start -> last body byte (ttfb + download)",
+      "note": "pure HTTP timing; no frame-rate or rendering measurement of any kind"
+    },
+    "resources": [
+      {
+        "name": "page_root",
+        "url": "https://192.168.1.229:8444/",
+        "kind": "page_html",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1127,
+        "ttfb_ms": {
+          "min": 13.857,
+          "median": 14.946,
+          "max": 75.73,
+          "samples": [
+            13.857,
+            14.946,
+            75.73
+          ]
+        },
+        "download_ms": {
+          "min": 0.619,
+          "median": 1.105,
+          "max": 4.156,
+          "samples": [
+            0.619,
+            1.105,
+            4.156
+          ]
+        },
+        "total_ms": {
+          "min": 14.962,
+          "median": 15.565,
+          "max": 79.887,
+          "samples": [
+            14.962,
+            15.565,
+            79.887
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 75.73,
+            "download_ms": 4.156,
+            "total_ms": 79.887,
+            "bytes": 1127,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 14.946,
+            "download_ms": 0.619,
+            "total_ms": 15.565,
+            "bytes": 1127,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 13.857,
+            "download_ms": 1.105,
+            "total_ms": 14.962,
+            "bytes": 1127,
+            "error": null
+          }
+        ]
+      },
+      {
+        "name": "page_model_coronary_601",
+        "url": "https://192.168.1.229:8444/?model=assets/coronary_601.glb",
+        "kind": "page_html",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1127,
+        "ttfb_ms": {
+          "min": 12.784,
+          "median": 13.029,
+          "max": 14.744,
+          "samples": [
+            12.784,
+            13.029,
+            14.744
+          ]
+        },
+        "download_ms": {
+          "min": 0.794,
+          "median": 2.146,
+          "max": 2.195,
+          "samples": [
+            0.794,
+            2.146,
+            2.195
+          ]
+        },
+        "total_ms": {
+          "min": 13.823,
+          "median": 14.931,
+          "max": 16.94,
+          "samples": [
+            13.823,
+            14.931,
+            16.94
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 14.744,
+            "download_ms": 2.195,
+            "total_ms": 16.94,
+            "bytes": 1127,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 12.784,
+            "download_ms": 2.146,
+            "total_ms": 14.931,
+            "bytes": 1127,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 13.029,
+            "download_ms": 0.794,
+            "total_ms": 13.823,
+            "bytes": 1127,
+            "error": null
+          }
+        ]
+      },
+      {
+        "name": "coronary_601",
+        "url": "https://192.168.1.229:8444/assets/coronary_601.glb",
+        "kind": "glb",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1261272,
+        "ttfb_ms": {
+          "min": 13.903,
+          "median": 23.425,
+          "max": 27.487,
+          "samples": [
+            13.903,
+            23.425,
+            27.487
+          ]
+        },
+        "download_ms": {
+          "min": 61.404,
+          "median": 64.651,
+          "max": 75.711,
+          "samples": [
+            61.404,
+            64.651,
+            75.711
+          ]
+        },
+        "total_ms": {
+          "min": 78.554,
+          "median": 88.891,
+          "max": 99.136,
+          "samples": [
+            78.554,
+            88.891,
+            99.136
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 27.487,
+            "download_ms": 61.404,
+            "total_ms": 88.891,
+            "bytes": 1261272,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 13.903,
+            "download_ms": 64.651,
+            "total_ms": 78.554,
+            "bytes": 1261272,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 23.425,
+            "download_ms": 75.711,
+            "total_ms": 99.136,
+            "bytes": 1261272,
+            "error": null
+          }
+        ],
+        "glb": "out/coronary_601.glb"
+      },
+      {
+        "name": "coronary_700",
+        "url": "https://192.168.1.229:8444/assets/coronary_700.glb",
+        "kind": "glb",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1261268,
+        "ttfb_ms": {
+          "min": 23.819,
+          "median": 31.779,
+          "max": 52.099,
+          "samples": [
+            23.819,
+            31.779,
+            52.099
+          ]
+        },
+        "download_ms": {
+          "min": 49.217,
+          "median": 59.106,
+          "max": 66.82,
+          "samples": [
+            49.217,
+            59.106,
+            66.82
+          ]
+        },
+        "total_ms": {
+          "min": 80.996,
+          "median": 90.639,
+          "max": 111.205,
+          "samples": [
+            80.996,
+            90.639,
+            111.205
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 31.779,
+            "download_ms": 49.217,
+            "total_ms": 80.996,
+            "bytes": 1261268,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 23.819,
+            "download_ms": 66.82,
+            "total_ms": 90.639,
+            "bytes": 1261268,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 52.099,
+            "download_ms": 59.106,
+            "total_ms": 111.205,
+            "bytes": 1261268,
+            "error": null
+          }
+        ],
+        "glb": "out/coronary_700.glb"
+      },
+      {
+        "name": "coronary_798",
+        "url": "https://192.168.1.229:8444/assets/coronary_798.glb",
+        "kind": "glb",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1261176,
+        "ttfb_ms": {
+          "min": 9.371,
+          "median": 21.486,
+          "max": 45.236,
+          "samples": [
+            9.371,
+            21.486,
+            45.236
+          ]
+        },
+        "download_ms": {
+          "min": 29.898,
+          "median": 34.198,
+          "max": 92.054,
+          "samples": [
+            29.898,
+            34.198,
+            92.054
+          ]
+        },
+        "total_ms": {
+          "min": 39.269,
+          "median": 55.684,
+          "max": 137.29,
+          "samples": [
+            39.269,
+            55.684,
+            137.29
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 45.236,
+            "download_ms": 92.054,
+            "total_ms": 137.29,
+            "bytes": 1261176,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 9.371,
+            "download_ms": 29.898,
+            "total_ms": 39.269,
+            "bytes": 1261176,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 21.486,
+            "download_ms": 34.198,
+            "total_ms": 55.684,
+            "bytes": 1261176,
+            "error": null
+          }
+        ],
+        "glb": "out/coronary_798.glb"
+      },
+      {
+        "name": "cardiac_s0004",
+        "url": "https://192.168.1.229:8444/assets/cardiac.glb",
+        "kind": "glb",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1090456,
+        "ttfb_ms": {
+          "min": 12.273,
+          "median": 12.574,
+          "max": 13.97,
+          "samples": [
+            12.273,
+            12.574,
+            13.97
+          ]
+        },
+        "download_ms": {
+          "min": 35.118,
+          "median": 39.072,
+          "max": 48.08,
+          "samples": [
+            35.118,
+            39.072,
+            48.08
+          ]
+        },
+        "total_ms": {
+          "min": 49.088,
+          "median": 51.345,
+          "max": 60.654,
+          "samples": [
+            49.088,
+            51.345,
+            60.654
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 12.273,
+            "download_ms": 39.072,
+            "total_ms": 51.345,
+            "bytes": 1090456,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 13.97,
+            "download_ms": 35.118,
+            "total_ms": 49.088,
+            "bytes": 1090456,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 12.574,
+            "download_ms": 48.08,
+            "total_ms": 60.654,
+            "bytes": 1090456,
+            "error": null
+          }
+        ],
+        "glb": "out/cardiac_s0004.glb",
+        "note": "served under the viewer default asset name assets/cardiac.glb (byte-identical to out/cardiac_s0004.glb)"
+      },
+      {
+        "name": "cardiac_s0015",
+        "url": "https://192.168.1.229:8444/assets/cardiac_s0015.glb",
+        "kind": "glb",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 1267532,
+        "ttfb_ms": {
+          "min": 12.092,
+          "median": 17.78,
+          "max": 22.765,
+          "samples": [
+            12.092,
+            17.78,
+            22.765
+          ]
+        },
+        "download_ms": {
+          "min": 42.098,
+          "median": 48.132,
+          "max": 83.645,
+          "samples": [
+            42.098,
+            48.132,
+            83.645
+          ]
+        },
+        "total_ms": {
+          "min": 64.862,
+          "median": 65.912,
+          "max": 95.737,
+          "samples": [
+            64.862,
+            65.912,
+            95.737
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 12.092,
+            "download_ms": 83.645,
+            "total_ms": 95.737,
+            "bytes": 1267532,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 22.765,
+            "download_ms": 42.098,
+            "total_ms": 64.862,
+            "bytes": 1267532,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 17.78,
+            "download_ms": 48.132,
+            "total_ms": 65.912,
+            "bytes": 1267532,
+            "error": null
+          }
+        ],
+        "glb": "out/cardiac_s0015.glb"
+      },
+      {
+        "name": "single_aorta",
+        "url": "https://192.168.1.229:8444/assets/single_aorta.glb",
+        "kind": "glb",
+        "samples_requested": 3,
+        "samples_ok": 3,
+        "status": 200,
+        "bytes": 456428,
+        "ttfb_ms": {
+          "min": 12.515,
+          "median": 14.884,
+          "max": 16.067,
+          "samples": [
+            12.515,
+            14.884,
+            16.067
+          ]
+        },
+        "download_ms": {
+          "min": 12.776,
+          "median": 14.478,
+          "max": 14.483,
+          "samples": [
+            12.776,
+            14.478,
+            14.483
+          ]
+        },
+        "total_ms": {
+          "min": 26.998,
+          "median": 27.66,
+          "max": 30.545,
+          "samples": [
+            26.998,
+            27.66,
+            30.545
+          ]
+        },
+        "raw": [
+          {
+            "status": 200,
+            "ttfb_ms": 12.515,
+            "download_ms": 14.483,
+            "total_ms": 26.998,
+            "bytes": 456428,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 16.067,
+            "download_ms": 14.478,
+            "total_ms": 30.545,
+            "bytes": 456428,
+            "error": null
+          },
+          {
+            "status": 200,
+            "ttfb_ms": 14.884,
+            "download_ms": 12.776,
+            "total_ms": 27.66,
+            "bytes": 456428,
+            "error": null
+          }
+        ],
+        "glb": "out/single_aorta.glb"
+      }
+    ]
+  },
+  "notes": [
+    "frame rates NOT verified without headset telemetry",
+    "No renderer runs here: no GPU timing, no display timing, no frame-rate numbers appear anywhere in this artifact. Frame rates are measured exclusively ON the headset via the in-XR FPS readout (see out/track2_report.md pre-headset checklist).",
+    "Target hardware is stated as assumptions only (Meta Quest 2 / Snapdragon XR2); nothing has been validated on the device.",
+    "quantized_ratio_vs_f32 = stored vertex-attribute buffer bytes / float32-equivalent vertex-attribute bytes (count * components * 4). The quantized layout stores POSITION as normalized unsigned short (6 B/vertex) and NORMAL as normalized signed byte (3 B/vertex) = 9 B/vertex vs 24 B/vertex float32 -> ratio 0.375. The variant quantized_ratio_vs_f32_all_buffers includes the index buffer in both terms.",
+    "draw_calls_estimate = 1 pass per mesh primitive + 1 extra pass when the material alphaMode is BLEND; three.js renders double-sided transparent geometry in two passes (back faces then front faces) and the pipeline emits doubleSided:true.",
+    "total_bytes = sum of per-structure index_bytes + vertex_bytes (GLB BIN payload); file_bytes = on-disk GLB size (JSON chunk + padding included).",
+    "load_ms = median total_ms (request start -> last body byte, fresh TLS connection per sample) from tools/loadtime_probe.mjs; 3 samples per resource with min/median/max and raw samples retained under \"loadtime\".",
+    "out/cardiac_s0004.glb is served as assets/cardiac.glb (viewer default model); the two files are byte-identical (md5 384cc1145161ce0f9f69967d358df0b8), so its load timing is the true asset timing.",
+    "Combo within_budget is checked against the pipeline window [100000, 150000] (build_cardiac_glb.py WINDOW_LO/WINDOW_HI, same as the within_window check in the Phase-1 report schema).",
+    "Combos exceeding the ceiling carry an explicit flag and a per-model budget split (rebudget); note the caveat there: build_cardiac_glb.py hard-clamps each output into [100000, 150000], so per-model budgets below the floor need that window parameterized first."
+  ]
+}
