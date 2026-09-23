@@ -18,7 +18,9 @@ Overrides: TOTALSEG_DEVICE (device), TOTALSEG_BIN (engine binary).
 Target: end-to-end ~30s-class live demos on M1 Max.
 
 Input : data/raw/totalseg_ct/<case_id>/ct.nii.gz
-Output: data/segmentations/<case_id>_heartchambers_highres/ (per-structure .nii.gz)
+Output: data/segmentations/<case_id>_heartchambers_highres/ containing per-structure
+        .nii.gz files (standard mode) or a single labels.nii.gz (demo mode: integer
+        ids 1..7 per pipeline/structures.py DEFAULT_LABEL_MAP)
         + compatibility symlink data/segmentations/<case_id> -> <case_id>_heartchambers_highres
 Run record appended to tools/segmentation_runs.json (runtime_s, device, outputs).
 
@@ -49,7 +51,7 @@ license_number = args[1] if len(args) > 1 else os.environ.get("TOTALSEG_LICENSE"
 cmd = seg_backend.build_command(inp, outdir, task="heartchambers_highres",
                                 license_number=license_number, demo=demo)
 device = seg_backend.resolve_device()
-env = {**os.environ, **seg_backend.run_env(device)} if demo else None
+env = {**os.environ, **seg_backend.run_env(device)}
 print("running:", " ".join(cmd), flush=True)
 t0 = time.time()
 proc = subprocess.run(cmd, capture_output=True, text=True, env=env)

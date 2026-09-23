@@ -5,7 +5,9 @@ Device: TOTALSEG_DEVICE override wins; else "mps" on Apple Silicon (native Metal
 "gpu" when torch reports CUDA, else "cpu".
 Binary: TOTALSEG_BIN override, else <repo>/.venv/bin/TotalSegmentator, else PATH.
 
-Demo mode (demo=True) appends `--ml --resampling_order 1` and requires device "mps".
+Demo mode (demo=True) appends `--ml --resampling_order 1`, names the output
+`labels.nii.gz` inside outdir (2.18.0 `--ml` writes `<path>.nii` outside a bare-dir
+`-o`, so the demo path names the file explicitly), and requires device "mps".
 """
 import json
 import os
@@ -53,7 +55,8 @@ def build_command(inp, outdir, task="heartchambers_highres", device=None,
     device = device or resolve_device()
     if demo and device != "mps":
         raise ValueError(f"demo mode requires device 'mps', resolved {device!r}")
-    cmd = [resolve_bin(), "-i", inp, "-o", outdir, "-ta", task, "-d", device]
+    out = os.path.join(outdir, "labels.nii.gz") if demo else outdir
+    cmd = [resolve_bin(), "-i", inp, "-o", out, "-ta", task, "-d", device]
     if license_number:
         cmd += ["-l", license_number]
     if demo:
