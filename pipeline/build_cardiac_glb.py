@@ -3,8 +3,11 @@
 
 Three mutually exclusive ingestion modes (exactly one required):
   --stl-dir     ImageCAS-style per-structure STL meshes
-  --ts-dir      TotalSegmentator output dir: per-structure *.nii.gz masks and/or
-                a single labels.nii.gz / *_multilabel.nii.gz volume
+  --ts-dir      TotalSegmentator output dir(s), repeatable (or
+                space-separated): per-structure *.nii.gz masks and/or a single
+                labels.nii.gz / *_multilabel.nii.gz volume; a case root whose
+                chambers/ veins/ coronaries/ subdirs hold the 3-pass outputs
+                is recursed one level (legacy flat dirs unchanged)
   --multilabel  one multilabel NIfTI (integer label per structure)
 
 Mask/multilabel modes select cardiac anatomy by default: only structures whose
@@ -12,6 +15,12 @@ resolved id is in the palette (the 16 contract ids plus 'heart') are ingested;
 everything else is recorded as a skipped row with reason 'non_cardiac'.
 --extra-names whitelists additional raw names (normalized), --all-names ingests
 everything. --stl-dir is an explicit file set and is never filtered.
+
+Multi-source precedence: when one canonical id appears in several source dirs,
+heartchambers_highres output dirs (and chambers/ subdirs) rank above veins/,
+which rank above coronaries/, which rank above every other mask dir; each
+loser becomes a skipped row. `heart` is suppressed (skip reason
+'superseded_by_myocardium') whenever `heart_myocardium` is present.
 
 Per-structure chain (contract order):
   1. ingest        STL: pv.read -> clean() + triangulate() (watertight via
@@ -30,18 +39,28 @@ Per-structure chain (contract order):
                    per structure and emitted null + volume_note on open
                    (non-watertight) surfaces where the divergence-theorem
                    volume is meaningless
-  3. decimation    to the per-structure budget allocation via --decimator:
+  3. decimation    to the per-structure budget allocation (stratified tier
+                   shares of --budget: myocardium 0.30, chambers 0.26,
+                   great_vessels 0.22, coronaries 0.22, renormalized over the
+                   tiers present; `other`-group structures get per-structure
+                   floors only) via --decimator:
                    decimate_pro (default) = PolyData.decimate_pro(reduction=...)
                    [vtkDecimatePro, the deliverable-named API]; quadric =
                    PolyData.decimate(target_reduction=...,
                    volume_preservation=True) [vtkQuadricDecimation]. Reduction
                    clamped <= 0.95, binary-searched (<= 6 iters) to within 2% of
                    target; per-structure floors survive trim/relax passes (the
-                   floor only drops when the input mesh itself is smaller);
-                   then trim/relax passes onto the hard window
-  4. finalize      recompute per-vertex normals (consistent, non-splitting) and
-                   apply the world transform (RAS mm -> Y-up meters, bbox center
-                   of ALL structures at the origin)
+                   the floor only drops when the input mesh itself is smaller);
+                   then trim/relax passes onto the hard window; finally every
+                   open boundary loop of the FOV-truncated inlet/outlet ends of
+                   _CAP_STRUCTURE_IDS (aorta, vena_cava_superior) is capped
+                   with a planar centroid fan (render geometry only: volume
+                   metrics stay on the pre-cap mesh)
+  4. finalize      smooth per-vertex point normals (consistent, splitting off,
+                   flat feature angle -- no crease splitting, so PBR lighting
+                   follows anatomical curvature) and apply the world transform
+                   (RAS mm -> Y-up meters, bbox center of ALL structures at the
+                   origin)
   5. emit          one binary .glb (glb_writer, KHR_mesh_quantization) + report
 """
 
@@ -78,6 +97,30 @@ VESSEL_IDS = frozenset(
     {'coronary_artery_left', 'coronary_artery_right', 'coronary_arteries', 'pulmonary_veins'}
 )
 CAP_FRACTION = 0.30
+# stratified per-tier budget weights of --budget (renormalized over the tiers
+# actually present; 'other' gets per-structure floors only)
+GROUP_WEIGHTS = {
+    'myocardium': 0.30,
+    'chambers': 0.26,
+    'great_vessels': 0.22,
+    'coronaries': 0.22,
+}
+# the mandate's per-tier triangle ranges (fixed contract); the hard total
+# window wins over these on any conflict
+TIER_RANGE = {
+    'myocardium': (35000, 45000),
+    'great_vessels': (25000, 33000),
+    'chambers': (30000, 40000),
+    'coronaries': (25000, 35000),
+}
+# decimation-scatter guard for the window top-up: aim slightly above WINDOW_LO
+# so per-structure decimation scatter (observed 0..-2 tris each) cannot slip
+# the achieved aggregate below WINDOW_LO -- that would trip _aggregate_passes'
+# relax backstop, which re-aims at --budget and wrecks the tier ranges. The
+# mandated acceptance band is WINDOW_LO..WINDOW_LO+2000, so this stays inside.
+_TOPUP_MARGIN = 500
+# FOV-truncated vessel ends whose open rims get planar caps after decimation
+_CAP_STRUCTURE_IDS = frozenset({'aorta', 'vena_cava_superior'})
 MAX_SEARCH_ITERS = 6
 MAX_AGGREGATE_PASSES = 8
 REDUCTION_CAP = 0.95
@@ -108,6 +151,7 @@ class _Work:
     mesh: object
     achieved: int
     target: int
+    boundary_loops_capped: int = 0
 
 
 def parse_args(argv=None):
@@ -118,8 +162,13 @@ def parse_args(argv=None):
     source.add_argument('--stl-dir', help='ImageCAS-style per-structure STL mesh directory')
     source.add_argument(
         '--ts-dir',
-        help='TotalSegmentator output dir: per-structure *.nii.gz masks and/or '
-        'a single labels.nii.gz / *_multilabel.nii.gz volume',
+        action='append',
+        nargs='+',
+        metavar='DIR',
+        help='TotalSegmentator output dir(s), repeatable or space-separated: '
+        'per-structure *.nii.gz masks and/or a single labels.nii.gz / '
+        '*_multilabel.nii.gz volume; a case root containing chambers/ veins/ '
+        'coronaries/ subdirs is recursed one level',
     )
     source.add_argument('--multilabel', help='single multilabel NIfTI (integer label per structure)')
     parser.add_argument(
@@ -131,7 +180,14 @@ def parse_args(argv=None):
     )
     parser.add_argument('--out', default='out/cardiac.glb')
     parser.add_argument('--report', default='out/report.json')
-    parser.add_argument('--budget', type=int, default=120000)
+    parser.add_argument(
+        '--budget',
+        type=int,
+        default=135000,
+        help='total triangle budget, stratified over tiers (myocardium 0.30, '
+        'chambers 0.26, great_vessels 0.22, coronaries 0.22, renormalized '
+        'over present tiers; other = floors only)',
+    )
     parser.add_argument('--smooth-iters', type=int, default=25)
     parser.add_argument('--pass-band', type=float, default=0.1)
     parser.add_argument('--threads', type=int, default=os.cpu_count() or 1)
@@ -155,6 +211,8 @@ def parse_args(argv=None):
         'quadric (PolyData.decimate with volume preservation)',
     )
     args = parser.parse_args(argv)
+    if args.ts_dir:
+        args.ts_dir = [d for group in args.ts_dir for d in group]
     if args.name_map and not args.stl_dir:
         parser.error('--name-map requires --stl-dir')
     if args.label_map and not (args.multilabel or args.ts_dir):
@@ -216,7 +274,54 @@ def _multilabel_specs(path, data, label_map) -> list[dict]:
     return specs
 
 
+def _ts_files(root: Path) -> list[Path]:
+    """Mask/multilabel NIfTIs under ``root``: the dir itself plus one sub-level.
+
+    Accepts legacy flat TotalSegmentator output dirs and 3-pass case roots
+    (``chambers/``, ``veins/``, ``coronaries/`` subdirs) unchanged.
+    """
+    files = [p for p in root.glob('*.nii.gz') if p.is_file()]
+    for sub in sorted(p for p in root.glob('*') if p.is_dir()):
+        files.extend(p for p in sub.glob('*.nii.gz') if p.is_file())
+    return sorted(files)
+
+
+def _source_rank(root: Path, path: Path) -> int:
+    """Source precedence tier of one mask/multilabel file (lower wins).
+
+    heartchambers_highres output dirs and ``chambers/`` subdirs rank above
+    ``veins/``, which rank above ``coronaries/``, which rank above every other
+    mask dir. Symlinked roots are judged by their resolved dir name too (the
+    data/segmentations/<case> -> <case>_heartchambers_highres convenience
+    links).
+    """
+    names = [root.name, *path.relative_to(root).parts[:-1]]
+    try:
+        resolved_name = root.resolve().name
+    except OSError:
+        resolved_name = root.name
+    names.append(resolved_name)
+    lowered = [name.lower() for name in names]
+    if any('heartchambers_highres' in name for name in lowered) or 'chambers' in lowered:
+        return 0
+    if 'veins' in lowered:
+        return 1
+    if 'coronaries' in lowered:
+        return 2
+    return 3
+
+
 def _collect_specs(args, label_map, volumes) -> list[dict]:
+    """Collect structure specs across all sources with precedence dedupe.
+
+    Sources: --stl-dir meshes, one or more --ts-dir trees (each scanned flat
+    plus one sub-level for case roots), or a single --multilabel volume. When
+    one canonical id appears more than once the highest-precedence source wins
+    (heartchambers_highres/chambers > veins > coronaries > other; ties break
+    first-seen) and each loser becomes a skipped row. `heart` is suppressed
+    with skip reason 'superseded_by_myocardium' whenever `heart_myocardium` is
+    present.
+    """
     specs: list[dict] = []
     if args.stl_dir:
         name_map = _load_name_map(args.name_map) if args.name_map else {}
@@ -234,25 +339,30 @@ def _collect_specs(args, label_map, volumes) -> list[dict]:
                 }
             )
     elif args.ts_dir:
-        files = sorted(Path(args.ts_dir).glob('*.nii.gz'))
-        for path in files:
-            if _is_multilabel_filename(path.name):
-                continue
-            specs.append(
-                {
-                    'name': structures.resolve_name(path.name),
-                    'raw': structures.strip_suffix(path.name),
-                    'source_file': str(path),
-                    'mode': 'mask',
-                    'path': path,
-                    'label': None,
-                }
-            )
-        for path in files:
-            if not _is_multilabel_filename(path.name):
-                continue
-            data, _affine = _load_volume(path, volumes)
-            specs.extend(_multilabel_specs(path, data, label_map))
+        for root_str in args.ts_dir:
+            root = Path(root_str)
+            files = _ts_files(root)
+            for path in files:
+                if _is_multilabel_filename(path.name):
+                    continue
+                specs.append(
+                    {
+                        'name': structures.resolve_name(path.name),
+                        'raw': structures.strip_suffix(path.name),
+                        'source_file': str(path),
+                        'mode': 'mask',
+                        'path': path,
+                        'label': None,
+                        'rank': _source_rank(root, path),
+                    }
+                )
+            for path in files:
+                if not _is_multilabel_filename(path.name):
+                    continue
+                data, _affine = _load_volume(path, volumes)
+                for spec in _multilabel_specs(path, data, label_map):
+                    spec['rank'] = _source_rank(root, path)
+                    specs.append(spec)
     else:
         path = Path(args.multilabel)
         data, _affine = _load_volume(path, volumes)
@@ -271,16 +381,34 @@ def _collect_specs(args, label_map, volumes) -> list[dict]:
                 continue
             spec['skipped'] = 'non_cardiac'
 
-    # first selected source for a duplicated structure name wins; later ones are skipped
-    seen: dict[str, str] = {}
-    for spec in specs:
+    # duplicate canonical ids: the highest-precedence source wins (first seen
+    # on a tie); every loser becomes a skipped row
+    kept: dict[str, tuple[int, int]] = {}
+    for order, spec in enumerate(specs):
         if 'skipped' in spec:
             continue
         name = spec['name']
-        if name in seen:
-            spec['skipped'] = f'duplicate structure name (first seen in {seen[name]})'
+        rank = spec.get('rank', 3)
+        prev = kept.get(name)
+        if prev is None:
+            kept[name] = (rank, order)
+            continue
+        if (rank, order) < prev:
+            winner, loser = spec, specs[prev[1]]
+            kept[name] = (rank, order)
         else:
-            seen[name] = spec['source_file']
+            winner, loser = specs[prev[1]], spec
+        loser['skipped'] = (
+            f'duplicate structure name (superseded by {winner["source_file"]})'
+        )
+
+    # the whole-heart envelope never coexists with LV myocardium
+    if any(
+        'skipped' not in spec and spec['name'] == 'heart_myocardium' for spec in specs
+    ):
+        for spec in specs:
+            if spec['name'] == 'heart':
+                spec['skipped'] = 'superseded_by_myocardium'
     return specs
 
 
@@ -408,16 +536,142 @@ def _smooth(mesh, n_iter, pass_band, watertight):
 
 
 def _allocate_targets(names, raws, budget) -> list[int]:
-    """Budget share proportional to raw triangles, floors, 30% single cap."""
-    raw_total = sum(raws)
-    targets = []
-    for name, raw in zip(names, raws):
-        floor = FLOOR_TRIS_VESSEL if name in VESSEL_IDS else FLOOR_TRIS
-        lower = min(floor, raw)  # floor only drops when the input mesh is smaller
-        target = max(budget * raw / raw_total, lower)
-        target = max(min(target, CAP_FRACTION * budget, raw), lower)
-        targets.append(max(1, int(round(target))))
+    """Stratified per-tier budget allocation (tier weights of ``budget``).
+
+    Tier weights -- myocardium 0.30, chambers 0.26, great_vessels 0.22,
+    coronaries 0.22 (``structures.structure_group``) -- are renormalized over
+    the tiers actually present: absent tiers hand their weight to the present
+    ones. Each tier's share of ``budget`` is clamped into its mandated
+    ``TIER_RANGE`` and bounded above by its summed raw triangles: a tier whose
+    raws fall below its range minimum stays at its raw total (supply-limited,
+    no synthetic upsampling). The tier targets are then topped up to the hard
+    window floor (``_top_up_to_window``; WINDOW_LO wins over the ranges on any
+    conflict). Within a tier the target splits proportional to raw triangle
+    counts with the existing floors (``_floor_base``) and the 0.30
+    single-structure cap applied against the TIER target, not the global
+    budget. Capped excess is redistributed to the other tier members; when the
+    tier cannot absorb it the cap releases (it never starves the tier below its
+    share). ``other``-group structures get per-structure floors only.
+    """
+    targets = [0] * len(names)
+    groups: dict[str, list[int]] = {}
+    for index, name in enumerate(names):
+        groups.setdefault(structures.structure_group(name), []).append(index)
+    for index in groups.get('other', ()):
+        targets[index] = max(1, min(_floor_base(names[index]), raws[index]))
+    present = [group for group in GROUP_WEIGHTS if group in groups]
+    weight_total = sum(GROUP_WEIGHTS[group] for group in present)
+    tier_targets: dict[str, float] = {}
+    tier_raws: dict[str, int] = {}
+    for group in present:
+        share = budget * GROUP_WEIGHTS[group] / weight_total if weight_total else 0.0
+        raw_sum = sum(raws[i] for i in groups[group])
+        low, high = TIER_RANGE[group]
+        tier_raws[group] = raw_sum
+        tier_targets[group] = min(max(round(share), low), high, raw_sum)
+    _top_up_to_window(tier_targets, tier_raws, sum(targets))
+    for group in present:
+        _split_group_targets(names, raws, groups[group], tier_targets[group], targets)
     return targets
+
+
+def _top_up_to_window(tier_targets, tier_raws, fixed) -> None:
+    """Raise tier targets until the allocation total reaches the window floor.
+
+    Phase 1 feeds the tiers with remaining raw headroom (``tier_raws - target
+    > 0``) in proportion to their weights, never past a tier's ``TIER_RANGE``
+    maximum. Phase 2 (the hard window wins over the ranges): once every tier
+    sits at min(range max, raw sum) the range maxima relax and the remainder
+    spreads proportionally to the remaining raw headroom -- the only step where
+    a target may exceed its tier's raw sum. ``fixed`` is the untouchable
+    floors-only mass (``other``-group structures).
+    """
+    deficit = WINDOW_LO + _TOPUP_MARGIN - (sum(tier_targets.values()) + fixed)
+    if deficit <= 0:
+        return
+    for _ in range(2 * len(tier_targets) + 4):
+        feeders = [
+            group
+            for group, target in tier_targets.items()
+            if tier_raws[group] > target and target < TIER_RANGE[group][1]
+        ]
+        if not feeders:
+            break
+        weight_total = sum(GROUP_WEIGHTS[group] for group in feeders)
+        offered = deficit
+        for group in feeders:
+            room = min(
+                TIER_RANGE[group][1] - tier_targets[group],
+                tier_raws[group] - tier_targets[group],
+            )
+            add = min(offered * GROUP_WEIGHTS[group] / weight_total, room)
+            if add > 0:
+                tier_targets[group] += add
+                deficit -= add
+        if deficit <= 0:
+            return
+    if not tier_targets or not all(
+        tier_targets[group] >= min(TIER_RANGE[group][1], tier_raws[group]) - 1e-6
+        for group in tier_targets
+    ):
+        return
+    headroom = {
+        group: tier_raws[group] - tier_targets[group]
+        for group in tier_targets
+        if tier_raws[group] > tier_targets[group]
+    }
+    spread = sum(headroom.values())
+    if spread > 0:
+        for group, head in headroom.items():
+            tier_targets[group] += deficit * head / spread
+    else:
+        # no raw headroom anywhere; the hard window still wins
+        weight_total = sum(GROUP_WEIGHTS[group] for group in tier_targets)
+        for group in tier_targets:
+            tier_targets[group] += deficit * GROUP_WEIGHTS[group] / weight_total
+
+
+def _split_group_targets(names, raws, indexes, group_target, targets) -> None:
+    """Split one tier's target over its members (floors + 0.30 water-filled cap)."""
+    total_raw = sum(raws[i] for i in indexes)
+    if group_target <= 0 or total_raw <= 0:
+        for i in indexes:
+            targets[i] = max(1, min(_floor_base(names[i]), raws[i]))
+        return
+    cap = CAP_FRACTION * group_target
+    lowers = {i: min(_floor_base(names[i]), raws[i]) for i in indexes}
+    uppers = {i: max(min(raws[i], cap), lowers[i]) for i in indexes}
+    alloc = {i: group_target * raws[i] / total_raw for i in indexes}
+    cap_released = False
+    for _ in range(len(indexes) + 4):
+        for i in indexes:
+            alloc[i] = min(max(alloc[i], lowers[i]), uppers[i])
+        delta = group_target - sum(alloc.values())
+        if abs(delta) < 1e-6:
+            break
+        if delta > 0:
+            room = {i: uppers[i] - alloc[i] for i in indexes if uppers[i] > alloc[i]}
+            if not room:
+                if cap_released:
+                    break
+                # too little absorbable headroom for the 0.30 cap to bind
+                # without leaving the tier under target -- release it
+                cap_released = True
+                for i in indexes:
+                    uppers[i] = raws[i]
+                continue
+            total_room = sum(room.values())
+            for i, head in room.items():
+                alloc[i] += delta * head / total_room
+        else:
+            head = {i: alloc[i] - lowers[i] for i in indexes if alloc[i] > lowers[i]}
+            if not head:
+                break
+            total_head = sum(head.values())
+            for i, slack in head.items():
+                alloc[i] += delta * slack / total_head
+    for i in indexes:
+        targets[i] = max(1, int(round(alloc[i])))
 
 
 def _floor_base(name):
@@ -513,14 +767,93 @@ def _aggregate_passes(work, budget, decimator) -> None:
         total = sum(w.achieved for w in work)
 
 
+def _boundary_loops(mesh) -> list[list[int]]:
+    """Open-boundary loops as vertex-index cycles, directed by the adjacent    face winding (consecutive half-edges u -> v chain via nxt[u] == v, so a
+    cap patch closing the loop must traverse v -> u)."""
+    faces = np.asarray(mesh.faces, dtype=np.int64).reshape(-1, 4)[:, 1:]
+    n_verts = int(len(mesh.points))
+    half_edges = np.concatenate(
+        [faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]], axis=0
+    )
+    codes = half_edges[:, 0] * n_verts + half_edges[:, 1]
+    reverses = half_edges[:, 1] * n_verts + half_edges[:, 0]
+    boundary = half_edges[~np.isin(reverses, codes)]
+    if boundary.size == 0:
+        return []
+    nxt: dict[int, int] = {}
+    for u, v in boundary:
+        nxt.setdefault(int(u), int(v))
+    loops: list[list[int]] = []
+    visited: set[int] = set()
+    for start in list(nxt):
+        if start in visited:
+            continue
+        loop = [start]
+        visited.add(start)
+        cur = nxt[start]
+        while cur != start and cur not in visited and cur in nxt:
+            loop.append(cur)
+            visited.add(cur)
+            cur = nxt[cur]
+        if cur == start and len(loop) >= 3:
+            loops.append(loop)
+    return loops
+
+
+def _cap_open_rims(work) -> None:
+    """Planar caps for the open rims of FOV-truncated vessel ends (render only).
+
+    After decimation, every open boundary loop of the ``_CAP_STRUCTURE_IDS``
+    structures (aorta, vena_cava_superior) is capped with a planar centroid
+    fan -- one fan vertex at the loop centroid (the loop best-fit plane passes
+    through it), triangles reversed against the adjacent face winding -- so no
+    raw open polygon rims reach the GLB. Metric semantics are unchanged:
+    volume drift was computed on the pre-cap geometry and open rows keep null
+    metrics. Refreshes w.mesh / w.achieved and sets w.boundary_loops_capped.
+    """
+    for w in work:
+        w.boundary_loops_capped = 0
+        if structures.resolve_name(w.name) not in _CAP_STRUCTURE_IDS:
+            continue
+        loops = [loop for loop in _boundary_loops(w.mesh) if len(loop) >= 3]
+        if not loops:
+            continue
+        points = np.asarray(w.mesh.points, dtype=np.float64)
+        faces = np.asarray(w.mesh.faces, dtype=np.int64).reshape(-1, 4)[:, 1:]
+        centroids = np.asarray(
+            [points[loop].mean(axis=0) for loop in loops], dtype=np.float64
+        )
+        caps = []
+        for loop_index, loop in enumerate(loops):
+            center = len(points) + loop_index
+            for i, u in enumerate(loop):
+                v = loop[(i + 1) % len(loop)]
+                caps.append((v, u, center))  # reversed half-edge closes the surface
+        capped_faces = np.vstack([faces, np.asarray(caps, dtype=np.int64)])
+        padded = np.hstack(
+            [np.full((len(capped_faces), 1), 3, dtype=np.int64), capped_faces]
+        ).ravel()
+        w.mesh = pv.PolyData(np.vstack([points, centroids]), padded)
+        w.achieved = int(w.mesh.n_faces)
+        w.boundary_loops_capped = len(loops)
+
+
 def _finalize_geometry(work) -> list[dict]:
-    """Step 4: recompute normals, world transform, recenter on the global bbox."""
+    """Step 4: smooth point normals, world transform, recenter on the global bbox.
+
+    Normals are smooth per-vertex point normals (compute_normals with
+    point_normals=True / cell_normals=False, consistent, splitting off and a
+    flat feature angle -- no crease splitting) so PBR lighting follows
+    anatomical curvature. Accepts anything with .name and .mesh (the raw-scale
+    validator passes plain namespaces).
+    """
     items = []
     for w in work:
         mesh = w.mesh.compute_normals(
             cell_normals=False,
             point_normals=True,
             split_vertices=False,
+            feature_angle=180.0,
             consistent_normals=True,
         )
         normals = np.asarray(mesh.point_data['Normals'], dtype=np.float64)
@@ -545,7 +878,12 @@ def _finalize_geometry(work) -> list[dict]:
 
 def _row_for(result, decimator) -> dict:
     if not isinstance(result, _Work):
-        return {**result, 'decimator': decimator}
+        return {
+            **result,
+            'boundary_loops_capped': 0,
+            'normals': 'smooth_point',
+            'decimator': decimator,
+        }
     w = result
     reduction = (1.0 - w.achieved / w.input_triangles) * 100.0 if w.input_triangles else 0.0
     if w.watertight:
@@ -581,6 +919,8 @@ def _row_for(result, decimator) -> dict:
             else None
         ),
         'smoothing_note': w.smoothing_note,
+        'boundary_loops_capped': w.boundary_loops_capped,
+        'normals': 'smooth_point',
         'final_triangles': w.achieved,
         'target_triangles': w.target,
         'reduction_pct': round(reduction, 3),
@@ -694,6 +1034,7 @@ def main(argv=None) -> int:
         _aggregate_passes(work, args.budget, args.decimator)
         for w in work:
             w.volume_final_mm3 = float(w.mesh.volume) if w.watertight else None
+        _cap_open_rims(work)  # render geometry only; metrics stay pre-cap
         items = _finalize_geometry(work)
     else:
         items = []

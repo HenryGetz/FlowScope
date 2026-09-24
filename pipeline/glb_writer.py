@@ -23,7 +23,6 @@ from pathlib import Path
 
 import numpy as np
 
-from structures import alpha_mode
 from structures import material_for
 
 _GLB_MAGIC = 0x46546C67
@@ -58,6 +57,7 @@ def write_glb(path, meshes, quantize: bool = True) -> dict:
     accessors: list[dict] = []
     meshes_json: list[dict] = []
     materials_json: list[dict] = []
+    material_index_by_key: dict[tuple, int] = {}
     nodes_json: list[dict] = [{'name': 'cardiac', 'children': []}]
 
     def add_view(data: bytes, target: int) -> int:
@@ -87,20 +87,26 @@ def write_glb(path, meshes, quantize: bool = True) -> dict:
         indices = np.asarray(item['indices'], dtype=np.int64).reshape(-1)
         n_verts = len(points)
 
-        rgba, _known = material_for(name)
-        material_index = len(materials_json)
-        materials_json.append(
-            {
-                'name': name,
-                'pbrMetallicRoughness': {
-                    'baseColorFactor': [float(v) for v in rgba],
-                    'metallicFactor': 0.0,
-                    'roughnessFactor': 0.85,
-                },
-                'doubleSided': True,
-                'alphaMode': alpha_mode(rgba),
-            }
-        )
+        spec, _known = material_for(name)
+        # one shared glTF material per unique (rgba, roughness, metallic,
+        # alphaMode) signature -- e.g. LV/LA/LAA share one material index
+        mat_key = (spec.rgba, spec.roughness, spec.metallic, spec.alpha_mode)
+        material_index = material_index_by_key.get(mat_key)
+        if material_index is None:
+            material_index = len(materials_json)
+            material_index_by_key[mat_key] = material_index
+            materials_json.append(
+                {
+                    'name': name,
+                    'pbrMetallicRoughness': {
+                        'baseColorFactor': [float(v) for v in spec.rgba],
+                        'roughnessFactor': float(spec.roughness),
+                        'metallicFactor': float(spec.metallic),
+                    },
+                    'doubleSided': True,
+                    'alphaMode': spec.alpha_mode,
+                }
+            )
 
         if quantize:
             bbox_min = points.min(axis=0)
