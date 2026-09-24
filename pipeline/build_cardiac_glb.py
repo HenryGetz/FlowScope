@@ -126,6 +126,7 @@ MAX_SEARCH_ITERS = 6
 MAX_AGGREGATE_PASSES = 8
 REDUCTION_CAP = 0.95
 # (x, y, z) RAS mm -> (x, z, -y) Y-up meters
+_Y_UP_PERM = [0, 2, 1]
 _Y_UP_SIGN = np.array([1.0, 1.0, -1.0])
 _MM_TO_M = 1e-3
 
@@ -831,14 +832,36 @@ def _cap_open_rims(work) -> None:
         w.boundary_loops_capped = len(loops)
 
 
-def _finalize_geometry(work) -> list[dict]:
+class _GeometryItems(list):
+    """Finalized items; ``transform`` records the world transform applied to points.
+
+    A ``list`` subclass so consumers that just iterate the meshes
+    (glb_writer.write_glb, the raw-scale validator) are unaffected.
+    """
+
+    transform: dict
+
+
+def _transform_record(center) -> dict:
+    """Invertible record of the RAS-mm -> Y-up-m world transform of _finalize_geometry."""
+    return {
+        'space': 'ras_mm->y_up_m',
+        'perm': list(_Y_UP_PERM),
+        'sign': [float(v) for v in _Y_UP_SIGN],
+        'scale_m_per_mm': float(_MM_TO_M),
+        'center_m': [float(v) for v in np.asarray(center, dtype=np.float64).reshape(3)],
+    }
+
+
+def _finalize_geometry(work) -> _GeometryItems:
     """Step 4: smooth point normals, world transform, recenter on the global bbox.
 
     Normals are smooth per-vertex point normals (compute_normals with
     point_normals=True / cell_normals=False, consistent, splitting off and a
     flat feature angle -- no crease splitting) so PBR lighting follows
     anatomical curvature. Accepts anything with .name and .mesh (the raw-scale
-    validator passes plain namespaces).
+    validator passes plain namespaces). Returns the items carrying the applied
+    world transform in ``.transform`` (see ``_transform_record``).
     """
     items = []
     for w in work:
@@ -855,8 +878,8 @@ def _finalize_geometry(work) -> list[dict]:
         items.append(
             {
                 'id': w.name,
-                'points': points[:, [0, 2, 1]] * _Y_UP_SIGN * _MM_TO_M,
-                'normals': normals[:, [0, 2, 1]] * _Y_UP_SIGN,
+                'points': points[:, _Y_UP_PERM] * _Y_UP_SIGN * _MM_TO_M,
+                'normals': normals[:, _Y_UP_PERM] * _Y_UP_SIGN,
                 'indices': indices,
             }
         )
@@ -866,7 +889,9 @@ def _finalize_geometry(work) -> list[dict]:
     )
     for it in items:
         it['points'] = it['points'] - center
-    return items
+    out = _GeometryItems(items)
+    out.transform = _transform_record(center)
+    return out
 
 
 def _row_for(result, decimator) -> dict:
@@ -1029,8 +1054,10 @@ def main(argv=None) -> int:
             w.volume_final_mm3 = float(w.mesh.volume) if w.watertight else None
         _cap_open_rims(work)  # render geometry only; metrics stay pre-cap
         items = _finalize_geometry(work)
+        transform = items.transform
     else:
         items = []
+        transform = _transform_record(np.zeros(3))
 
     info = glb_writer.write_glb(args.out, items, quantize=not args.no_quantize)
 
@@ -1053,7 +1080,9 @@ def main(argv=None) -> int:
 
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps({'structures': rows, 'totals': totals}, indent=2))
+    report_path.write_text(
+        json.dumps({'structures': rows, 'totals': totals, 'transform': transform}, indent=2)
+    )
 
     _print_table(rows, totals)
     return 0

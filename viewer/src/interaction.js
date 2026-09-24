@@ -16,6 +16,10 @@ const TOUCHPAD_Y_AXIS = 3;
 const CLIP_DEADZONE = 0.15;
 const CLIP_NUDGE_RATE = 0.5; // offset01 per second at full deflection
 const CLIP_NUDGE_MAX_STEP = 0.05; // hard per-frame bound (offset01)
+// Timeline scrub (while a grip holds the model): same thumbstick/touchpad Y.
+const SCRUB_RATE = 0.5; // time01 per second at full deflection
+const SCRUB_MAX_STEP = 0.05; // hard per-frame bound (time01)
+const TAP_DOUBLE_MS = 300; // two trigger presses within this => play/pause
 
 const _delta = new THREE.Matrix4();
 const _model = new THREE.Matrix4();
@@ -38,9 +42,13 @@ const _dir = new THREE.Vector3();
  *    applies the grip's 6DOF delta in world space, two hands drive rotation +
  *    uniform scale from the relative transform between the grips; on release
  *    the model stays where it was placed.
- *  - `select` (trigger) ray-picks a structure and toggles its visibility.
+ *  - `select` (trigger) ray-picks a structure and toggles its visibility; two
+ *    trigger presses within TAP_DOUBLE_MS additionally flip playback
+ *    (`onPlayPause()`) while every press still runs the pick (onToggle intact).
  *  - while no hand grips the model, thumbstick/touchpad Y of either controller
  *    nudges the cross-section clip offset through `onClipNudge(delta01)`.
+ *  - while a grip holds the model, the same axes scrub the playback timeline
+ *    through `onScrub(delta01)` (the modifier keeps clip-nudging intact).
  *
  * The model group must be a direct child of the scene (identity parent).
  */
@@ -50,6 +58,8 @@ export function createInteraction({
   modelRoot,
   onToggle = () => {},
   onClipNudge = () => {},
+  onScrub = () => {},
+  onPlayPause = () => {},
 }) {
   const structures = [];
   const raycaster = new THREE.Raycaster();
@@ -89,6 +99,7 @@ export function createInteraction({
       grabbing: false,
       squeezed: false,
       selectActed: false,
+      lastPressAt: 0,
       inputSource: null,
     };
 
@@ -131,13 +142,18 @@ export function createInteraction({
     startGrab(hand);
   }
 
-  // Exactly one pick per trigger press (`select` may trail `selectend`).
+  // Exactly one pick per trigger press (`select` may trail `selectend`); a
+  // second press within TAP_DOUBLE_MS additionally flips playback.
   function onSelect(event, hand) {
     const down = buttonDown(event, TRIGGER_BUTTON);
     if (down === false) return;
     if (hand.selectActed) return;
     hand.selectActed = true;
+    const now = performance.now();
+    const doubleTap = now - hand.lastPressAt < TAP_DOUBLE_MS;
+    hand.lastPressAt = doubleTap ? 0 : now;
     pick(hand);
+    if (doubleTap) onPlayPause();
   }
 
   // ---- grabbing ----------------------------------------------------------
@@ -202,9 +218,10 @@ export function createInteraction({
     };
   }
 
-  /** Per-frame update: clip nudge, then the current grip configuration. */
+  /** Per-frame update: stick scrub while gripping, clip nudge otherwise. */
   function update(dt) {
-    nudgeClip(dt);
+    if (hands.some((hand) => hand.grabbing)) scrubTimeline(dt);
+    else nudgeClip(dt);
     if (!grabRef) return;
     const active = hands.filter((hand) => hand.grabbing);
     if (active.length !== grabRef.mode) {
@@ -240,10 +257,10 @@ export function createInteraction({
     modelRoot.updateMatrix();
   }
 
-  // ---- cross-section clip nudge ------------------------------------------
+  // ---- stick timeline scrub / cross-section clip nudge --------------------
 
   /** Thumbstick/touchpad Y deflection of a hand (0 when idle or no gamepad). */
-  function clipAxis(hand) {
+  function stickAxis(hand) {
     const gamepad = hand.inputSource && hand.inputSource.gamepad;
     const axes = gamepad && gamepad.axes;
     if (!axes) return 0;
@@ -252,25 +269,43 @@ export function createInteraction({
     return Math.abs(pad) > Math.abs(thumb) ? pad : thumb;
   }
 
+  /** Deadzone-corrected deflection of the strongest axis across both hands. */
+  function stickDeflection() {
+    let axis = 0;
+    for (const hand of hands) {
+      const value = stickAxis(hand);
+      if (Math.abs(value) > Math.abs(axis)) axis = value;
+    }
+    const magnitude = (Math.abs(axis) - CLIP_DEADZONE) / (1 - CLIP_DEADZONE);
+    return magnitude <= 0 ? 0 : magnitude * Math.sign(axis);
+  }
+
+  /** Bounded step from a deflection at the given rate over `dt` milliseconds. */
+  function stickStep(dt, rate, maxStep) {
+    const seconds = (Number.isFinite(dt) ? Math.min(Math.max(dt, 0), 100) : 1000 / 60) / 1000;
+    const delta = -stickDeflection() * rate * seconds; // stick up = positive step
+    return Math.max(-maxStep, Math.min(maxStep, delta));
+  }
+
+  /**
+   * While a grip holds the model (the scrub modifier), thumbstick/touchpad Y
+   * scrubs the playback timeline at a bounded per-frame rate via
+   * `onScrub(delta01)` — clip nudging stays on the no-grip path below.
+   */
+  function scrubTimeline(dt) {
+    const delta = stickStep(dt, SCRUB_RATE, SCRUB_MAX_STEP);
+    if (delta !== 0) onScrub(delta);
+  }
+
   /**
    * While NOT gripping the model with a hand, thumbstick Y (xr-standard
    * axes[1]) or touchpad Y (axes[3]) of either controller nudges the
    * cross-section offset at a bounded per-frame rate (stick up = deeper cut).
    */
   function nudgeClip(dt) {
-    if (hands.some((hand) => hand.grabbing)) return;
-    let axis = 0;
-    for (const hand of hands) {
-      const value = clipAxis(hand);
-      if (Math.abs(value) > Math.abs(axis)) axis = value;
-    }
-    const magnitude = (Math.abs(axis) - CLIP_DEADZONE) / (1 - CLIP_DEADZONE);
-    if (magnitude <= 0) return;
-    const deflection = magnitude * Math.sign(axis);
-    const seconds = (Number.isFinite(dt) ? Math.min(Math.max(dt, 0), 100) : 1000 / 60) / 1000;
     // Gamepad Y is negative toward the top of the stick: up = deeper cut.
-    const delta = -deflection * CLIP_NUDGE_RATE * seconds;
-    onClipNudge(Math.max(-CLIP_NUDGE_MAX_STEP, Math.min(CLIP_NUDGE_MAX_STEP, delta)));
+    const delta = stickStep(dt, CLIP_NUDGE_RATE, CLIP_NUDGE_MAX_STEP);
+    if (delta !== 0) onClipNudge(delta);
   }
 
   // ---- trigger picking ---------------------------------------------------

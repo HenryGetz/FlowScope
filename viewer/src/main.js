@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createStage } from './scene.js';
-import { loadModel, collectStructures, modelURL } from './loader.js';
+import { loadModel, collectStructures, modelURL, assetsBaseURL, payloadURL } from './loader.js';
+import { createCfdPlayback, initialCaseId, initialProfile } from '../js/cfd_playback.js';
 import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
 import { structureGroup, GROUPS } from './structures.js';
@@ -12,6 +13,13 @@ const overlay = document.getElementById('overlay');
 const stage = createStage(document.getElementById('app'));
 
 let xrActive = false;
+
+// ---- CFD contrast playback (contract C5 payload) --------------------------
+// Created after the GLB decode (it needs the glTF to map payload meshes), its
+// shader patch runs inside initClipping's traverse and its transport is driven
+// from stage.onFrame. No payload -> inert state + notice, anatomy untouched.
+let playback = null;
+let playState = null;
 
 // ---- cross-section clipping (one global plane for every group) ------------
 // The plane keeps the default-camera half space and sweeps the fitted-model
@@ -53,6 +61,11 @@ const interaction = createInteraction({
     updateHook();
   },
   onClipNudge: (delta) => setClipOffset(clipOffset01 + delta),
+  // XR scrub modifier: only fired while a grip holds the model (interaction.js)
+  onScrub: (delta) => {
+    if (playback && playState) playback.scrub(playState.time01 + delta);
+  },
+  onPlayPause: () => togglePlaying(),
 });
 
 const ui = createUI(overlay, {
@@ -60,6 +73,28 @@ const ui = createUI(overlay, {
   onToggleVisible: (name, visible) => interaction.setStructureVisible(name, visible),
   onToggleGroup: (group, visible) => toggleGroup(group, visible),
   onClipChange: (offset01) => setClipOffset(offset01),
+  onPlayToggle: () => togglePlaying(),
+  onPlayLoop: (on) => {
+    if (playback) playback.setLoop(!!on);
+  },
+  onPlaySpeed: (x) => {
+    if (playback) playback.setSpeed(x);
+  },
+  onPlayProfile: (p) => {
+    if (playback) {
+      playback.setProfile(p).catch((err) => {
+        console.error(err);
+        ui.showError(
+          `Could not load the CFD contrast profile "${p}".\n` +
+            `The viewer remains fully usable without it. (${err.message})`,
+        );
+        ui.setPlayback(playState); // re-render the unchanged selection
+      });
+    }
+  },
+  onPlayScrub: (t01) => {
+    if (playback) playback.scrub(t01);
+  },
   onEnterVR: async () => {
     const session = await enterVR(stage.renderer, stage);
     xrActive = true;
@@ -89,6 +124,15 @@ const hook = {
   groups: { myocardium: true, chambers: false, great_vessels: true, coronaries: true, other: false },
   /** Cross-section state (offset01 0 => clipping disabled). */
   clip: { enabled: false, offset01: 0 },
+  /** Contrast playback state (C5 payload; available false when absent). */
+  playback: {
+    playing: false,
+    loop: true,
+    time01: 0,
+    speed: 1,
+    profile: 'A',
+    transitMs: null,
+  },
   xrSupported: false,
   xrActive: false,
   /** Set a contract group's visibility (toggles all its member structures). */
@@ -102,6 +146,23 @@ const hook = {
   /** Reframe the desktop camera: 'anterior' | 'lateral' | 'lao'. */
   setView(preset) {
     setCameraView(preset);
+  },
+  /** Contrast playback: start/pause the timeline. */
+  setPlaying(flag) {
+    if (flag) playback?.play();
+    else playback?.pause();
+  },
+  /** Contrast playback: speed preset (0.25 | 0.5 | 1 | 2). */
+  setSpeed(x) {
+    playback?.setSpeed(x);
+  },
+  /** Contrast playback: injection profile 'A' | 'B' | 'C' (async switch). */
+  setProfile(p) {
+    return playback ? playback.setProfile(p) : Promise.resolve();
+  },
+  /** Contrast playback: scrub the timeline to `t01` in 0..1. */
+  scrub(t01) {
+    playback?.scrub(t01);
   },
   // Per-frame render debug (data-driven verification), mutated in place after
   // every rendered frame.
@@ -139,6 +200,26 @@ function updateHook() {
   for (const group of Object.keys(hook.groups)) hook.groups[group] = groupVisible(group);
   hook.clip.enabled = clipOffset01 > 0;
   hook.clip.offset01 = clipOffset01;
+}
+
+/** Playback readout -> Contrast HUD + automation hook (every state change). */
+function handlePlayReadout(state) {
+  playState = state;
+  const pb = hook.playback;
+  pb.playing = state.playing;
+  pb.loop = state.loop;
+  pb.time01 = state.time01;
+  pb.speed = state.speed;
+  pb.profile = state.profile;
+  pb.transitMs = state.transitMs;
+  ui.setPlayback(state);
+}
+
+/** Play/pause flip for the HUD button, XR double-tap and the automation hook. */
+function togglePlaying() {
+  if (!playback) return;
+  if (playState && playState.playing) playback.pause();
+  else playback.play();
 }
 
 /** All loaded structure names belonging to a contract group. */
@@ -260,6 +341,10 @@ function initClipping(root) {
   root.traverse((node) => {
     const material = node.material;
     if (!material) return;
+    // Playback shader patch (contrast TF + aC0/aC1/uMix/uContrastOn) lands in
+    // this same post-decode traverse; the materials stay on clipMaterials so
+    // the shared clipping plane keeps cutting them.
+    if (playback && node.isMesh) playback.applyShader(node);
     const rank = depthRankOf(node.name || '');
     const mats = Array.isArray(material) ? material : [material];
     clipMaterials.push(...mats);
@@ -317,6 +402,7 @@ function setCameraView(preset) {
 
 stage.onFrame((dt) => {
   interaction.update(dt);
+  if (playback) playback.update(dt); // dt in ms (stage.onFrame convention)
   updateClipPlane();
   // ready only after the GLB is loaded AND one frame has rendered since then
   if (modelLoaded && !hook.ready && stage.renderedFrames > loadFrameMark) {
@@ -460,12 +546,22 @@ loadModel(modelURL())
     ui.setStructures(structures);
     structureNames = structures.map((item) => item.name);
     hook.structures = structureNames;
+    // Playback exists before initClipping so its shader patch joins the same
+    // traverse (and therefore the clipMaterials list).
+    playback = createCfdPlayback({
+      scene: stage.scene,
+      stage,
+      gltf,
+      assetsBase: assetsBaseURL(),
+      onReadout: handlePlayReadout,
+    });
     initClipping(gltf.scene);
     applyLoadDefaults();
     loadFrameMark = stage.renderedFrames;
     modelLoaded = true;
     ui.clearBoot();
     updateHook();
+    loadContrastPayload();
   })
   .catch((err) => {
     console.error(err);
@@ -476,3 +572,30 @@ loadModel(modelURL())
         `(${err.message})`,
     );
   });
+
+/**
+ * Kick off the C5 contrast payload load. A missing/unfetchable payload
+ * degrades to a notice only: no playback, but groups, picking and clipping
+ * keep working on the untouched anatomy.
+ */
+function loadContrastPayload() {
+  const caseId = initialCaseId();
+  const profile = initialProfile();
+  const override = payloadURL();
+  if (!caseId && !override) {
+    ui.showError(
+      `No CFD contrast payload for model "${modelURL()}".\n` +
+        'Open with ?case=<id> or ?payload=<url> to enable contrast playback.\n' +
+        'The viewer remains fully usable without it.',
+    );
+    return;
+  }
+  playback.load(caseId, profile).catch((err) => {
+    console.error(err);
+    ui.showError(
+      `Could not load the CFD contrast payload for case "${caseId || override}" (profile ${profile}).\n` +
+        `The viewer remains fully usable without it. (${err.message})`,
+    );
+    ui.setPlayback(null);
+  });
+}

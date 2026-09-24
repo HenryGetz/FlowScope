@@ -17,6 +17,15 @@ const STYLE = `
 .fs-clip{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
 .fs-clip input[type=range]{flex:1;min-width:80px;accent-color:#4f9cff}
 .fs-clip-pct{color:#9fb0c4;min-width:30px;text-align:right}
+.fs-play{display:flex;align-items:center;gap:7px;margin:4px 0}
+.fs-play input[type=range]{flex:1;min-width:80px;accent-color:#ffb454}
+.fs-play-time{color:#9fb0c4;min-width:54px;text-align:right}
+.fs-btnrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:2px 0 6px}
+.fs-btn{padding:2px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#dfe5ee;font:inherit;cursor:pointer}
+.fs-btn:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.fs-btn.fs-on{background:#5a3a10;border-color:#c98a2e;color:#ffe1ad;font-weight:700}
+.fs-btn:disabled{opacity:.5;cursor:not-allowed}
+.fs-transit{color:#ffcf8a}
 .fs-vr{width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
 .fs-vr:hover:not(:disabled){background:#274b78}
 .fs-vr:disabled{opacity:.55;cursor:not-allowed}
@@ -55,13 +64,28 @@ function ensureStyle() {
  * renderer.info.render.triangles, the 5 group toggle rows (checkbox per
  * contract structure group), the structure toggle list (checkbox + palette
  * swatch per GLB node name, coherent with the group state both ways), the
- * Cross-section slider (0-100, fires onClipChange(offset01)) and the Enter VR
- * button. Also mirrors the stats into the in-XR head-locked quad and hosts the
- * on-screen error banner.
+ * Cross-section slider (0-100, fires onClipChange(offset01)), the Contrast
+ * playback HUD (scrub timeline + Play/Pause + Loop + speed 0.25/0.5/1/2 +
+ * profile A/B/C + distal transit-time readout, driven by setPlayback and the
+ * onPlay* callbacks) and the Enter VR button. Also mirrors the stats (plus
+ * contrast time/transit when a payload is active) into the in-XR head-locked
+ * quad and hosts the on-screen error banner.
  */
 export function createUI(
   container,
-  { stage, onToggleVisible, onToggleGroup = () => {}, onClipChange = () => {}, onEnterVR, onExitVR },
+  {
+    stage,
+    onToggleVisible,
+    onToggleGroup = () => {},
+    onClipChange = () => {},
+    onPlayToggle = () => {},
+    onPlayLoop = () => {},
+    onPlaySpeed = () => {},
+    onPlayProfile = () => {},
+    onPlayScrub = () => {},
+    onEnterVR,
+    onExitVR,
+  },
 ) {
   ensureStyle();
 
@@ -82,6 +106,30 @@ export function createUI(
       <span class="fs-name">Cross-section</span>
       <input data-fs="clip" type="range" min="0" max="100" step="1" value="0" />
       <span class="fs-clip-pct" data-fs="clip-pct">0%</span>
+    </div>
+    <div class="fs-section">Contrast</div>
+    <div class="fs-play">
+      <input data-fs="play-scrub" type="range" min="0" max="1000" step="1" value="0" disabled />
+      <span class="fs-play-time" data-fs="play-time">&mdash;</span>
+    </div>
+    <div class="fs-btnrow">
+      <button class="fs-btn" type="button" data-fs="play-toggle" disabled>Play</button>
+      <label class="fs-row"><input data-fs="play-loop" type="checkbox" checked disabled /><span class="fs-name">Loop</span></label>
+    </div>
+    <div class="fs-btnrow">
+      <button class="fs-btn" type="button" data-fs="play-speed" value="0.25">0.25&times;</button>
+      <button class="fs-btn" type="button" data-fs="play-speed" value="0.5">0.5&times;</button>
+      <button class="fs-btn fs-on" type="button" data-fs="play-speed" value="1">1&times;</button>
+      <button class="fs-btn" type="button" data-fs="play-speed" value="2">2&times;</button>
+    </div>
+    <div class="fs-btnrow">
+      <button class="fs-btn fs-on" type="button" data-fs="play-profile" value="A">A</button>
+      <button class="fs-btn" type="button" data-fs="play-profile" value="B">B</button>
+      <button class="fs-btn" type="button" data-fs="play-profile" value="C">C</button>
+    </div>
+    <div class="fs-clip">
+      <span class="fs-name">Transit</span>
+      <span class="fs-transit" data-fs="transit">&mdash;</span>
     </div>
     <button class="fs-vr" type="button">Enter VR</button>
   `;
@@ -143,13 +191,72 @@ export function createUI(
     onClipChange(pct / 100);
   });
 
+  // ---- contrast playback (state-driven render, see setPlayback) -----------
+  const playScrub = panel.querySelector('[data-fs="play-scrub"]');
+  const playTime = panel.querySelector('[data-fs="play-time"]');
+  const playToggle = panel.querySelector('[data-fs="play-toggle"]');
+  const playLoop = panel.querySelector('[data-fs="play-loop"]');
+  const transitEl = panel.querySelector('[data-fs="transit"]');
+  const speedButtons = Array.from(panel.querySelectorAll('[data-fs="play-speed"]'));
+  const profileButtons = Array.from(panel.querySelectorAll('[data-fs="play-profile"]'));
+  /** Latest playback readout (null until a payload is active). */
+  let playState = null;
+
+  playScrub.addEventListener('input', () => {
+    onPlayScrub(Number(playScrub.value) / 1000);
+  });
+  playToggle.addEventListener('click', () => onPlayToggle());
+  playLoop.addEventListener('change', () => onPlayLoop(playLoop.checked));
+  for (const button of speedButtons) {
+    button.addEventListener('click', () => onPlaySpeed(Number(button.value)));
+  }
+  for (const button of profileButtons) {
+    button.addEventListener('click', () => onPlayProfile(button.value));
+  }
+
+  /** Render the Contrast HUD from the stored readout (also driven by tick). */
+  function renderPlayback() {
+    const available = !!(playState && playState.available);
+    playScrub.disabled = !available;
+    playToggle.disabled = !available;
+    playLoop.disabled = !available;
+    for (const button of speedButtons) button.disabled = !available;
+    for (const button of profileButtons) button.disabled = !available;
+    if (!available) {
+      playScrub.value = '0';
+      playTime.textContent = '—';
+      playToggle.textContent = 'Play';
+      transitEl.textContent = '—';
+      return;
+    }
+    playScrub.value = String(Math.round(Math.min(1, Math.max(0, playState.time01)) * 1000));
+    playTime.textContent = `${playState.t_s.toFixed(2)} s`;
+    playToggle.textContent = playState.playing ? 'Pause' : 'Play';
+    playLoop.checked = !!playState.loop;
+    for (const button of speedButtons) {
+      button.classList.toggle('fs-on', Number(button.value) === playState.speed);
+    }
+    for (const button of profileButtons) {
+      button.classList.toggle('fs-on', button.value === playState.profile);
+    }
+    transitEl.textContent =
+      playState.transitMs == null ? '—' : `${Math.round(playState.transitMs)} ms`;
+  }
+
   function tick() {
     const { fps, frameMs } = stage.metrics;
     const tris = stage.triangles();
     fpsEl.textContent = `FPS ${fps.toFixed(1)}`;
     frameEl.textContent = `frame ${frameMs.toFixed(1)} ms`;
     trisEl.textContent = `triangles ${tris.toLocaleString('en-US')}`;
-    stage.setStatsText([`FPS ${fps.toFixed(1)}`, `frame ${frameMs.toFixed(1)} ms`, `triangles ${tris}`]);
+    renderPlayback();
+    const stats = [`FPS ${fps.toFixed(1)}`, `frame ${frameMs.toFixed(1)} ms`, `triangles ${tris}`];
+    if (playState && playState.available) {
+      let line = `contrast t ${playState.t_s.toFixed(2)} s`;
+      if (playState.transitMs != null) line += `  transit ${Math.round(playState.transitMs)} ms`;
+      stats.push(line);
+    }
+    stage.setStatsText(stats);
   }
   setInterval(tick, 250);
   tick();
@@ -248,6 +355,11 @@ export function createUI(
     setStructures,
     setVisibility,
     setClipValue,
+    /** Store the playback readout (or null) and refresh the Contrast HUD. */
+    setPlayback(state) {
+      playState = state;
+      renderPlayback();
+    },
     setVRState({ supported, reason }) {
       vrSupported = supported;
       vrReason = reason || '';
