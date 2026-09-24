@@ -1,10 +1,14 @@
 import * as THREE from 'three';
 import { createStage } from './scene.js';
-import { loadModel, collectStructures, modelURL } from './loader.js';
+import { loadModel, loadVolume, collectStructures, modelURL } from './loader.js';
 import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
 import { structureGroup, GROUPS } from './structures.js';
 import { vrAvailability, enterVR, exitVR } from './xr.js';
+import { assertSharedParent } from './coordinates.js';
+import { MprSlice } from './mprSlice.js';
+import { ClippingSync } from './clippingSync.js';
+import { createTelemetry } from './telemetry.js';
 
 const worldScaleVec = new THREE.Vector3();
 
@@ -13,19 +17,26 @@ const stage = createStage(document.getElementById('app'));
 
 let xrActive = false;
 
-// ---- cross-section clipping (one global plane for every group) ------------
-// The plane keeps the default-camera half space and sweeps the fitted-model
-// bbox along the default camera view direction: offset 0 is fully clear of the
-// near side (clipping disabled), 1 fully past the far side. The sweep range
-// tracks the model through XR grabs and re-framing via the modelRoot-local
-// bbox corners captured at load.
+// ---- MPR slicing + hardware mesh clipping --------------------------------
+// One authoritative slice plane (ClippingSync, modelRoot-local) drives both
+// the MPR slice quad and the per-material clippingPlanes of the heart meshes.
+// The Cross-section offset positions the plane over the ROI extent along its
+// normal (0 = near bound, 1 = far bound) and never disables clipping; without
+// a volume pair nothing is wired and the viewer runs without MPR.
 stage.renderer.localClippingEnabled = true; // drives material.clippingPlanes
+stage.renderer.xr.setFoveation(1.0);
 
-const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
 const clipMaterials = [];
-const clipCorners = [];
-let clipOffset01 = 0;
-let clipMaterialsEnabled = null; // last applied clippingPlanes state
+let mpr = null; // MprSlice once the <stem>_volume.bin/<stem>_meta.json pair loaded
+let clippingSync = null; // owns the authoritative slice plane (modelRoot-local)
+let interaction = null; // built with the loaded scene (needs the MPR mesh handle)
+let clipOffset01 = 0.5;
+let windowHu = 600;
+let levelHu = 150;
+let presetName = null;
+let planeGrabActive = false;
+
+const telemetry = createTelemetry({ renderer: stage.renderer, stage });
 
 // ---- chambers default / auto-show rule ------------------------------------
 // Chambers are visible at load iff no myocardium structure is visible; turning
@@ -36,30 +47,72 @@ let chambersOverridden = false;
 /** True while main applies defaults/auto visibility (never a user toggle). */
 let applyingAuto = false;
 
-const _clipBox = new THREE.Box3();
-const _clipInv = new THREE.Matrix4();
-const _clipCorner = new THREE.Vector3();
+const _dragPlane = new THREE.Plane();
+const _dragMat = new THREE.Matrix4();
+const _wandInv = new THREE.Matrix4();
+const _wandNormalMat = new THREE.Matrix3();
+const _wandOrigin = new THREE.Vector3();
+const _wandNormal = new THREE.Vector3();
 
-const interaction = createInteraction({
-  renderer: stage.renderer,
-  scene: stage.scene,
-  modelRoot: stage.modelRoot,
-  onToggle: (name, visible) => {
-    // Trigger picks (and UI rows routed through setStructureVisible) are
-    // explicit user toggles and stand the chambers auto rule down; the rule's
-    // own auto-show/hide runs inside applyingAuto and never counts.
-    if (!applyingAuto && structureGroup(name) === 'chambers') chambersOverridden = true;
-    ui.setVisibility(name, visible);
-    updateHook();
-  },
-  onClipNudge: (delta) => setClipOffset(clipOffset01 + delta),
-});
+/**
+ * Build the XR interaction rig once the scene is loaded — the MPR quad handle
+ * exists only after the volume pair loads, and squeeze plane-grab arbitration
+ * needs it at construction (null = no MPR: plain model grab + wand only).
+ */
+function setupInteraction(mprMesh) {
+  interaction = createInteraction({
+    renderer: stage.renderer,
+    scene: stage.scene,
+    modelRoot: stage.modelRoot,
+    mprMesh,
+    onToggle: (name, visible) => {
+      // Trigger picks (and UI rows routed through setStructureVisible) are
+      // explicit user toggles and stand the chambers auto rule down; the rule's
+      // own auto-show/hide runs inside applyingAuto and never counts.
+      if (!applyingAuto && structureGroup(name) === 'chambers') chambersOverridden = true;
+      ui.setVisibility(name, visible);
+      updateHook();
+    },
+    onClipNudge: (delta) => setClipOffset(clipOffset01 + delta),
+    onPlaneGrabStart: () => {
+      planeGrabActive = true;
+    },
+    onPlaneGrabEnd: () => {
+      planeGrabActive = false;
+    },
+    onPlaneDrag: (deltaWorld) => {
+      if (!clippingSync || !planeGrabActive) return;
+      // Follow the hand's world delta exactly: lift the modelRoot-local plane
+      // through modelRoot.matrixWorld, apply the world delta, map back.
+      const plane = clippingSync.plane;
+      const modelMatrix = stage.modelRoot.matrixWorld;
+      _dragPlane.copy(plane).applyMatrix4(modelMatrix);
+      _dragPlane.applyMatrix4(deltaWorld);
+      _dragPlane.applyMatrix4(_dragMat.copy(modelMatrix).invert());
+      plane.copy(_dragPlane);
+    },
+    onWandPose: (originWorld, normalWorld, active) => {
+      if (!clippingSync || !active) return; // release keeps the plane in place
+      _wandInv.copy(stage.modelRoot.matrixWorld).invert();
+      _wandOrigin.copy(originWorld).applyMatrix4(_wandInv);
+      _wandNormal
+        .copy(normalWorld)
+        .applyMatrix3(_wandNormalMat.getNormalMatrix(_wandInv))
+        .normalize();
+      clippingSync.setPlaneFromPose(_wandOrigin, _wandNormal);
+    },
+  });
+}
 
 const ui = createUI(overlay, {
   stage,
+  telemetry,
   onToggleVisible: (name, visible) => interaction.setStructureVisible(name, visible),
   onToggleGroup: (group, visible) => toggleGroup(group, visible),
   onClipChange: (offset01) => setClipOffset(offset01),
+  onWindowChange: (widthHu) => applyWindow(widthHu),
+  onLevelChange: (centerHu) => applyLevel(centerHu),
+  onPreset: (name) => applyPreset(name),
   onEnterVR: async () => {
     const session = await enterVR(stage.renderer, stage);
     xrActive = true;
@@ -87,15 +140,37 @@ const hook = {
   structures: [],
   /** group name -> every loaded member structure visible. */
   groups: { myocardium: true, chambers: false, great_vessels: true, coronaries: true, other: false },
-  /** Cross-section state (offset01 0 => clipping disabled). */
-  clip: { enabled: false, offset01: 0 },
+  /** Cross-section state (enabled = MPR active; offset01 = plane position 0..1). */
+  clip: { enabled: false, offset01: 0.5 },
+  /** MPR slice state (set* are no-ops until a volume pair is loaded). */
+  mpr: {
+    ready: false,
+    window: 600,
+    level: 150,
+    preset: null,
+    offset01: 0.5,
+    setOffset(t) {
+      if (mpr) setClipOffset(t);
+    },
+    setWindow(w) {
+      if (mpr) applyWindow(w);
+    },
+    setLevel(l) {
+      if (mpr) applyLevel(l);
+    },
+    setPreset(name) {
+      if (mpr) applyPreset(name);
+    },
+  },
+  /** Frame/GPU telemetry (refreshed in updateHook). */
+  telemetry: { fps: 0, frameMs: 0, gpuMs: null, triangles: 0, drawCalls: 0 },
   xrSupported: false,
   xrActive: false,
   /** Set a contract group's visibility (toggles all its member structures). */
   setGroup(name, visible) {
     if (Object.prototype.hasOwnProperty.call(GROUPS, name)) toggleGroup(name, !!visible);
   },
-  /** Cross-section offset in 0..1 (0 disables clipping). */
+  /** Cross-section offset in 0..1 (plane position over the ROI extent). */
   setClip(offset01) {
     setClipOffset(offset01);
   },
@@ -137,8 +212,19 @@ function updateHook() {
   hook.structures = structureNames;
   hook.xrActive = xrActive;
   for (const group of Object.keys(hook.groups)) hook.groups[group] = groupVisible(group);
-  hook.clip.enabled = clipOffset01 > 0;
+  hook.clip.enabled = !!mpr;
   hook.clip.offset01 = clipOffset01;
+  hook.mpr.ready = !!mpr;
+  hook.mpr.window = windowHu;
+  hook.mpr.level = levelHu;
+  hook.mpr.preset = presetName;
+  hook.mpr.offset01 = clipOffset01;
+  const frame = telemetry.sample();
+  hook.telemetry.fps = frame.fps;
+  hook.telemetry.frameMs = frame.frameMs;
+  hook.telemetry.gpuMs = frame.gpuMs;
+  hook.telemetry.triangles = frame.triangles;
+  hook.telemetry.drawCalls = frame.drawCalls;
 }
 
 /** All loaded structure names belonging to a contract group. */
@@ -195,38 +281,44 @@ function applyLoadDefaults() {
   }
 }
 
-/** Cross-section offset in 0..1 (0 disables clipping entirely). */
+/**
+ * Cross-section offset in 0..1: plane position over the ROI extent along the
+ * plane normal (0 = near bound, 1 = far bound). Drives ClippingSync when a
+ * volume pair is loaded and nothing otherwise.
+ */
 function setClipOffset(offset01) {
   clipOffset01 = Math.min(1, Math.max(0, Number(offset01) || 0));
   ui.setClipValue(clipOffset01);
-  applyClipMaterials();
-  updateClipPlane();
+  if (clippingSync) clippingSync.setOffset(clipOffset01);
   updateHook();
 }
 
-function applyClipMaterials(force = false) {
-  const enabled = clipOffset01 > 0;
-  if (!force && enabled === clipMaterialsEnabled) return;
-  clipMaterialsEnabled = enabled;
-  const planes = enabled ? [clipPlane] : [];
-  for (const material of clipMaterials) material.clippingPlanes = planes;
+/** MPR window width in HU (full width of the displayed grayscale ramp). */
+function applyWindow(widthHu) {
+  windowHu = Number(widthHu);
+  if (mpr) {
+    mpr.setWindow(windowHu);
+    ui.setWindowLevel(windowHu, levelHu);
+  }
+  updateHook();
 }
 
-/** Move the plane to the current offset over the fitted-model bbox extent. */
-function updateClipPlane() {
-  if (!(clipOffset01 > 0) || clipCorners.length === 0) return;
-  const model = stage.modelRoot;
-  model.updateWorldMatrix(true, false);
-  let dMin = Infinity;
-  let dMax = -Infinity;
-  for (const corner of clipCorners) {
-    _clipCorner.copy(corner).applyMatrix4(model.matrixWorld);
-    const d = clipPlane.normal.dot(_clipCorner);
-    if (d < dMin) dMin = d;
-    if (d > dMax) dMax = d;
+/** MPR window level in HU (center of the displayed grayscale ramp). */
+function applyLevel(centerHu) {
+  levelHu = Number(centerHu);
+  if (mpr) {
+    mpr.setLevel(levelHu);
+    ui.setWindowLevel(windowHu, levelHu);
   }
-  // offset 0 = fully clear of the near side, 1 = fully past the far side
-  clipPlane.constant = -(dMin + (dMax - dMin) * clipOffset01);
+  updateHook();
+}
+
+/** MPR plane preset ('axial' | 'coronal' | 'sagittal'), re-centred on the ROI. */
+function applyPreset(name) {
+  presetName = name || null;
+  if (clippingSync && presetName) clippingSync.setPreset(presetName);
+  if (presetName) ui.setPresetActive(presetName);
+  updateHook();
 }
 
 // Mirror of pipeline structures.STRUCTURE_GROUPS great_vessels membership.
@@ -238,11 +330,8 @@ const GREAT_VESSEL_IDS = new Set([
   'vena_cava_inferior',
 ]);
 
-/** Shared clipping plane: capture the normal, sweep range and every material. */
+/** Collect every heart material (the ClippingSync wiring targets) + depth ladder. */
 function initClipping(root) {
-  // The normal is the default camera view direction (setModel just framed it).
-  clipPlane.normal.copy(stage.controls.target).sub(stage.camera.position).normalize();
-
   clipMaterials.length = 0;
   // Interpenetrating masks (vessel roots through the heart envelope, coronaries
   // lying on the epicardium) are coincident within a depth unit and z-fight as
@@ -275,21 +364,6 @@ function initClipping(root) {
       }
     }
   });
-
-  clipCorners.length = 0;
-  stage.measureBox(stage.modelRoot, _clipBox);
-  if (!_clipBox.isEmpty()) {
-    _clipInv.copy(stage.modelRoot.matrixWorld).invert();
-    for (const x of [_clipBox.min.x, _clipBox.max.x]) {
-      for (const y of [_clipBox.min.y, _clipBox.max.y]) {
-        for (const z of [_clipBox.min.z, _clipBox.max.z]) {
-          clipCorners.push(new THREE.Vector3(x, y, z).applyMatrix4(_clipInv));
-        }
-      }
-    }
-  }
-  applyClipMaterials(true);
-  updateClipPlane();
 }
 
 /** setView preset -> direction from the fitted model center toward the camera. */
@@ -316,8 +390,9 @@ function setCameraView(preset) {
 }
 
 stage.onFrame((dt) => {
-  interaction.update(dt);
-  updateClipPlane();
+  if (interaction) interaction.update(dt);
+  if (clippingSync) clippingSync.update();
+  telemetry.tick(dt);
   // ready only after the GLB is loaded AND one frame has rendered since then
   if (modelLoaded && !hook.ready && stage.renderedFrames > loadFrameMark) {
     hook.ready = true;
@@ -449,18 +524,39 @@ vrAvailability().then(({ supported, reason }) => {
   updateHook();
 });
 
-loadModel(modelURL())
-  .then((gltf) => {
+Promise.all([loadModel(modelURL()), loadVolume(modelURL())])
+  .then(([gltf, volume]) => {
     stage.setModel(gltf.scene);
     const structures = collectStructures(gltf.scene);
     loadedRoot = gltf.scene;
     scanAttributeBasis(gltf.scene);
     hook.debug.model.bindings = scanBindings(gltf.scene);
+    initClipping(gltf.scene);
+
+    if (volume) {
+      const { texture, meta } = volume;
+      mpr = new MprSlice({ texture, meta });
+      stage.modelRoot.add(mpr.mesh);
+      assertSharedParent(stage.modelRoot, mpr.mesh);
+    }
+
+    setupInteraction(mpr ? mpr.mesh : null);
     interaction.setStructures(structures);
     ui.setStructures(structures);
     structureNames = structures.map((item) => item.name);
     hook.structures = structureNames;
-    initClipping(gltf.scene);
+
+    if (mpr) {
+      clippingSync = new ClippingSync({
+        mpr,
+        materials: clipMaterials,
+        modelRoot: stage.modelRoot,
+        glbLocalFromWorld: () => loadedRoot.matrixWorld.clone().invert(),
+      });
+      setClipOffset(0.5);
+    }
+    ui.setVolumeReady(!!mpr);
+
     applyLoadDefaults();
     loadFrameMark = stage.renderedFrames;
     modelLoaded = true;
@@ -469,10 +565,11 @@ loadModel(modelURL())
   })
   .catch((err) => {
     console.error(err);
+    setupInteraction(null);
     ui.clearBoot();
     ui.showError(
       `Could not load the cardiac model "${modelURL()}".\n` +
-        'Place the GLB at viewer/public/assets/cardiac.glb or open with ?model=<url>.\n' +
+        'Place the GLB at viewer/models/case_01.glb or open with ?model=<url>.\n' +
         `(${err.message})`,
     );
   });

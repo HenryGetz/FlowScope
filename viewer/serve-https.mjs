@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const distDir = join(root, 'dist');
+const modelsDir = join(root, 'models');
 const certDir = join(root, 'certs');
 
 const MIME = {
@@ -109,19 +110,35 @@ const server = https.createServer(
     }
     if (pathname.endsWith('/')) pathname += 'index.html';
 
-    let target = normalize(join(distDir, pathname.replace(/^\/+/, '')));
-    if (target !== distDir && !target.startsWith(distDir + sep)) {
-      send(response, 403, 'forbidden\n');
-      return;
+    // /models/* serves viewer/models/ (case GLB + volume pair) first; every
+    // other request falls through to the viewer/dist/ build below.
+    let target = null;
+    let stat = null;
+    if (pathname.startsWith('/models/')) {
+      const candidate = normalize(join(modelsDir, pathname.slice('/models/'.length)));
+      if (candidate === modelsDir || candidate.startsWith(modelsDir + sep)) {
+        const candidateStat = statOrNull(candidate);
+        if (candidateStat && candidateStat.isFile()) {
+          target = candidate;
+          stat = candidateStat;
+        }
+      }
     }
-    let stat = statOrNull(target);
-    if (stat && stat.isDirectory()) {
-      target = join(target, 'index.html');
+    if (!target) {
+      target = normalize(join(distDir, pathname.replace(/^\/+/, '')));
+      if (target !== distDir && !target.startsWith(distDir + sep)) {
+        send(response, 403, 'forbidden\n');
+        return;
+      }
       stat = statOrNull(target);
-    }
-    if (!stat || !stat.isFile()) {
-      send(response, 404, `not found: ${pathname}\n`);
-      return;
+      if (stat && stat.isDirectory()) {
+        target = join(target, 'index.html');
+        stat = statOrNull(target);
+      }
+      if (!stat || !stat.isFile()) {
+        send(response, 404, `not found: ${pathname}\n`);
+        return;
+      }
     }
 
     const type = MIME[extname(target).toLowerCase()] || 'application/octet-stream';

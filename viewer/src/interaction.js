@@ -5,6 +5,16 @@ const RAY_LENGTH = 0.4;
 const GRIP_COLOR = 0x39455a;
 const GRIP_GRAB_COLOR = 0x7fd4a0;
 
+// Squeeze arbitration distances (m): grip proximity to the MPR slice quad
+// surface, and pick-ray hit distance to the same quad.
+const QUAD_GRAB_DIST = 0.04;
+const QUAD_RAY_GRAB_DIST = 0.15;
+
+/** Per-hand squeeze modes, arbitrated once per squeeze press. */
+const MODE_MODEL = 'model';
+const MODE_PLANE = 'plane';
+const MODE_WAND = 'wand';
+
 // xr-standard gamepad button indices (also used by the smoke device config).
 const TRIGGER_BUTTON = 0;
 const SQUEEZE_BUTTON = 1;
@@ -30,26 +40,48 @@ const _v1 = new THREE.Vector3();
 const _mid = new THREE.Vector3();
 const _origin = new THREE.Vector3();
 const _dir = new THREE.Vector3();
+const _dragDelta = new THREE.Matrix4();
+const _quadInv = new THREE.Matrix4();
+const _pA = new THREE.Vector3();
+const _pB = new THREE.Vector3();
+const _wPos = new THREE.Vector3();
+const _wDir = new THREE.Vector3();
 
 /**
  * 6DOF controller interaction, shared by the desktop page and the XR smoke
- * page (identical module in both):
- *  - grip squeeze (squeezestart/squeezeend) grabs the model group: one hand
- *    applies the grip's 6DOF delta in world space, two hands drive rotation +
- *    uniform scale from the relative transform between the grips; on release
- *    the model stays where it was placed.
+ * page (identical module in both). Grip squeeze (squeezestart/squeezeend)
+ * arbitrates once per press, in priority order:
+ *  - grip within QUAD_GRAB_DIST of the MPR slice quad surface, or its pick-ray
+ *    hitting the quad within QUAD_RAY_GRAB_DIST = plane grab: onPlaneGrabStart,
+ *    then onPlaneDrag(deltaWorld) every update with the hand's world delta
+ *    since the last frame, and onPlaneGrabEnd on release.
+ *  - pick-ray hitting a structure = model grab: one hand applies the grip's
+ *    6DOF delta in world space, two hands drive rotation + uniform scale from
+ *    the relative transform between the grips; on release the model stays
+ *    where it was placed.
+ *  - otherwise (empty space) = Slicing Wand: onWandPose(hand world position,
+ *    hand forward (-Z) world direction, true) every update while held, and
+ *    exactly one (... false) on release (the plane stays put).
  *  - `select` (trigger) ray-picks a structure and toggles its visibility.
- *  - while no hand grips the model, thumbstick/touchpad Y of either controller
- *    nudges the cross-section clip offset through `onClipNudge(delta01)`.
+ *  - while no hand holds a squeeze mode, thumbstick/touchpad Y of either
+ *    controller nudges the cross-section clip offset through
+ *    `onClipNudge(delta01)`.
  *
- * The model group must be a direct child of the scene (identity parent).
+ * mprMesh is the MprSlice slice quad (unit PlaneGeometry under its mesh
+ * transform); when null the plane-grab branch is skipped. The model group must
+ * be a direct child of the scene (identity parent).
  */
 export function createInteraction({
   renderer,
   scene,
   modelRoot,
+  mprMesh = null,
   onToggle = () => {},
   onClipNudge = () => {},
+  onPlaneGrabStart = () => {},
+  onPlaneDrag = () => {},
+  onPlaneGrabEnd = () => {},
+  onWandPose = () => {},
 }) {
   const structures = [];
   const raycaster = new THREE.Raycaster();
@@ -86,7 +118,8 @@ export function createInteraction({
       targetRay,
       grip,
       gripBox,
-      grabbing: false,
+      mode: null, // active squeeze mode (MODE_MODEL/MODE_PLANE/MODE_WAND)
+      prevGripInv: new THREE.Matrix4(), // inverse grip pose at the last plane drag
       squeezed: false,
       selectActed: false,
       inputSource: null,
@@ -105,7 +138,7 @@ export function createInteraction({
       target.addEventListener('squeeze', (event) => onSqueeze(event, hand));
       target.addEventListener('squeezeend', () => {
         hand.squeezed = false;
-        endGrab(hand);
+        endSqueeze(hand);
       });
       target.addEventListener('selectstart', (event) => onSelect(event, hand));
       target.addEventListener('select', (event) => onSelect(event, hand));
@@ -128,7 +161,7 @@ export function createInteraction({
     const down = buttonDown(event, SQUEEZE_BUTTON);
     if (down === false) return;
     hand.squeezed = true;
-    startGrab(hand);
+    startSqueeze(hand);
   }
 
   // Exactly one pick per trigger press (`select` may trail `selectend`).
@@ -140,20 +173,91 @@ export function createInteraction({
     pick(hand);
   }
 
-  // ---- grabbing ----------------------------------------------------------
+  // ---- squeeze arbitration: plane grab / model grab / slicing wand -------
 
-  function startGrab(hand) {
-    if (hand.grabbing) return;
-    hand.grabbing = true;
+  /**
+   * Exactly one arbitration per squeeze press. Priority: slice-quad plane
+   * grab, then structure-ray model grab, then Slicing Wand in empty space.
+   */
+  function startSqueeze(hand) {
+    if (hand.mode !== null) return;
     hand.gripBox.material.color.setHex(GRIP_GRAB_COLOR);
-    capture();
+    if (nearSliceQuad(hand) || rayHitsSliceQuad(hand)) {
+      hand.mode = MODE_PLANE;
+      gripMatrix(hand, _gripA);
+      hand.prevGripInv.copy(_gripA).invert();
+      onPlaneGrabStart();
+    } else if (raycastStructures(hand)) {
+      hand.mode = MODE_MODEL;
+      capture();
+    } else {
+      hand.mode = MODE_WAND;
+    }
   }
 
-  function endGrab(hand) {
-    if (!hand.grabbing) return;
-    hand.grabbing = false;
+  function endSqueeze(hand) {
+    if (hand.mode === null) return;
+    const mode = hand.mode;
+    hand.mode = null;
     hand.gripBox.material.color.setHex(GRIP_COLOR);
-    capture(); // re-baseline the remaining hand(s): the model stays put
+    if (mode === MODE_MODEL) {
+      capture(); // re-baseline the remaining hand(s): the model stays put
+    } else if (mode === MODE_PLANE) {
+      onPlaneGrabEnd();
+    } else {
+      emitWand(hand, false); // exactly one release pose: the plane stays put
+    }
+  }
+
+  /** Grip world position within QUAD_GRAB_DIST of the slice quad surface. */
+  function nearSliceQuad(hand) {
+    if (!mprMesh || !mprMesh.visible) return false;
+    mprMesh.updateWorldMatrix(true, false);
+    hand.grip.updateWorldMatrix(true, false);
+    _pA.setFromMatrixPosition(hand.grip.matrixWorld);
+    _quadInv.copy(mprMesh.matrixWorld).invert();
+    _pB.copy(_pA).applyMatrix4(_quadInv);
+    // quad geometry space: the surface is z = 0 over [-0.5, 0.5]^2
+    _pB.set(
+      Math.min(0.5, Math.max(-0.5, _pB.x)),
+      Math.min(0.5, Math.max(-0.5, _pB.y)),
+      0,
+    );
+    _pB.applyMatrix4(mprMesh.matrixWorld);
+    return _pA.distanceTo(_pB) <= QUAD_GRAB_DIST;
+  }
+
+  /** Pick-ray hits the slice quad within QUAD_RAY_GRAB_DIST (m). */
+  function rayHitsSliceQuad(hand) {
+    if (!mprMesh || !mprMesh.visible) return false;
+    hand.targetRay.updateWorldMatrix(true, false);
+    _origin.setFromMatrixPosition(hand.targetRay.matrixWorld);
+    _dir.set(0, 0, -1).transformDirection(hand.targetRay.matrixWorld);
+    raycaster.set(_origin, _dir);
+    const hits = raycaster.intersectObject(mprMesh, true);
+    return hits.length > 0 && hits[0].distance <= QUAD_RAY_GRAB_DIST;
+  }
+
+  /** First visible-structure pick-ray hit along the hand's ray, or null. */
+  function raycastStructures(hand) {
+    if (structures.length === 0) return null;
+    hand.targetRay.updateWorldMatrix(true, false);
+    _origin.setFromMatrixPosition(hand.targetRay.matrixWorld);
+    _dir.set(0, 0, -1).transformDirection(hand.targetRay.matrixWorld);
+    raycaster.set(_origin, _dir);
+    const targets = structures
+      .filter((entry) => entry.object.visible)
+      .map((entry) => entry.object);
+    const hits = raycaster.intersectObjects(targets, true);
+    return hits.length > 0 ? hits[0] : null;
+  }
+
+  /** Slicing Wand pose: hand (grip) world position and forward (-Z). */
+  function emitWand(hand, active) {
+    hand.grip.updateWorldMatrix(true, false);
+    _wPos.setFromMatrixPosition(hand.grip.matrixWorld);
+    _wDir.set(0, 0, -1).transformDirection(hand.grip.matrixWorld);
+    onWandPose(_wPos, _wDir, active);
   }
 
   function gripMatrix(hand, out) {
@@ -163,7 +267,7 @@ export function createInteraction({
 
   function capture() {
     grabRef = null;
-    const active = hands.filter((hand) => hand.grabbing);
+    const active = hands.filter((hand) => hand.mode === MODE_MODEL);
     if (active.length === 0) return;
 
     modelRoot.updateMatrix();
@@ -202,11 +306,21 @@ export function createInteraction({
     };
   }
 
-  /** Per-frame update: clip nudge, then the current grip configuration. */
+  /** Per-frame update: clip nudge, plane drags/wands, then the grip configuration. */
   function update(dt) {
     nudgeClip(dt);
+    for (const hand of hands) {
+      if (hand.mode === MODE_PLANE) {
+        gripMatrix(hand, _gripA);
+        _dragDelta.multiplyMatrices(_gripA, hand.prevGripInv);
+        hand.prevGripInv.copy(_gripA).invert();
+        onPlaneDrag(_dragDelta);
+      } else if (hand.mode === MODE_WAND) {
+        emitWand(hand, true);
+      }
+    }
     if (!grabRef) return;
-    const active = hands.filter((hand) => hand.grabbing);
+    const active = hands.filter((hand) => hand.mode === MODE_MODEL);
     if (active.length !== grabRef.mode) {
       capture();
       return;
@@ -253,12 +367,13 @@ export function createInteraction({
   }
 
   /**
-   * While NOT gripping the model with a hand, thumbstick Y (xr-standard
-   * axes[1]) or touchpad Y (axes[3]) of either controller nudges the
-   * cross-section offset at a bounded per-frame rate (stick up = deeper cut).
+   * While no hand holds a squeeze mode (model/plane grab or slicing wand),
+   * thumbstick Y (xr-standard axes[1]) or touchpad Y (axes[3]) of either
+   * controller nudges the cross-section offset at a bounded per-frame rate
+   * (stick up = deeper cut).
    */
   function nudgeClip(dt) {
-    if (hands.some((hand) => hand.grabbing)) return;
+    if (hands.some((hand) => hand.mode !== null)) return;
     let axis = 0;
     for (const hand of hands) {
       const value = clipAxis(hand);
@@ -276,17 +391,9 @@ export function createInteraction({
   // ---- trigger picking ---------------------------------------------------
 
   function pick(hand) {
-    if (structures.length === 0) return null;
-    hand.targetRay.updateWorldMatrix(true, false);
-    _origin.setFromMatrixPosition(hand.targetRay.matrixWorld);
-    _dir.set(0, 0, -1).transformDirection(hand.targetRay.matrixWorld);
-    raycaster.set(_origin, _dir);
-    const targets = structures
-      .filter((entry) => entry.object.visible)
-      .map((entry) => entry.object);
-    const hits = raycaster.intersectObjects(targets, true);
-    if (hits.length === 0) return null;
-    const entry = entryFor(hits[0].object);
+    const hit = raycastStructures(hand);
+    if (!hit) return null;
+    const entry = entryFor(hit.object);
     if (!entry) return null;
     setStructureVisible(entry.name, !entry.object.visible);
     return entry.name;

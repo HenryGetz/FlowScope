@@ -53,8 +53,8 @@ GLBS = [
     {
         'name': 'cardiac_s0004',
         'path': 'out/cardiac_s0004.glb',
-        'served_url': '/assets/cardiac.glb',
-        'note': 'served under the viewer default asset name assets/cardiac.glb; '
+        'served_url': '/models/case_01.glb',
+        'note': 'served under the viewer default asset name models/case_01.glb; '
                 'byte-identical to out/cardiac_s0004.glb (md5 384cc1145161ce0f9f69967d358df0b8)',
     },
     {'name': 'cardiac_s0015', 'path': 'out/cardiac_s0015.glb', 'served_url': '/assets/cardiac_s0015.glb'},
@@ -579,7 +579,7 @@ def main() -> int:
         'load_ms = median total_ms (request start -> last body byte, fresh TLS connection per '
         'sample) from tools/loadtime_probe.mjs; 3 samples per resource with min/median/max and '
         'raw samples retained under "loadtime".',
-        'out/cardiac_s0004.glb is served as assets/cardiac.glb (viewer default model); the two '
+        'out/cardiac_s0004.glb is served as models/case_01.glb (viewer default model); the two '
         'files are byte-identical (md5 384cc1145161ce0f9f69967d358df0b8), so its load timing '
         'is the true asset timing.',
         f'Combo within_budget is checked against the pipeline window [{BUDGET_WINDOW_LO}, '

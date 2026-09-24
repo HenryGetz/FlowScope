@@ -39,14 +39,19 @@
     <div id="overlay"><div id="status">XR smoke booting&hellip;</div></div>
     <script type="module">
       // Dev-only XR smoke page: boots the Immersive Web Emulation Runtime
-      // (emulated immersive-vr + two controllers) and reuses src/scene.js and
-      // src/interaction.js UNCHANGED, exposing window.__XRTEST__ for automated
-      // grab-rotate / two-hand-scale checks.
+      // (emulated immersive-vr + two controllers) and reuses src/scene.js,
+      // src/interaction.js, src/ui.js and src/telemetry.js UNCHANGED, exposing
+      // window.__XRTEST__ for automated grab-rotate / two-hand-scale checks and
+      // the MPR input smokes (squeeze near the slice quad = plane drag, squeeze
+      // in empty space = slicing wand).
+      import * as THREE from 'three';
       import { XRDevice, metaQuest3 } from 'immersive-web-emulation-runtime';
       import { createStage } from './src/scene.js';
       import { loadModel, collectStructures, modelURL } from './src/loader.js';
       import { createInteraction } from './src/interaction.js';
-      import { enterVR } from './src/xr.js';
+      import { createUI } from './src/ui.js';
+      import { createTelemetry } from './src/telemetry.js';
+      import { enterVR, exitVR } from './src/xr.js';
 
       const statusEl = document.getElementById('status');
       function setStatus(text) {
@@ -92,18 +97,79 @@
       });
       device.installRuntime();
 
-      // --- shared viewer stack (src/scene.js + src/interaction.js) ----------
+      // --- shared viewer stack (src/scene.js + src/interaction.js + src/ui.js +
+      //     src/telemetry.js) -------------------------------------------------
       const stage = createStage(document.getElementById('app'));
+
+      // Stand-in MPR slice quad: unit PlaneGeometry under a mesh transform — the
+      // exact shape src/interaction.js tests against (surface = local z 0 over
+      // [-0.5, 0.5]^2). Plane-grab smokes aim near it (or move it via poseQuad).
+      const SLICE_QUAD_SIZE = 0.3;
+      const sliceQuad = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({
+          color: 0x4f9cff,
+          transparent: true,
+          opacity: 0.35,
+          side: THREE.DoubleSide,
+        }),
+      );
+      sliceQuad.scale.setScalar(SLICE_QUAD_SIZE);
+      sliceQuad.position.set(0, 0, -0.5);
+      stage.scene.add(sliceQuad);
+
+      // Every interaction/UI callback lands in one event log for __XRTEST__.events().
+      const events = [];
+      const record = (type, data) => {
+        events.push({ type, ...data });
+      };
+
       const interaction = createInteraction({
         renderer: stage.renderer,
         scene: stage.scene,
         modelRoot: stage.modelRoot,
+        mprMesh: sliceQuad,
+        onClipNudge: (delta01) => record('clipNudge', { delta01 }),
+        onPlaneGrabStart: () => record('planeGrabStart', {}),
+        onPlaneDrag: (deltaWorld) => record('planeDrag', { elements: Array.from(deltaWorld.elements) }),
+        onPlaneGrabEnd: () => record('planeGrabEnd', {}),
+        onWandPose: (origin, normal, active) =>
+          record('wand', {
+            origin: [origin.x, origin.y, origin.z],
+            normal: [normal.x, normal.y, normal.z],
+            active: !!active,
+          }),
       });
-      stage.onFrame((dt) => interaction.update(dt));
+
+      const telemetry = createTelemetry({ renderer: stage.renderer, stage });
+
+      // The createUI smoke lives in a hidden container: this page's surface is
+      // the #status block and .fs-panel would cover it. The MPR controls are
+      // driven through __XRTEST__.uiInput()/uiCall() and read back via uiState().
+      const uiRoot = document.createElement('div');
+      uiRoot.style.display = 'none';
+      document.body.appendChild(uiRoot);
+      const ui = createUI(uiRoot, {
+        stage,
+        telemetry,
+        onToggleVisible: (name, visible) => interaction.setStructureVisible(name, visible),
+        onWindowChange: (widthHu) => record('window', { widthHu }),
+        onLevelChange: (levelHu) => record('level', { levelHu }),
+        onPreset: (name) => record('preset', { name }),
+        onEnterVR: () => enterVR(stage.renderer, stage),
+        onExitVR: () => exitVR(stage.renderer),
+      });
+
+      stage.onFrame((dt) => {
+        telemetry.tick(dt);
+        interaction.update(dt);
+      });
 
       const ready = loadModel(modelURL()).then((gltf) => {
         stage.setModel(gltf.scene);
-        interaction.setStructures(collectStructures(gltf.scene));
+        const structures = collectStructures(gltf.scene);
+        interaction.setStructures(structures);
+        ui.setStructures(structures);
         setStatus(`model loaded (${modelURL()}) — __XRTEST__ ready`);
         return true;
       });
@@ -155,6 +221,70 @@
             quaternion: [model.quaternion.x, model.quaternion.y, model.quaternion.z, model.quaternion.w],
             scale: [model.scale.x, model.scale.y, model.scale.z],
             visible: interaction.visibleNames(),
+          };
+        },
+        /** Interaction/UI callback events since the last clearEvents(). */
+        events() {
+          return events.map((event) => ({ ...event }));
+        },
+        clearEvents() {
+          events.length = 0;
+        },
+        /** Place the stand-in slice quad: position [x,y,z], quaternion [x,y,z,w]. */
+        poseQuad(position, quaternion) {
+          sliceQuad.position.set(position[0], position[1], position[2]);
+          sliceQuad.quaternion.set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+          sliceQuad.updateMatrixWorld(true);
+        },
+        /** Read back the stand-in quad pose and its square side length (m). */
+        quadState() {
+          sliceQuad.updateMatrixWorld(true);
+          return {
+            position: [sliceQuad.position.x, sliceQuad.position.y, sliceQuad.position.z],
+            quaternion: [
+              sliceQuad.quaternion.x,
+              sliceQuad.quaternion.y,
+              sliceQuad.quaternion.z,
+              sliceQuad.quaternion.w,
+            ],
+            side: SLICE_QUAD_SIZE,
+          };
+        },
+        /**
+         * Drive an MPR UI control: 'window'|'level' slider (value in HU) or
+         * 'preset' button name. Preset clicks need uiCall('setVolumeReady', true)
+         * first: .click() on a disabled button is a no-op per spec.
+         */
+        uiInput(kind, value) {
+          if (kind === 'window' || kind === 'level') {
+            const slider = uiRoot.querySelector(`[data-fs="${kind}"]`);
+            slider.value = String(value);
+            slider.dispatchEvent(new Event('input'));
+          } else if (kind === 'preset') {
+            uiRoot.querySelector(`[data-preset="${value}"]`).click();
+          } else {
+            throw new Error(`uiInput: kind must be 'window', 'level' or 'preset', got ${kind}`);
+          }
+          return true;
+        },
+        /** Drive a createUI setter: 'setWindowLevel'|'setPresetActive'|'setVolumeReady'. */
+        uiCall(method, ...args) {
+          if (method !== 'setWindowLevel' && method !== 'setPresetActive' && method !== 'setVolumeReady') {
+            throw new Error(`uiCall: unknown method ${method}`);
+          }
+          ui[method](...args);
+          return true;
+        },
+        /** MPR control state: slider HU values, active preset, volume-ready flag. */
+        uiState() {
+          const windowEl = uiRoot.querySelector('[data-fs="window"]');
+          const levelEl = uiRoot.querySelector('[data-fs="level"]');
+          const active = uiRoot.querySelector('.fs-preset.fs-active');
+          return {
+            windowHu: Number(windowEl.value),
+            levelHu: Number(levelEl.value),
+            preset: active ? active.getAttribute('data-preset') : null,
+            volumeReady: !windowEl.disabled,
           };
         },
       };

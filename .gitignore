@@ -12,3 +12,5 @@ out/transport/u_cache.npz
 out/sync_log.jsonl
 *.glb
 *.png
+data/case_01/
+viewer/models/

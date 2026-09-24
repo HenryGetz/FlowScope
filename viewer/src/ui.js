@@ -16,7 +16,12 @@ const STYLE = `
 .fs-name{overflow-wrap:anywhere}
 .fs-clip{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
 .fs-clip input[type=range]{flex:1;min-width:80px;accent-color:#4f9cff}
-.fs-clip-pct{color:#9fb0c4;min-width:30px;text-align:right}
+.fs-clip-pct{color:#9fb0c4;min-width:30px;text-align:right;white-space:nowrap}
+.fs-presets{display:flex;gap:4px;margin:4px 0 6px}
+.fs-preset{flex:1;padding:5px 4px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
+.fs-preset:hover:not(:disabled){background:#274b78}
+.fs-preset:disabled{opacity:.55;cursor:not-allowed}
+.fs-preset.fs-active{background:#2f6399;border-color:rgba(160,210,255,.6)}
 .fs-vr{width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
 .fs-vr:hover:not(:disabled){background:#274b78}
 .fs-vr:disabled{opacity:.55;cursor:not-allowed}
@@ -51,17 +56,31 @@ function ensureStyle() {
 }
 
 /**
- * DOM overlay (top-left, dark panel): FPS + frame ms (rolling 1 s),
+ * DOM overlay (top-left, dark panel): FPS + frame ms (rolling 1 s) + GPU ms
+ * (from the optional telemetry sample, `gpu n/a` without one),
  * renderer.info.render.triangles, the 5 group toggle rows (checkbox per
  * contract structure group), the structure toggle list (checkbox + palette
- * swatch per GLB node name, coherent with the group state both ways), the
+ * swatch per GLB node name, coherent with the group state both ways), the MPR
+ * section (Axial/Coronal/Sagittal preset buttons firing onPreset(name),
+ * Window/Level sliders firing onWindowChange/onLevelChange in HU), the
  * Cross-section slider (0-100, fires onClipChange(offset01)) and the Enter VR
  * button. Also mirrors the stats into the in-XR head-locked quad and hosts the
- * on-screen error banner.
+ * on-screen error banner. The MPR rows are disabled until setVolumeReady(true).
  */
 export function createUI(
   container,
-  { stage, onToggleVisible, onToggleGroup = () => {}, onClipChange = () => {}, onEnterVR, onExitVR },
+  {
+    stage,
+    telemetry = null,
+    onToggleVisible,
+    onToggleGroup = () => {},
+    onClipChange = () => {},
+    onWindowChange = () => {},
+    onLevelChange = () => {},
+    onPreset = () => {},
+    onEnterVR,
+    onExitVR,
+  },
 ) {
   ensureStyle();
 
@@ -73,11 +92,28 @@ export function createUI(
       <div data-fs="fps"></div>
       <div data-fs="frame"></div>
       <div data-fs="tris"></div>
+      <div data-fs="gpu"></div>
     </div>
     <div class="fs-section">Groups</div>
     <div class="fs-groups"></div>
     <div class="fs-section">Structures</div>
     <div class="fs-structures"></div>
+    <div class="fs-section">MPR</div>
+    <div class="fs-presets">
+      <button class="fs-preset" type="button" data-preset="axial">Axial</button>
+      <button class="fs-preset" type="button" data-preset="coronal">Coronal</button>
+      <button class="fs-preset" type="button" data-preset="sagittal">Sagittal</button>
+    </div>
+    <div class="fs-clip">
+      <span class="fs-name">Window</span>
+      <input data-fs="window" type="range" min="1" max="2000" step="1" value="600" />
+      <span class="fs-clip-pct" data-fs="window-pct">600 HU</span>
+    </div>
+    <div class="fs-clip">
+      <span class="fs-name">Level</span>
+      <input data-fs="level" type="range" min="-500" max="500" step="1" value="150" />
+      <span class="fs-clip-pct" data-fs="level-pct">150 HU</span>
+    </div>
     <div class="fs-clip">
       <span class="fs-name">Cross-section</span>
       <input data-fs="clip" type="range" min="0" max="100" step="1" value="0" />
@@ -94,10 +130,16 @@ export function createUI(
   const fpsEl = panel.querySelector('[data-fs="fps"]');
   const frameEl = panel.querySelector('[data-fs="frame"]');
   const trisEl = panel.querySelector('[data-fs="tris"]');
+  const gpuEl = panel.querySelector('[data-fs="gpu"]');
   const groupsBox = panel.querySelector('.fs-groups');
   const structuresBox = panel.querySelector('.fs-structures');
   const clipSlider = panel.querySelector('[data-fs="clip"]');
   const clipPct = panel.querySelector('[data-fs="clip-pct"]');
+  const presetButtons = panel.querySelectorAll('[data-preset]');
+  const windowSlider = panel.querySelector('[data-fs="window"]');
+  const windowPct = panel.querySelector('[data-fs="window-pct"]');
+  const levelSlider = panel.querySelector('[data-fs="level"]');
+  const levelPct = panel.querySelector('[data-fs="level-pct"]');
   const vrButton = panel.querySelector('.fs-vr');
   const checkboxes = new Map();
   const rowGroups = new Map();
@@ -143,13 +185,45 @@ export function createUI(
     onClipChange(pct / 100);
   });
 
+  windowSlider.addEventListener('input', () => {
+    const widthHu = Number(windowSlider.value);
+    windowPct.textContent = `${widthHu} HU`;
+    onWindowChange(widthHu);
+  });
+
+  levelSlider.addEventListener('input', () => {
+    const levelHu = Number(levelSlider.value);
+    levelPct.textContent = `${levelHu} HU`;
+    onLevelChange(levelHu);
+  });
+
+  for (const button of presetButtons) {
+    button.addEventListener('click', () => {
+      const name = button.getAttribute('data-preset');
+      setPresetActive(name);
+      onPreset(name);
+    });
+  }
+
+  /** `gpu X.X ms` when a GPU timer sample exists, else `gpu n/a`. */
+  function gpuLabel(gpuMs) {
+    return gpuMs == null ? 'gpu n/a' : `gpu ${gpuMs.toFixed(1)} ms`;
+  }
+
   function tick() {
     const { fps, frameMs } = stage.metrics;
     const tris = stage.triangles();
+    const gpuText = telemetry ? gpuLabel(telemetry.sample().gpuMs) : 'gpu n/a';
     fpsEl.textContent = `FPS ${fps.toFixed(1)}`;
     frameEl.textContent = `frame ${frameMs.toFixed(1)} ms`;
     trisEl.textContent = `triangles ${tris.toLocaleString('en-US')}`;
-    stage.setStatsText([`FPS ${fps.toFixed(1)}`, `frame ${frameMs.toFixed(1)} ms`, `triangles ${tris}`]);
+    gpuEl.textContent = gpuText;
+    stage.setStatsText([
+      `FPS ${fps.toFixed(1)}`,
+      `frame ${frameMs.toFixed(1)} ms`,
+      `triangles ${tris}`,
+      gpuText,
+    ]);
   }
   setInterval(tick, 250);
   tick();
@@ -237,17 +311,50 @@ export function createUI(
     clipPct.textContent = `${pct}%`;
   }
 
+  /** Mirror window/level (HU) into the MPR sliders (no events). */
+  function setWindowLevel(widthHu, centerHu) {
+    const width = Math.min(2000, Math.max(1, Math.round(widthHu)));
+    const level = Math.min(500, Math.max(-500, Math.round(centerHu)));
+    windowSlider.value = String(width);
+    windowPct.textContent = `${width} HU`;
+    levelSlider.value = String(level);
+    levelPct.textContent = `${level} HU`;
+  }
+
+  /** Highlight the active MPR preset button (null/undefined clears all). */
+  function setPresetActive(name) {
+    for (const button of presetButtons) {
+      button.classList.toggle('fs-active', button.getAttribute('data-preset') === name);
+    }
+  }
+
+  /** Disable the MPR rows until a volume pair is loaded. */
+  function setVolumeReady(ready) {
+    setControlEnabled(windowSlider, ready);
+    setControlEnabled(levelSlider, ready);
+    for (const button of presetButtons) setControlEnabled(button, ready);
+  }
+
+  function setControlEnabled(control, enabled) {
+    control.disabled = !enabled;
+    control.setAttribute('aria-disabled', String(!enabled));
+  }
+
   function showError(message) {
     error.textContent = message;
     error.classList.add('fs-visible');
   }
 
   renderVRButton();
+  setVolumeReady(false);
 
   return {
     setStructures,
     setVisibility,
     setClipValue,
+    setWindowLevel,
+    setPresetActive,
+    setVolumeReady,
     setVRState({ supported, reason }) {
       vrSupported = supported;
       vrReason = reason || '';

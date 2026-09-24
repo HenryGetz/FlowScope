@@ -1,9 +1,10 @@
+import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-/** Default model location relative to the page (viewer/public/assets/). */
-export const DEFAULT_MODEL_URL = 'assets/cardiac.glb';
+/** Default model location relative to the page (viewer/models/, served at /models/). */
+export const DEFAULT_MODEL_URL = 'models/case_01.glb';
 
-/** Model URL: `?model=<url>` override, else `assets/cardiac.glb` relative. */
+/** Model URL: `?model=<url>` override, else `models/case_01.glb` relative. */
 export function modelURL() {
   const fromQuery = new URLSearchParams(window.location.search).get('model');
   const trimmed = fromQuery ? fromQuery.trim() : '';
@@ -36,6 +37,56 @@ export function loadModel(url = modelURL(), onProgress = null) {
       (err) => reject(new Error(`failed to load "${url}": ${err && err.message ? err.message : err}`)),
     );
   });
+}
+
+/**
+ * Volume-pair URLs derived from the model URL stem: `<stem>_volume.bin` and
+ * `<stem>_meta.json` beside the model. Returns null when the model URL is not
+ * a *.glb.
+ */
+export function volumeURLs(modelUrl = modelURL()) {
+  const match = /^(.*)\.glb$/i.exec(String(modelUrl));
+  return match ? { volume: `${match[1]}_volume.bin`, meta: `${match[1]}_meta.json` } : null;
+}
+
+let volumeWarned = false;
+
+/**
+ * Load the quantized CT volume pair (uint8 `<stem>_volume.bin` + `<stem>_meta.json`)
+ * as a gl.R8 Data3DTexture ready for `texture(sampler3D, uvw)`. Resolves null
+ * when the pair is missing: the viewer then runs without MPR (warns once).
+ */
+export async function loadVolume(modelUrl = modelURL()) {
+  const urls = volumeURLs(modelUrl);
+  if (!urls) return null;
+  try {
+    const [binResponse, metaResponse] = await Promise.all([
+      fetch(new URL(urls.volume, document.baseURI).href),
+      fetch(new URL(urls.meta, document.baseURI).href),
+    ]);
+    if (!binResponse.ok || !metaResponse.ok) {
+      throw new Error(`HTTP ${!binResponse.ok ? binResponse.status : metaResponse.status}`);
+    }
+    const [buffer, meta] = await Promise.all([binResponse.arrayBuffer(), metaResponse.json()]);
+    const [dx, dy, dz] = meta.dimensions;
+    const texture = new THREE.Data3DTexture(new Uint8Array(buffer), dx, dy, dz);
+    texture.format = THREE.RedFormat;
+    texture.type = THREE.UnsignedByteType;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.wrapR = THREE.ClampToEdgeWrapping;
+    texture.unpackAlignment = 1;
+    texture.needsUpdate = true;
+    return { texture, meta };
+  } catch {
+    if (!volumeWarned) {
+      volumeWarned = true;
+      console.warn(`no volume pair for "${modelUrl}" — running without MPR`);
+    }
+    return null;
+  }
 }
 
 /**

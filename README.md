@@ -12,7 +12,7 @@
 
 * **Headless Mesh Decimator (`pipeline/build_cardiac_glb.py`):** Runs Flying Edges extraction and Taubin smoothing without Blender — and tells the volume story straight. Measured over 355 real cardiac CT scans, per-structure Taubin drift is median 0.27%, IQR 0.18-0.45%, p95 0.57%, p99 1.02%; 206/355 cases exceeded 0.5% max-per-structure drift (dominated by the whole-heart envelope at a consistent ~0.55%). Plain verdict: "non-shrinking / no volume loss" does NOT hold strictly — smoothing systematically shrinks volume slightly (98.7% of structures, median -0.27%) — it holds only approximately/directionally for normal structures, and before the fix it failed outright (up to -100% volume) on degenerate small volumes. The pipeline now enforces **per-structure Taubin drift capped at 1% for watertight structures (measured)** via an iteration ladder (25→12→6→3→1 iters, else the raw Flying Edges mesh is kept unsmoothed): geometry is never discarded, and each structure reports its iters used plus capped/uncapped drift. One honest footnote: open FOV-truncated surfaces (641 rows) have no meaningful volume metric, so drift is unmeasured/uncapped there.
 * **Stratified Poly Budgets:** Per-structure tier targets (myocardium 35–45k, great vessels ~30k, chambers 30–40k, coronaries 25–35k triangles) inside a hard 100k–150k scene window, with volume-preserving decimation and drift-capped Taubin smoothing.
-* **Browser-Native WebXR Viewer (`viewer/`):** Three.js scene with 6DOF grab/rotate, two-handed scaling, per-structure and per-group visibility toggles (Myocardium Shell / Internal Chambers / Great Vessels / Coronary Tree), an opaque-PBR anatomical palette, a `THREE.Plane` cross-section slider (also VR-thumbstick driven) for slicing the myocardium open, and live FPS telemetry.
+* **Browser-Native WebXR Viewer (`viewer/`):** Three.js scene with 6DOF grab/rotate, two-handed scaling, per-structure and per-group visibility toggles (Myocardium Shell / Internal Chambers / Great Vessels / Coronary Tree), an opaque-PBR anatomical palette, and an interactive oblique MPR slice plane: a `THREE.Data3DTexture` (R8) CT slice with exactly one trilinear fetch per fragment, synchronized bidirectionally with hardware mesh clipping through a single authoritative `THREE.Plane` (Cross-section slider + VR thumbstick nudge to translate the cut along its normal, Axial/Coronal/Sagittal snaps, interactive Window/Level, VR grip-grab of the plane and a squeeze-held slicing wand). Co-registration rides one RAS-to-Three.js change of basis (meters, R→+X / A→−Z / S→+Y) baked into a compound `worldToVolume` uniform shared by the slice shader and the GLB. Live FPS / frame / GPU-time telemetry HUD included.
 * **Zero-Sideload Delivery:** Served directly over local HTTPS to the Meta Quest Browser—no ADB installs or developer modes.
 
 ---
@@ -94,21 +94,32 @@ python tools/run_heartchambers.py s0011
 # alongside `heart_myocardium` (LV wall inner shell).
 python pipeline/build_cardiac_glb.py \
     --ts-dir data/segmentations/s0011 data/raw/totalseg_ct/s0011/segmentations \
-    --out viewer/public/assets/cardiac.glb --report out/report_s0011.json
+    --output viewer/models/s0011.glb --report out/report_s0011.json
 
+# MPR mode: give it the case root (CT + masks) and it also bakes the quantized
+# CT volume pair beside the GLB — <case>_volume.bin (256^3 uint8, cardiovascular
+# HU window -150..+450) + <case>_meta.json (dimensions/spacing/origin/affine plus
+# the GLB recenter anchor for sub-mm slice/mesh co-registration).
+python pipeline/build_cardiac_glb.py \
+    --input data/case_01 \
+    --output viewer/models/case_01.glb --report out/report_case_01.json
+
+# No gated data at hand? Generate a synthetic contrast-CT sample case first:
+python tools/make_sample_case.py            # writes data/case_01/ (CT + 15 masks)
 ```
 
 ### 3. Run the Viewer
 
 ```bash
 cd viewer
-# WebXR demands SSL; generate a quick throwaway cert
-openssl req -new -x509 -keyout key.pem -out cert.pem -days 365 -nodes
-python -m http.server 8444 --bind 0.0.0.0 --ssl
+npm ci
+npm run build        # dist/ ships models/ (viewer/public/models -> ../models)
+npm run cert         # throwaway self-signed cert into viewer/certs/
+npm run serve:https  # serves dist/ + /models/ on https://0.0.0.0:8443
 
 ```
 
-Put on the headset, browse to `https://<YOUR-LAN-IP>:8444`, bypass the self-signed cert warning, and hit **Enter VR**.
+Put on the headset, browse to `https://<YOUR-LAN-IP>:8443`, bypass the self-signed cert warning, and hit **Enter VR**.
 
 ---
 

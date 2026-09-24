@@ -48,10 +48,10 @@ const RESOURCES = [
   { name: 'coronary_798', url: '/assets/coronary_798.glb', kind: 'glb', glb: 'out/coronary_798.glb' },
   {
     name: 'cardiac_s0004',
-    url: '/assets/cardiac.glb',
+    url: '/models/case_01.glb',
     kind: 'glb',
     glb: 'out/cardiac_s0004.glb',
-    note: 'served under the viewer default asset name assets/cardiac.glb (byte-identical to out/cardiac_s0004.glb)',
+    note: 'served under the viewer default asset name models/case_01.glb (byte-identical to out/cardiac_s0004.glb)',
   },
   {
     name: 'cardiac_s0015',
