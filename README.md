@@ -11,8 +11,8 @@
 ## What Actually Works
 
 * **Headless Mesh Decimator (`pipeline/build_cardiac_glb.py`):** Runs Flying Edges extraction and Taubin smoothing without Blender — and tells the volume story straight. Measured over 355 real cardiac CT scans, per-structure Taubin drift is median 0.27%, IQR 0.18-0.45%, p95 0.57%, p99 1.02%; 206/355 cases exceeded 0.5% max-per-structure drift (dominated by the whole-heart envelope at a consistent ~0.55%). Plain verdict: "non-shrinking / no volume loss" does NOT hold strictly — smoothing systematically shrinks volume slightly (98.7% of structures, median -0.27%) — it holds only approximately/directionally for normal structures, and before the fix it failed outright (up to -100% volume) on degenerate small volumes. The pipeline now enforces **per-structure Taubin drift capped at 1% for watertight structures (measured)** via an iteration ladder (25→12→6→3→1 iters, else the raw Flying Edges mesh is kept unsmoothed): geometry is never discarded, and each structure reports its iters used plus capped/uncapped drift. One honest footnote: open FOV-truncated surfaces (641 rows) have no meaningful volume metric, so drift is unmeasured/uncapped there.
-* **Sub-120k Poly Diets:** Cuts 1.5M–5M triangle isosurfaces by 90–95%, consistently hitting the 100k–120k mobile GPU sweet spot across 5 test sets.
-* **Browser-Native WebXR Viewer (`viewer/`):** Three.js scene with 6DOF grab/rotate, two-handed scaling, per-structure visibility toggles, and live FPS telemetry.
+* **Stratified Poly Budgets:** Per-structure tier targets (myocardium 35–45k, great vessels ~30k, chambers 30–40k, coronaries 25–35k triangles) inside a hard 100k–150k scene window, with volume-preserving decimation and drift-capped Taubin smoothing.
+* **Browser-Native WebXR Viewer (`viewer/`):** Three.js scene with 6DOF grab/rotate, two-handed scaling, per-structure and per-group visibility toggles (Myocardium Shell / Internal Chambers / Great Vessels / Coronary Tree), an opaque-PBR anatomical palette, a `THREE.Plane` cross-section slider (also VR-thumbstick driven) for slicing the myocardium open, and live FPS telemetry.
 * **Zero-Sideload Delivery:** Served directly over local HTTPS to the Meta Quest Browser—no ADB installs or developer modes.
 
 ---
@@ -29,7 +29,7 @@ flowchart TD
 
     subgraph engine ["&nbsp;FlowScope Mesh Engine&nbsp;"]
         direction LR
-        seg("<b>🫀 TotalSegmentator</b><br><small>14 Chambers</small>"):::process
+        seg("<b>🫀 TotalSegmentator</b><br><small>3-Pass: chambers · coronaries · veins</small>"):::process
         smooth("<b>✨ Taubin Smoothing</b><br><small>Drift Capped (&le;1%)</small>"):::process
         diet("<b>✂️ Poly Decimation</b><br><small>&lt;150k Triangles</small>"):::process
         glb("<b>📦 Asset Packaging</b><br><small>Binary .GLB</small>"):::process
@@ -52,7 +52,7 @@ flowchart TD
 
 * **Starter Coronary Meshes:** [ImageCAS on Kaggle](https://www.kaggle.com/datasets/xiaoweixumedicalai/imagecas?utm_source=gemini) — 1,000 pre-extracted vessel trees. Drop credentials in `~/.kaggle/` or use the env vars below.
 * **Full Multi-Structure Heart (Ideal):** [AI-CVM/Cardiac-CT on Hugging Face](https://huggingface.co/datasets/AI-CVM/Cardiac-CT?utm_source=gemini) — 14 structures (chambers + coronaries). Gated; click "Request Access" on HF and wait for approval.
-* **Raw DICOM / NIfTI Volumes:** Run any clean contrast volume through TotalSegmentator's local `--task heartchambers_highres`.
+* **Raw DICOM / NIfTI Volumes:** Run any clean contrast volume through `tools/run_heartchambers.py` — the 3-pass TotalSegmentator recipe (`heartchambers_highres`, `coronary_arteries`, and a great-veins `--roi_subset` pass) lands discrete labels per structure, chamber type before lateral side (`heart_ventricle_left`, not `heart_left_ventricle`).
 
 ---
 
@@ -83,7 +83,17 @@ One-time setup: the key lands machine-wide in `~/.totalsegmentator/config.json`,
 ### 2. Crunch the Meshes
 
 ```bash
-python pipeline/build_cardiac_glb.py --input data/case_01/ --output viewer/models/case_01.glb
+# 3-pass TotalSegmentator extraction per case (chambers/ + coronaries/ + veins/):
+#   1) -ta heartchambers_highres   2) -ta coronary_arteries
+#   3) default total task with --roi_subset superior_vena_cava inferior_vena_cava --fast
+# Runs the passes sequentially (TotalSegmentator model downloads share one temp file).
+python tools/run_heartchambers.py s0011
+
+# Build the GLB: heartchambers_highres output wins over coarser masks for shared
+# ids; the `heart` envelope is suppressed when heart_myocardium is present.
+python pipeline/build_cardiac_glb.py \
+    --ts-dir data/segmentations/s0011 data/raw/totalseg_ct/s0011/segmentations \
+    --out viewer/public/assets/cardiac.glb --report out/report_s0011.json
 
 ```
 

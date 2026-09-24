@@ -5,6 +5,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/adrenal_gland_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -12,6 +14,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/adrenal_gland_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -26,9 +30,15 @@
       "volume_final_mm3": null,
       "volume_drift_pct": null,
       "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
-      "final_triangles": 33532,
-      "target_triangles": 33534,
-      "reduction_pct": 9.221,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": "drift unmeasured: open surface (FOV-truncated); smoothing uncapped",
+      "boundary_loops_capped": 2,
+      "normals": "smooth_point",
+      "final_triangles": 17572,
+      "target_triangles": 17501,
+      "reduction_pct": 52.428,
       "decimator": "decimate_pro"
     },
     {
@@ -43,9 +53,15 @@
       "volume_final_mm3": null,
       "volume_drift_pct": null,
       "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
-      "final_triangles": 1551,
-      "target_triangles": 1552,
-      "reduction_pct": 9.298,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": "drift unmeasured: open surface (FOV-truncated); smoothing uncapped",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
+      "final_triangles": 1710,
+      "target_triangles": 1710,
+      "reduction_pct": 0.0,
       "decimator": "decimate_pro"
     },
     {
@@ -53,6 +69,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/autochthon_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -60,6 +78,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/autochthon_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -67,6 +87,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/brachiocephalic_trunk.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -74,6 +96,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/brachiocephalic_vein_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -81,6 +105,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/brachiocephalic_vein_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -88,6 +114,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/brain.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -95,6 +123,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/clavicula_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -102,6 +132,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/clavicula_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -109,6 +141,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/colon.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -116,6 +150,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/common_carotid_artery_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -123,6 +159,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/common_carotid_artery_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -130,6 +168,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/costal_cartilages.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -137,6 +177,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/duodenum.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -144,6 +186,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/esophagus.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -151,6 +195,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/femur_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -158,6 +204,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/femur_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -165,6 +213,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gallbladder.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -172,6 +222,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gluteus_maximus_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -179,6 +231,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gluteus_maximus_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -186,6 +240,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gluteus_medius_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -193,6 +249,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gluteus_medius_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -200,6 +258,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gluteus_minimus_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -207,6 +267,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/gluteus_minimus_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -221,9 +283,15 @@
       "volume_final_mm3": null,
       "volume_drift_pct": null,
       "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
-      "final_triangles": 54881,
-      "target_triangles": 54883,
-      "reduction_pct": 26.48,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": "drift unmeasured: open surface (FOV-truncated); smoothing uncapped",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
+      "final_triangles": 54245,
+      "target_triangles": 54246,
+      "reduction_pct": 27.332,
       "decimator": "decimate_pro"
     },
     {
@@ -231,6 +299,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/hip_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -238,6 +308,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/hip_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -245,6 +317,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/humerus_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -252,6 +326,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/humerus_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -259,6 +335,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/iliac_artery_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -266,6 +344,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/iliac_artery_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -273,6 +353,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/iliac_vena_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -280,6 +362,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/iliac_vena_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -287,6 +371,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/iliopsoas_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -294,6 +380,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/iliopsoas_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -305,11 +393,17 @@
       "post_fe_triangles": 20688,
       "volume_raw_mm3": 68657.766,
       "volume_smoothed_mm3": 68524.474,
-      "volume_final_mm3": 68520.634,
+      "volume_final_mm3": 68475.127,
       "volume_drift_pct": 0.1941,
-      "final_triangles": 18780,
-      "target_triangles": 18780,
-      "reduction_pct": 9.223,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": null,
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
+      "final_triangles": 14648,
+      "target_triangles": 14649,
+      "reduction_pct": 29.196,
       "decimator": "decimate_pro"
     },
     {
@@ -317,6 +411,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/kidney_cyst_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -324,6 +420,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/kidney_cyst_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -331,6 +429,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/kidney_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -338,6 +438,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/kidney_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -345,6 +447,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/liver.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -352,6 +456,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/lung_lower_lobe_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -359,6 +465,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/lung_lower_lobe_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -366,6 +474,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/lung_middle_lobe_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -373,6 +483,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/lung_upper_lobe_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -380,6 +492,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/lung_upper_lobe_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -387,6 +501,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/pancreas.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -394,6 +510,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/portal_vein_and_splenic_vein.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -401,6 +519,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/prostate.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -415,9 +535,15 @@
       "volume_final_mm3": null,
       "volume_drift_pct": null,
       "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
-      "final_triangles": 9272,
-      "target_triangles": 9273,
-      "reduction_pct": 9.24,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": "drift unmeasured: open surface (FOV-truncated); smoothing uncapped",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
+      "final_triangles": 10216,
+      "target_triangles": 10216,
+      "reduction_pct": 0.0,
       "decimator": "decimate_pro"
     },
     {
@@ -425,6 +551,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_1.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -432,6 +560,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_10.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -439,6 +569,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_11.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -446,6 +578,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_12.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -453,6 +587,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_2.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -460,6 +596,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_3.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -467,6 +605,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_4.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -474,6 +614,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_5.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -481,6 +623,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_6.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -488,6 +632,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_7.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -495,6 +641,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_8.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -502,6 +650,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_left_9.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -509,6 +659,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_1.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -516,6 +668,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_10.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -523,6 +677,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_11.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -530,6 +686,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_12.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -537,6 +695,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_2.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -544,6 +704,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_3.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -551,6 +713,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_4.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -558,6 +722,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_5.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -565,6 +731,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_6.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -572,6 +740,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_7.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -579,6 +749,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_8.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -586,6 +758,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/rib_right_9.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -593,6 +767,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/sacrum.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -600,6 +776,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/scapula_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -607,6 +785,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/scapula_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -614,6 +794,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/skull.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -621,6 +803,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/small_bowel.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -628,6 +812,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/spinal_cord.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -635,6 +821,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/spleen.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -642,6 +830,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/sternum.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -649,6 +839,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/stomach.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -656,6 +848,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/subclavian_artery_left.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -663,6 +857,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/subclavian_artery_right.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -677,9 +873,15 @@
       "volume_final_mm3": null,
       "volume_drift_pct": null,
       "volume_note": "open surface (FOV-truncated); divergence-theorem volume not meaningful",
-      "final_triangles": 1978,
-      "target_triangles": 1978,
-      "reduction_pct": 9.183,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": "drift unmeasured: open surface (FOV-truncated); smoothing uncapped",
+      "boundary_loops_capped": 1,
+      "normals": "smooth_point",
+      "final_triangles": 2238,
+      "target_triangles": 2178,
+      "reduction_pct": -2.755,
       "decimator": "decimate_pro"
     },
     {
@@ -687,6 +889,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/thyroid_gland.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -694,6 +898,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/trachea.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -701,6 +907,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/urinary_bladder.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -708,6 +916,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C1.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -715,6 +925,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C2.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -722,6 +934,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C3.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -729,6 +943,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C4.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -736,6 +952,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C5.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -743,6 +961,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C6.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -750,6 +970,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_C7.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -757,6 +979,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_L1.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -764,6 +988,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_L2.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -771,6 +997,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_L3.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -778,6 +1006,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_L4.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -785,6 +1015,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_L5.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -792,6 +1024,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_S1.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -799,6 +1033,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T1.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -806,6 +1042,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T10.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -813,6 +1051,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T11.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -820,6 +1060,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T12.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -827,6 +1069,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T2.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -834,6 +1078,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T3.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -841,6 +1087,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T4.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -848,6 +1096,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T5.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -855,6 +1105,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T6.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -862,6 +1114,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T7.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -869,6 +1123,8 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T8.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     },
     {
@@ -876,20 +1132,22 @@
       "source_file": "data/raw/totalseg_ct/s0015/segmentations/vertebrae_T9.nii.gz",
       "mode": "mask",
       "skipped": "non_cardiac",
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
       "decimator": "decimate_pro"
     }
   ],
   "totals": {
     "aggregate_input_triangles": 146378,
-    "aggregate_final_triangles": 119994,
-    "aggregate_reduction_pct": 18.025,
-    "budget": 120000,
+    "aggregate_final_triangles": 100629,
+    "aggregate_reduction_pct": 31.254,
+    "budget": 135000,
     "window": [
       100000,
       150000
     ],
     "within_window": true,
-    "glb_bytes": 1267532,
+    "glb_bytes": 1064052,
     "quantized": true,
     "decimator": "decimate_pro"
   }

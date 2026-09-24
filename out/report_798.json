@@ -9,25 +9,31 @@
       "post_fe_triangles": 143596,
       "volume_raw_mm3": 11118.688,
       "volume_smoothed_mm3": 11106.003,
-      "volume_final_mm3": 11113.818,
+      "volume_final_mm3": 11103.278,
       "volume_drift_pct": 0.1141,
-      "final_triangles": 119998,
-      "target_triangles": 120000,
-      "reduction_pct": 16.434,
+      "smooth_iters_requested": 25,
+      "smooth_iters_used": 25,
+      "volume_drift_uncapped_pct": null,
+      "smoothing_note": null,
+      "boundary_loops_capped": 0,
+      "normals": "smooth_point",
+      "final_triangles": 100500,
+      "target_triangles": 100500,
+      "reduction_pct": 30.012,
       "decimator": "decimate_pro"
     }
   ],
   "totals": {
     "aggregate_input_triangles": 143596,
-    "aggregate_final_triangles": 119998,
-    "aggregate_reduction_pct": 16.434,
-    "budget": 120000,
+    "aggregate_final_triangles": 100500,
+    "aggregate_reduction_pct": 30.012,
+    "budget": 135000,
     "window": [
       100000,
       150000
     ],
     "within_window": true,
-    "glb_bytes": 1261176,
+    "glb_bytes": 1056460,
     "quantized": true,
     "decimator": "decimate_pro"
   }
