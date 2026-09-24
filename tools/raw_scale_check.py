@@ -215,7 +215,7 @@ def run_row(row: dict, args, cache: dict, glb_dir: Path) -> dict:
         abs(vol_final - vol_raw) / vol_raw * 100.0 if watertight and vol_raw else None
     )
 
-    items = B._finalize_geometry([SimpleNamespace(name=row['id'], mesh=final)])
+    items, _ = B._finalize_geometry([SimpleNamespace(name=row['id'], mesh=final)])
     glb_path = glb_dir / f'{row["id"]}.glb'
     info = B.glb_writer.write_glb(str(glb_path), items, quantize=True)
     ic = integrity_check(glb_path, int(achieved), expect_quantized=bool(info['quantized']))

@@ -299,7 +299,7 @@ def run_case(case: dict, args, case_dir: Path) -> dict:
     cmd = [
         args.python,
         args.pipeline,
-        '--out',
+        '--output',
         str(glb_path),
         '--report',
         str(report_path),

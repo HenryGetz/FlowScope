@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 """Build a quantized cardiac anatomy GLB from segmentation inputs (Phase 1).
 
-Three mutually exclusive ingestion modes (exactly one required):
+Four mutually exclusive ingestion modes (exactly one required):
+  --input       case root: CT (ct.nii.gz | ct.nii | image.nii.gz |
+                img.nii.gz in the root, or a dicom/ DICOM series) plus masks
+                discovered exactly like --ts-dir over that dir (the CT file is
+                excluded from mask specs); after GLB assembly the co-registered
+                MPR volume pair (<stem>_volume.bin / <stem>_meta.json) is
+                exported beside --output (extract_volume_roi: ROI over the
+                union of ALL label-mask voxels of the case root -- every
+                cardiac label incl. non-palette structures; meshes stay
+                cardiac-only -- trilinear HU resample, 256^3 quantization;
+                meta model_center_ras_mm = the exact _finalize_geometry
+                recenter mapped back to RAS mm)
   --stl-dir     ImageCAS-style per-structure STL meshes
   --ts-dir      TotalSegmentator output dir(s), repeatable (or
                 space-separated): per-structure *.nii.gz masks and/or a single
@@ -63,6 +74,7 @@ Per-structure chain (contract order):
                    (RAS mm -> Y-up meters, bbox center of ALL structures at the
                    origin)
   5. emit          one binary .glb (glb_writer, KHR_mesh_quantization) + report
+                   (+, in --input mode, the co-registered volume pair)
 """
 
 from __future__ import annotations
@@ -84,6 +96,7 @@ from vtkmodules.vtkCommonCore import vtkSMPTools
 from vtkmodules.vtkCommonDataModel import vtkDataObject
 from vtkmodules.vtkFiltersCore import vtkFlyingEdges3D
 
+import extract_volume_roi
 import glb_writer
 import structures
 
@@ -160,6 +173,15 @@ def parse_args(argv=None):
         description='Build a quantized cardiac anatomy GLB (WebXR Phase 1).'
     )
     source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        '--input',
+        metavar='DIR',
+        help='case root: CT (ct.nii.gz | ct.nii | image.nii.gz | img.nii.gz or '
+        'a dicom/ DICOM series) plus masks discovered exactly like --ts-dir '
+        'over that dir (the CT file is excluded from mask specs); also exports '
+        'the co-registered <stem>_volume.bin / <stem>_meta.json pair beside '
+        '--output',
+    )
     source.add_argument('--stl-dir', help='ImageCAS-style per-structure STL mesh directory')
     source.add_argument(
         '--ts-dir',
@@ -179,7 +201,7 @@ def parse_args(argv=None):
         '--label-map',
         help='JSON {label: canonical_or_raw_name}; default = heartchambers_highres ids 1..7',
     )
-    parser.add_argument('--out', default='out/cardiac.glb')
+    parser.add_argument('--output', default='out/cardiac.glb')
     parser.add_argument('--report', default='out/report.json')
     parser.add_argument(
         '--budget',
@@ -214,10 +236,13 @@ def parse_args(argv=None):
     args = parser.parse_args(argv)
     if args.ts_dir:
         args.ts_dir = [d for group in args.ts_dir for d in group]
+    elif args.input:
+        # --input scans the case root exactly like --ts-dir over that dir
+        args.ts_dir = [args.input]
     if args.name_map and not args.stl_dir:
         parser.error('--name-map requires --stl-dir')
     if args.label_map and not (args.multilabel or args.ts_dir):
-        parser.error('--label-map requires --multilabel or --ts-dir')
+        parser.error('--label-map requires --multilabel, --ts-dir or --input')
     if args.threads < 1:
         parser.error('--threads must be >= 1')
     return args
@@ -312,17 +337,20 @@ def _source_rank(root: Path, path: Path) -> int:
     return 3
 
 
-def _collect_specs(args, label_map, volumes) -> list[dict]:
+def _collect_specs(args, label_map, volumes, exclude_paths=()) -> list[dict]:
     """Collect structure specs across all sources with precedence dedupe.
 
     Sources: --stl-dir meshes, one or more --ts-dir trees (each scanned flat
-    plus one sub-level for case roots), or a single --multilabel volume. When
-    one canonical id appears more than once the highest-precedence source wins
-    (heartchambers_highres/chambers > veins > coronaries > other; ties break
-    first-seen) and each loser becomes a skipped row. `heart` is kept alongside
-    `heart_myocardium` (envelope vs LV wall; both share the myocardium group).
+    plus one sub-level for case roots; --input is scanned the same way with
+    the CT file in ``exclude_paths`` kept out of the mask specs), or a single
+    --multilabel volume. When one canonical id appears more than once the
+    highest-precedence source wins (heartchambers_highres/chambers > veins >
+    coronaries > other; ties break first-seen) and each loser becomes a
+    skipped row. `heart` is kept alongside `heart_myocardium` (envelope vs LV
+    wall; both share the myocardium group).
     """
     specs: list[dict] = []
+    exclude = {Path(p).resolve() for p in exclude_paths if p is not None}
     if args.stl_dir:
         name_map = _load_name_map(args.name_map) if args.name_map else {}
         for path in sorted(Path(args.stl_dir).glob('*.stl')):
@@ -341,7 +369,7 @@ def _collect_specs(args, label_map, volumes) -> list[dict]:
     elif args.ts_dir:
         for root_str in args.ts_dir:
             root = Path(root_str)
-            files = _ts_files(root)
+            files = [p for p in _ts_files(root) if p.resolve() not in exclude]
             for path in files:
                 if _is_multilabel_filename(path.name):
                     continue
@@ -831,7 +859,7 @@ def _cap_open_rims(work) -> None:
         w.boundary_loops_capped = len(loops)
 
 
-def _finalize_geometry(work) -> list[dict]:
+def _finalize_geometry(work) -> tuple[list[dict], np.ndarray]:
     """Step 4: smooth point normals, world transform, recenter on the global bbox.
 
     Normals are smooth per-vertex point normals (compute_normals with
@@ -839,6 +867,12 @@ def _finalize_geometry(work) -> list[dict]:
     flat feature angle -- no crease splitting) so PBR lighting follows
     anatomical curvature. Accepts anything with .name and .mesh (the raw-scale
     validator passes plain namespaces).
+
+    Returns ``(items, center)``: ``center`` is the Y-up-meters bbox center
+    subtracted from every point (the GLB-local origin in pre-recenter world
+    terms). It is preserved for co-registration -- callers map it back to RAS
+    mm as ``(1e3*c[0], -1e3*c[2], 1e3*c[1])`` = ``model_center_ras_mm`` of the
+    volume-pair meta.
     """
     items = []
     for w in work:
@@ -866,7 +900,7 @@ def _finalize_geometry(work) -> list[dict]:
     )
     for it in items:
         it['points'] = it['points'] - center
-    return items
+    return items, center
 
 
 def _row_for(result, decimator) -> dict:
@@ -948,6 +982,56 @@ def _print_table(rows, totals) -> None:
     )
 
 
+def _export_volume_pair(args, ct_path, roi_specs, volumes, model_center_ras_mm) -> None:
+    """--input mode: export the co-registered MPR volume pair beside --output.
+
+    ROI over the union of ALL label-mask voxels of the case root (every
+    mask/multilabel spec except the CT, incl. non-palette cardiac labels;
+    GLB mesh selection stays cardiac-only), trilinear HU resample + exactly
+    256^3 quantization (extract_volume_roi); ``model_center_ras_mm`` is the
+    exact ``_finalize_geometry`` recenter mapped back to RAS mm.
+    """
+    glb_path = Path(args.output)
+    if model_center_ras_mm is None:
+        print('volume export skipped: no model recenter (no ingested structures)')
+        return
+    ct_img = extract_volume_roi.load_ct(ct_path)
+    ct_affine = np.asarray(ct_img.affine, dtype=np.float64)
+    ct_shape = tuple(int(s) for s in ct_img.shape)
+
+    lo = hi = None
+    n_masks = 0
+    for spec in roi_specs:
+        data, affine = _load_volume(spec['path'], volumes)
+        extract_volume_roi.assert_mask_grid(
+            tuple(int(s) for s in data.shape),
+            affine,
+            ct_shape,
+            ct_affine,
+            spec['source_file'],
+        )
+        binary = (data == spec['label']) if spec['label'] is not None else (data > 0.5)
+        mask_lo, mask_hi = extract_volume_roi.tight_roi_bbox([binary])
+        lo = mask_lo if lo is None else np.minimum(lo, mask_lo)
+        hi = mask_hi if hi is None else np.maximum(hi, mask_hi)
+        n_masks += 1
+    if lo is None:
+        print('volume export skipped: no label masks in the case root')
+        return
+
+    grid = extract_volume_roi.build_roi_grid(ct_affine, lo, hi)
+    vol_u8 = extract_volume_roi.quantize_hu(extract_volume_roi.resample_hu(ct_img, grid))
+    out_bin, out_meta = extract_volume_roi.volume_paths(glb_path)
+    extract_volume_roi.export_volume(
+        out_bin, out_meta, vol_u8, grid, glb_path.stem, model_center_ras_mm
+    )
+    print(
+        f'volume pair: roi masks {n_masks}, ijk {tuple(int(v) for v in lo)}'
+        f'..{tuple(int(v) for v in hi)} -> 256^3 @ {grid["spacing"][0]:.4f} mm; '
+        f'wrote {out_bin} ({out_bin.stat().st_size} bytes) + {out_meta}'
+    )
+
+
 def main(argv=None) -> int:
     args = parse_args(argv)
     vtkMultiThreader.SetGlobalDefaultNumberOfThreads(args.threads)
@@ -957,7 +1041,10 @@ def main(argv=None) -> int:
         structures.DEFAULT_LABEL_MAP
     )
     volumes: dict = {}
-    specs = _collect_specs(args, label_map, volumes)
+    ct_path = extract_volume_roi.find_ct(Path(args.input)) if args.input else None
+    specs = _collect_specs(
+        args, label_map, volumes, exclude_paths={ct_path} if ct_path is not None else ()
+    )
 
     results = []
     work = []
@@ -1028,11 +1115,28 @@ def main(argv=None) -> int:
         for w in work:
             w.volume_final_mm3 = float(w.mesh.volume) if w.watertight else None
         _cap_open_rims(work)  # render geometry only; metrics stay pre-cap
-        items = _finalize_geometry(work)
+        items, center = _finalize_geometry(work)
     else:
-        items = []
+        items, center = [], None
 
-    info = glb_writer.write_glb(args.out, items, quantize=not args.no_quantize)
+    # the Y-up-meters recenter mapped back to RAS mm: the RAS mm point at the
+    # GLB-local origin (volume-pair co-registration)
+    model_center_ras_mm = (
+        [float(1e3 * center[0]), float(-1e3 * center[2]), float(1e3 * center[1])]
+        if center is not None
+        else None
+    )
+
+    info = glb_writer.write_glb(args.output, items, quantize=not args.no_quantize)
+
+    if args.input:
+        _export_volume_pair(
+            args,
+            ct_path,
+            [spec for spec in specs if spec['mode'] != 'stl'],
+            volumes,
+            model_center_ras_mm,
+        )
 
     rows = [_row_for(result, args.decimator) for result in results]
     total_in = sum(w.input_triangles for w in work)
@@ -1053,7 +1157,16 @@ def main(argv=None) -> int:
 
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps({'structures': rows, 'totals': totals}, indent=2))
+    report_path.write_text(
+        json.dumps(
+            {
+                'structures': rows,
+                'totals': totals,
+                'model_center_ras_mm': model_center_ras_mm,
+            },
+            indent=2,
+        )
+    )
 
     _print_table(rows, totals)
     return 0

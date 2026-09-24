@@ -46,6 +46,8 @@ EXPECTED_ARTIFACTS = [
 IMPORT_SMOKE_SCRIPTS = [
     "tools/batch_build.py",
     "tools/aggregate_report.py",
+    "tools/make_sample_case.py",
+    "pipeline/extract_volume_roi.py",
     "phase2/surrogate/train.py",
     "phase2/surrogate/evaluate.py",
     "phase2/rom/run_zerod.py",
