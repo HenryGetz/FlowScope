@@ -39,11 +39,12 @@
     <div id="overlay"><div id="status">XR smoke booting&hellip;</div></div>
     <script type="module">
       // Dev-only XR smoke page: boots the Immersive Web Emulation Runtime
-      // (emulated immersive-vr + two controllers) and reuses src/scene.js,
-      // src/interaction.js, src/ui.js and src/telemetry.js UNCHANGED, exposing
-      // window.__XRTEST__ for automated grab-rotate / two-hand-scale checks and
-      // the MPR input smokes (squeeze near the slice quad = plane drag, squeeze
-      // in empty space = slicing wand).
+      // (emulated immersive-vr/immersive-ar + two controllers) and reuses
+      // src/scene.js, src/interaction.js, src/ui.js and src/telemetry.js
+      // UNCHANGED, exposing window.__XRTEST__ for automated grab-rotate /
+      // two-hand-scale checks, the MPR input smokes (squeeze near the slice
+      // quad = plane drag, squeeze in empty space = slicing wand) and the AR
+      // passthrough smokes (startXR('immersive-ar') + xrState() readback).
       import * as THREE from 'three';
       import { XRDevice, metaQuest3 } from 'immersive-web-emulation-runtime';
       import { createStage } from './src/scene.js';
@@ -51,7 +52,7 @@
       import { createInteraction } from './src/interaction.js';
       import { createUI } from './src/ui.js';
       import { createTelemetry } from './src/telemetry.js';
-      import { enterVR, exitVR } from './src/xr.js';
+      import { XR_MODES, enterXR, exitXR } from './src/xr.js';
 
       const statusEl = document.getElementById('status');
       function setStatus(text) {
@@ -156,8 +157,8 @@
         onWindowChange: (widthHu) => record('window', { widthHu }),
         onLevelChange: (levelHu) => record('level', { levelHu }),
         onPreset: (name) => record('preset', { name }),
-        onEnterVR: () => enterVR(stage.renderer, stage),
-        onExitVR: () => exitVR(stage.renderer),
+        onEnter: (mode) => enterXR(stage.renderer, stage, mode),
+        onExit: () => exitXR(stage.renderer),
       });
 
       stage.onFrame((dt) => {
@@ -184,20 +185,50 @@
       }
 
       let session = null;
+      let sessionMode = null;
 
       window.__XRTEST__ = {
-        /** Boot the emulated immersive-vr session (waits for the GLB). */
-        async startXR() {
+        /**
+         * Boot an emulated immersive session (waits for the GLB): 'immersive-vr'
+         * (opaque backdrop) or 'immersive-ar' (transparent clear over the
+         * passthrough feed — the Quest 3 MR path).
+         */
+        async startXR(mode = 'immersive-vr') {
+          if (!XR_MODES.includes(mode)) {
+            throw new Error(`startXR: mode must be one of ${XR_MODES.join(', ')}, got ${mode}`);
+          }
           await ready;
           if (!session) {
-            session = await enterVR(stage.renderer, stage);
+            sessionMode = mode;
+            session = await enterXR(stage.renderer, stage, mode);
             session.addEventListener('end', () => {
               session = null;
+              sessionMode = null;
             });
             // let frames run so both controllers connect
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
           }
           return true;
+        },
+        /** End the emulated session (restores the opaque desktop backdrop). */
+        async endXR() {
+          if (session) {
+            const ended = new Promise((resolve) =>
+              session.addEventListener('end', resolve, { once: true }),
+            );
+            exitXR(stage.renderer);
+            await ended;
+          }
+          return true;
+        },
+        /** Session + backdrop state (AR passthrough smoke assertions). */
+        xrState() {
+          return {
+            mode: sessionMode,
+            presenting: !!stage.renderer.xr.getSession(),
+            backgroundTransparent: stage.scene.background === null,
+            clearAlpha: stage.renderer.getClearAlpha(),
+          };
         },
         /** Set the pose of grip i: position [x,y,z], quaternion [x,y,z,w]. */
         poseGrip(index, position, quaternion) {
@@ -289,7 +320,7 @@
         },
       };
 
-      setStatus(`__XRTEST__ installed — call startXR() (${modelURL()})`);
+      setStatus(`__XRTEST__ installed — call startXR('immersive-vr'|'immersive-ar') (${modelURL()})`);
     </script>
   </body>
 </html>

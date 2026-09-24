@@ -1,13 +1,37 @@
+/** Immersive session modes the viewer can start. */
+export const XR_MODES = ['immersive-vr', 'immersive-ar'];
+
 /** Session options per the shared contract (all optional features). */
 const SESSION_OPTIONS = {
   optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'],
 };
 
 /**
- * WebXR availability with an explanatory reason (for the Enter VR tooltip).
- * Returns { supported, reason }.
+ * immersive-ar runs over the Quest 3 passthrough feed (full-color MR):
+ * `environmentBlendMode: 'alpha-blend'` composites the scene over the camera
+ * view (given a transparent clear — see scene.js) and the optional hit-test /
+ * plane-detection / anchors modules unlock the platform's spatial features.
  */
-export async function vrAvailability() {
+const AR_SESSION_OPTIONS = {
+  ...SESSION_OPTIONS,
+  optionalFeatures: [
+    ...SESSION_OPTIONS.optionalFeatures,
+    'hit-test',
+    'plane-detection',
+    'anchors',
+  ],
+  environmentBlendMode: 'alpha-blend',
+};
+
+function sessionOptions(mode) {
+  return mode === 'immersive-ar' ? AR_SESSION_OPTIONS : SESSION_OPTIONS;
+}
+
+/**
+ * WebXR availability for an immersive mode with an explanatory reason (for the
+ * Enter button tooltip). Returns { supported, reason }.
+ */
+export async function xrAvailability(mode) {
   if (window.isSecureContext === false) {
     return {
       supported: false,
@@ -22,36 +46,33 @@ export async function vrAvailability() {
     };
   }
   try {
-    const supported = await navigator.xr.isSessionSupported('immersive-vr');
+    const supported = await navigator.xr.isSessionSupported(mode);
     return supported
       ? { supported: true, reason: '' }
-      : { supported: false, reason: 'This device reports no immersive-vr support.' };
+      : { supported: false, reason: `This device reports no ${mode} support.` };
   } catch (err) {
     return {
       supported: false,
-      reason: `immersive-vr support check failed: ${err && err.message ? err.message : err}`,
+      reason: `${mode} support check failed: ${err && err.message ? err.message : err}`,
     };
   }
 }
 
-export async function isVRSupported() {
-  return (await vrAvailability()).supported;
-}
-
 /**
- * Start an immersive-vr session with local-floor reference space and wire the
- * stage's desktop/XR placement. Resolves with the XRSession.
+ * Start an immersive session ('immersive-vr' over an opaque backdrop,
+ * 'immersive-ar' over the passthrough feed) with local-floor reference space
+ * and wire the stage's desktop/XR placement. Resolves with the XRSession.
  */
-export async function enterVR(renderer, stage) {
-  const session = await navigator.xr.requestSession('immersive-vr', SESSION_OPTIONS);
+export async function enterXR(renderer, stage, mode) {
+  const session = await navigator.xr.requestSession(mode, sessionOptions(mode));
   renderer.xr.setReferenceSpaceType('local-floor');
   await renderer.xr.setSession(session);
-  stage.setXRActive(true);
+  stage.setXRActive(true, mode);
   session.addEventListener('end', () => stage.setXRActive(false), { once: true });
   return session;
 }
 
-export function exitVR(renderer) {
+export function exitXR(renderer) {
   const session = renderer.xr.getSession();
   if (session) session.end().catch(() => {});
 }

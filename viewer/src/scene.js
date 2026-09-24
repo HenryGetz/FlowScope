@@ -6,6 +6,9 @@ export const MODEL_MAX_SIZE = 0.35;
 /** Model height above the floor (m) while an XR session is running. */
 export const XR_MODEL_Y = 1.15;
 
+/** Desktop/VR backdrop (opaque); immersive-ar clears to alpha 0 (passthrough). */
+const BACKDROP = new THREE.Color(0x0a0d12);
+
 const QUAD_DISTANCE = 0.4;
 
 /**
@@ -15,7 +18,7 @@ const QUAD_DISTANCE = 0.4;
  */
 export function createStage(container) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0d12);
+  scene.background = BACKDROP;
 
   const camera = new THREE.PerspectiveCamera(60, 1, 0.01, 100);
   camera.position.set(0.45, 0.32, 0.55);
@@ -29,7 +32,10 @@ export function createStage(container) {
   fillLight.position.set(-2, 1, -1.5);
   scene.add(fillLight);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  // alpha: true — an immersive-ar layer must clear to alpha 0 to composite
+  // over the Quest 3 passthrough feed (opaque contexts cover the camera view).
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setClearAlpha(1); // opaque until an immersive-ar session goes transparent
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.xr.enabled = true;
   renderer.xr.setFoveation(1);
@@ -226,13 +232,21 @@ export function createStage(container) {
     triangles() {
       return renderer.info.render.triangles;
     },
-    /** Toggle desktop/XR presentation state (model placement + stats quad). */
-    setXRActive(active) {
+    /**
+     * Toggle desktop/XR presentation state (model placement + stats quad).
+     * `mode` is the running immersive mode while active: 'immersive-ar'
+     * renders over the passthrough feed (no backdrop, clear alpha 0) while
+     * 'immersive-vr' and the desktop keep the opaque backdrop.
+     */
+    setXRActive(active, mode = null) {
       controls.enabled = !active;
       statsQuad.visible = active;
       modelRoot.position.set(0, active ? XR_MODEL_Y : 0, 0);
       modelRoot.quaternion.identity();
       modelRoot.scale.setScalar(1);
+      const passthrough = active && mode === 'immersive-ar';
+      scene.background = passthrough ? null : BACKDROP;
+      renderer.setClearAlpha(passthrough ? 0 : 1);
       if (!active) {
         resize();
         frameCamera();

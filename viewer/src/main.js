@@ -4,7 +4,7 @@ import { loadModel, loadVolume, collectStructures, modelURL } from './loader.js'
 import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
 import { structureGroup, GROUPS } from './structures.js';
-import { vrAvailability, enterVR, exitVR } from './xr.js';
+import { XR_MODES, xrAvailability, enterXR, exitXR } from './xr.js';
 import { assertSharedParent } from './coordinates.js';
 import { MprSlice } from './mprSlice.js';
 import { ClippingSync } from './clippingSync.js';
@@ -15,7 +15,8 @@ const worldScaleVec = new THREE.Vector3();
 const overlay = document.getElementById('overlay');
 const stage = createStage(document.getElementById('app'));
 
-let xrActive = false;
+/** Running immersive session mode ('immersive-vr' | 'immersive-ar' | null). */
+let xrMode = null;
 
 // ---- MPR slicing + hardware mesh clipping --------------------------------
 // One authoritative slice plane (ClippingSync, modelRoot-local) drives both
@@ -113,22 +114,22 @@ const ui = createUI(overlay, {
   onWindowChange: (widthHu) => applyWindow(widthHu),
   onLevelChange: (centerHu) => applyLevel(centerHu),
   onPreset: (name) => applyPreset(name),
-  onEnterVR: async () => {
-    const session = await enterVR(stage.renderer, stage);
-    xrActive = true;
-    ui.setActive(true);
+  onEnter: async (mode) => {
+    const session = await enterXR(stage.renderer, stage, mode);
+    xrMode = mode;
+    ui.setActive(mode);
     updateHook();
     session.addEventListener(
       'end',
       () => {
-        xrActive = false;
-        ui.setActive(false);
+        xrMode = null;
+        ui.setActive(null);
         updateHook();
       },
       { once: true },
     );
   },
-  onExitVR: () => exitVR(stage.renderer),
+  onExit: () => exitXR(stage.renderer),
 });
 
 // Automation hook: mutated in place, refreshed every second and once at load.
@@ -165,7 +166,9 @@ const hook = {
   /** Frame/GPU telemetry (refreshed in updateHook). */
   telemetry: { fps: 0, frameMs: 0, gpuMs: null, triangles: 0, drawCalls: 0 },
   xrSupported: false,
+  arSupported: false,
   xrActive: false,
+  xrMode: null,
   /** Set a contract group's visibility (toggles all its member structures). */
   setGroup(name, visible) {
     if (Object.prototype.hasOwnProperty.call(GROUPS, name)) toggleGroup(name, !!visible);
@@ -210,7 +213,8 @@ function updateHook() {
   hook.frameMs = stage.metrics.frameMs;
   hook.triangles = stage.renderer.info.render.triangles;
   hook.structures = structureNames;
-  hook.xrActive = xrActive;
+  hook.xrActive = xrMode !== null;
+  hook.xrMode = xrMode;
   for (const group of Object.keys(hook.groups)) hook.groups[group] = groupVisible(group);
   hook.clip.enabled = !!mpr;
   hook.clip.offset01 = clipOffset01;
@@ -518,11 +522,13 @@ function scanBindings(root) {
 updateHook();
 setInterval(updateHook, 1000);
 
-vrAvailability().then(({ supported, reason }) => {
-  hook.xrSupported = supported;
-  ui.setVRState({ supported, reason });
-  updateHook();
-});
+for (const mode of XR_MODES) {
+  xrAvailability(mode).then(({ supported, reason }) => {
+    hook[mode === 'immersive-ar' ? 'arSupported' : 'xrSupported'] = supported;
+    ui.setSessionState(mode, { supported, reason });
+    updateHook();
+  });
+}
 
 Promise.all([loadModel(modelURL()), loadVolume(modelURL())])
   .then(([gltf, volume]) => {
