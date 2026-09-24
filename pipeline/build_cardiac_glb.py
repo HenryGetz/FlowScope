@@ -19,8 +19,9 @@ everything. --stl-dir is an explicit file set and is never filtered.
 Multi-source precedence: when one canonical id appears in several source dirs,
 heartchambers_highres output dirs (and chambers/ subdirs) rank above veins/,
 which rank above coronaries/, which rank above every other mask dir; each
-loser becomes a skipped row. `heart` is suppressed (skip reason
-'superseded_by_myocardium') whenever `heart_myocardium` is present.
+loser becomes a skipped row. `heart` (whole-heart muscular envelope) is kept
+even when `heart_myocardium` (LV wall) is present: the envelope is the visible
+outer anchor, the wall the high-res inner shell.
 
 Per-structure chain (contract order):
   1. ingest        STL: pv.read -> clean() + triangulate() (watertight via
@@ -318,9 +319,8 @@ def _collect_specs(args, label_map, volumes) -> list[dict]:
     plus one sub-level for case roots), or a single --multilabel volume. When
     one canonical id appears more than once the highest-precedence source wins
     (heartchambers_highres/chambers > veins > coronaries > other; ties break
-    first-seen) and each loser becomes a skipped row. `heart` is suppressed
-    with skip reason 'superseded_by_myocardium' whenever `heart_myocardium` is
-    present.
+    first-seen) and each loser becomes a skipped row. `heart` is kept alongside
+    `heart_myocardium` (envelope vs LV wall; both share the myocardium group).
     """
     specs: list[dict] = []
     if args.stl_dir:
@@ -402,13 +402,6 @@ def _collect_specs(args, label_map, volumes) -> list[dict]:
             f'duplicate structure name (superseded by {winner["source_file"]})'
         )
 
-    # the whole-heart envelope never coexists with LV myocardium
-    if any(
-        'skipped' not in spec and spec['name'] == 'heart_myocardium' for spec in specs
-    ):
-        for spec in specs:
-            if spec['name'] == 'heart':
-                spec['skipped'] = 'superseded_by_myocardium'
     return specs
 
 

@@ -90,7 +90,8 @@ One-time setup: the key lands machine-wide in `~/.totalsegmentator/config.json`,
 python tools/run_heartchambers.py s0011
 
 # Build the GLB: heartchambers_highres output wins over coarser masks for shared
-# ids; the `heart` envelope is suppressed when heart_myocardium is present.
+# ids; the whole-heart `heart` envelope is kept as the visible outer anchor
+# alongside `heart_myocardium` (LV wall inner shell).
 python pipeline/build_cardiac_glb.py \
     --ts-dir data/segmentations/s0011 data/raw/totalseg_ct/s0011/segmentations \
     --out viewer/public/assets/cardiac.glb --report out/report_s0011.json
