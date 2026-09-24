@@ -9,6 +9,14 @@ const GRIP_GRAB_COLOR = 0x7fd4a0;
 const TRIGGER_BUTTON = 0;
 const SQUEEZE_BUTTON = 1;
 
+// Cross-section clip nudge while no hand grips the model: thumbstick Y
+// (xr-standard axes[1]) or touchpad Y (axes[3]) of either controller.
+const THUMBSTICK_Y_AXIS = 1;
+const TOUCHPAD_Y_AXIS = 3;
+const CLIP_DEADZONE = 0.15;
+const CLIP_NUDGE_RATE = 0.5; // offset01 per second at full deflection
+const CLIP_NUDGE_MAX_STEP = 0.05; // hard per-frame bound (offset01)
+
 const _delta = new THREE.Matrix4();
 const _model = new THREE.Matrix4();
 const _gripA = new THREE.Matrix4();
@@ -31,10 +39,18 @@ const _dir = new THREE.Vector3();
  *    uniform scale from the relative transform between the grips; on release
  *    the model stays where it was placed.
  *  - `select` (trigger) ray-picks a structure and toggles its visibility.
+ *  - while no hand grips the model, thumbstick/touchpad Y of either controller
+ *    nudges the cross-section clip offset through `onClipNudge(delta01)`.
  *
  * The model group must be a direct child of the scene (identity parent).
  */
-export function createInteraction({ renderer, scene, modelRoot, onToggle = () => {} }) {
+export function createInteraction({
+  renderer,
+  scene,
+  modelRoot,
+  onToggle = () => {},
+  onClipNudge = () => {},
+}) {
   const structures = [];
   const raycaster = new THREE.Raycaster();
   const hands = [createHand(0), createHand(1)];
@@ -73,11 +89,18 @@ export function createInteraction({ renderer, scene, modelRoot, onToggle = () =>
       grabbing: false,
       squeezed: false,
       selectActed: false,
+      inputSource: null,
     };
 
     // WebXRController forwards every input event to BOTH the target-ray and
     // the grip group; the handlers below are idempotent per hand.
     for (const target of [targetRay, grip]) {
+      target.addEventListener('connected', (event) => {
+        if (event.data) hand.inputSource = event.data;
+      });
+      target.addEventListener('disconnected', () => {
+        hand.inputSource = null;
+      });
       target.addEventListener('squeezestart', (event) => onSqueeze(event, hand));
       target.addEventListener('squeeze', (event) => onSqueeze(event, hand));
       target.addEventListener('squeezeend', () => {
@@ -179,8 +202,9 @@ export function createInteraction({ renderer, scene, modelRoot, onToggle = () =>
     };
   }
 
-  /** Apply the current grip configuration to the model group (per frame). */
-  function update() {
+  /** Per-frame update: clip nudge, then the current grip configuration. */
+  function update(dt) {
+    nudgeClip(dt);
     if (!grabRef) return;
     const active = hands.filter((hand) => hand.grabbing);
     if (active.length !== grabRef.mode) {
@@ -214,6 +238,39 @@ export function createInteraction({ renderer, scene, modelRoot, onToggle = () =>
       modelRoot.scale.copy(grabRef.scl0).multiplyScalar(scale);
     }
     modelRoot.updateMatrix();
+  }
+
+  // ---- cross-section clip nudge ------------------------------------------
+
+  /** Thumbstick/touchpad Y deflection of a hand (0 when idle or no gamepad). */
+  function clipAxis(hand) {
+    const gamepad = hand.inputSource && hand.inputSource.gamepad;
+    const axes = gamepad && gamepad.axes;
+    if (!axes) return 0;
+    const thumb = axes.length > THUMBSTICK_Y_AXIS ? axes[THUMBSTICK_Y_AXIS] : 0;
+    const pad = axes.length > TOUCHPAD_Y_AXIS ? axes[TOUCHPAD_Y_AXIS] : 0;
+    return Math.abs(pad) > Math.abs(thumb) ? pad : thumb;
+  }
+
+  /**
+   * While NOT gripping the model with a hand, thumbstick Y (xr-standard
+   * axes[1]) or touchpad Y (axes[3]) of either controller nudges the
+   * cross-section offset at a bounded per-frame rate (stick up = deeper cut).
+   */
+  function nudgeClip(dt) {
+    if (hands.some((hand) => hand.grabbing)) return;
+    let axis = 0;
+    for (const hand of hands) {
+      const value = clipAxis(hand);
+      if (Math.abs(value) > Math.abs(axis)) axis = value;
+    }
+    const magnitude = (Math.abs(axis) - CLIP_DEADZONE) / (1 - CLIP_DEADZONE);
+    if (magnitude <= 0) return;
+    const deflection = magnitude * Math.sign(axis);
+    const seconds = (Number.isFinite(dt) ? Math.min(Math.max(dt, 0), 100) : 1000 / 60) / 1000;
+    // Gamepad Y is negative toward the top of the stick: up = deeper cut.
+    const delta = -deflection * CLIP_NUDGE_RATE * seconds;
+    onClipNudge(Math.max(-CLIP_NUDGE_MAX_STEP, Math.min(CLIP_NUDGE_MAX_STEP, delta)));
   }
 
   // ---- trigger picking ---------------------------------------------------

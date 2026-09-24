@@ -3,6 +3,7 @@ import { createStage } from './scene.js';
 import { loadModel, collectStructures, modelURL } from './loader.js';
 import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
+import { structureGroup, GROUPS } from './structures.js';
 import { vrAvailability, enterVR, exitVR } from './xr.js';
 
 const worldScaleVec = new THREE.Vector3();
@@ -12,16 +13,53 @@ const stage = createStage(document.getElementById('app'));
 
 let xrActive = false;
 
+// ---- cross-section clipping (one global plane for every group) ------------
+// The plane keeps the default-camera half space and sweeps the fitted-model
+// bbox along the default camera view direction: offset 0 is fully clear of the
+// near side (clipping disabled), 1 fully past the far side. The sweep range
+// tracks the model through XR grabs and re-framing via the modelRoot-local
+// bbox corners captured at load.
+stage.renderer.localClippingEnabled = true; // drives material.clippingPlanes
+
+const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+const clipMaterials = [];
+const clipCorners = [];
+let clipOffset01 = 0;
+let clipMaterialsEnabled = null; // last applied clippingPlanes state
+
+// ---- chambers default / auto-show rule ------------------------------------
+// Chambers are visible at load iff no myocardium structure is visible; turning
+// the Myocardium group OFF auto-shows the chambers group and the reverse
+// transition auto-hides it again — until the user explicitly toggles a chamber
+// structure, after which the auto rule stands down (chambersOverridden).
+let chambersOverridden = false;
+/** True while main applies defaults/auto visibility (never a user toggle). */
+let applyingAuto = false;
+
+const _clipBox = new THREE.Box3();
+const _clipInv = new THREE.Matrix4();
+const _clipCorner = new THREE.Vector3();
+
 const interaction = createInteraction({
   renderer: stage.renderer,
   scene: stage.scene,
   modelRoot: stage.modelRoot,
-  onToggle: (name, visible) => ui.setVisibility(name, visible),
+  onToggle: (name, visible) => {
+    // Trigger picks (and UI rows routed through setStructureVisible) are
+    // explicit user toggles and stand the chambers auto rule down; the rule's
+    // own auto-show/hide runs inside applyingAuto and never counts.
+    if (!applyingAuto && structureGroup(name) === 'chambers') chambersOverridden = true;
+    ui.setVisibility(name, visible);
+    updateHook();
+  },
+  onClipNudge: (delta) => setClipOffset(clipOffset01 + delta),
 });
 
 const ui = createUI(overlay, {
   stage,
   onToggleVisible: (name, visible) => interaction.setStructureVisible(name, visible),
+  onToggleGroup: (group, visible) => toggleGroup(group, visible),
+  onClipChange: (offset01) => setClipOffset(offset01),
   onEnterVR: async () => {
     const session = await enterVR(stage.renderer, stage);
     xrActive = true;
@@ -47,8 +85,24 @@ const hook = {
   frameMs: 0,
   triangles: 0,
   structures: [],
+  /** group name -> every loaded member structure visible. */
+  groups: { myocardium: true, chambers: false, great_vessels: true, coronaries: true, other: false },
+  /** Cross-section state (offset01 0 => clipping disabled). */
+  clip: { enabled: false, offset01: 0 },
   xrSupported: false,
   xrActive: false,
+  /** Set a contract group's visibility (toggles all its member structures). */
+  setGroup(name, visible) {
+    if (Object.prototype.hasOwnProperty.call(GROUPS, name)) toggleGroup(name, !!visible);
+  },
+  /** Cross-section offset in 0..1 (0 disables clipping). */
+  setClip(offset01) {
+    setClipOffset(offset01);
+  },
+  /** Reframe the desktop camera: 'anterior' | 'lateral' | 'lao'. */
+  setView(preset) {
+    setCameraView(preset);
+  },
   // Per-frame render debug (data-driven verification), mutated in place after
   // every rendered frame.
   debug: {
@@ -82,10 +136,154 @@ function updateHook() {
   hook.triangles = stage.renderer.info.render.triangles;
   hook.structures = structureNames;
   hook.xrActive = xrActive;
+  for (const group of Object.keys(hook.groups)) hook.groups[group] = groupVisible(group);
+  hook.clip.enabled = clipOffset01 > 0;
+  hook.clip.offset01 = clipOffset01;
 }
 
-stage.onFrame(() => {
-  interaction.update();
+/** All loaded structure names belonging to a contract group. */
+function groupNames(group) {
+  return structureNames.filter((name) => structureGroup(name) === group);
+}
+
+function isStructureVisible(name) {
+  const entry = interaction.entries().find((item) => item.name === name);
+  return !!entry && entry.object.visible;
+}
+
+function groupVisible(group) {
+  const names = groupNames(group);
+  return names.length > 0 && names.every((name) => isStructureVisible(name));
+}
+
+function setGroupVisible(group, visible) {
+  for (const name of groupNames(group)) interaction.setStructureVisible(name, visible);
+}
+
+/** Chambers auto-show/hide (load rule + Myocardium transitions), never user. */
+function autoChambers(show) {
+  if (chambersOverridden) return;
+  applyingAuto = true;
+  try {
+    setGroupVisible('chambers', show);
+  } finally {
+    applyingAuto = false;
+  }
+}
+
+/** Group toggle (UI row / automation hook): user-explicit; runs the auto rule. */
+function toggleGroup(group, visible) {
+  if (group === 'chambers') chambersOverridden = true;
+  setGroupVisible(group, visible);
+  if (group === 'myocardium') autoChambers(!visible);
+  updateHook();
+}
+
+/** Mandated load defaults, including the chambers default rule. */
+function applyLoadDefaults() {
+  applyingAuto = true;
+  try {
+    setGroupVisible('myocardium', true);
+    setGroupVisible('great_vessels', true);
+    setGroupVisible('coronaries', true);
+    setGroupVisible('other', false);
+    // Chambers: visible iff no myocardium structure is visible at load.
+    const myocardiumVisible = groupNames('myocardium').some((name) => isStructureVisible(name));
+    setGroupVisible('chambers', !myocardiumVisible);
+  } finally {
+    applyingAuto = false;
+  }
+}
+
+/** Cross-section offset in 0..1 (0 disables clipping entirely). */
+function setClipOffset(offset01) {
+  clipOffset01 = Math.min(1, Math.max(0, Number(offset01) || 0));
+  ui.setClipValue(clipOffset01);
+  applyClipMaterials();
+  updateClipPlane();
+  updateHook();
+}
+
+function applyClipMaterials(force = false) {
+  const enabled = clipOffset01 > 0;
+  if (!force && enabled === clipMaterialsEnabled) return;
+  clipMaterialsEnabled = enabled;
+  const planes = enabled ? [clipPlane] : [];
+  for (const material of clipMaterials) material.clippingPlanes = planes;
+}
+
+/** Move the plane to the current offset over the fitted-model bbox extent. */
+function updateClipPlane() {
+  if (!(clipOffset01 > 0) || clipCorners.length === 0) return;
+  const model = stage.modelRoot;
+  model.updateWorldMatrix(true, false);
+  let dMin = Infinity;
+  let dMax = -Infinity;
+  for (const corner of clipCorners) {
+    _clipCorner.copy(corner).applyMatrix4(model.matrixWorld);
+    const d = clipPlane.normal.dot(_clipCorner);
+    if (d < dMin) dMin = d;
+    if (d > dMax) dMax = d;
+  }
+  // offset 0 = fully clear of the near side, 1 = fully past the far side
+  clipPlane.constant = -(dMin + (dMax - dMin) * clipOffset01);
+}
+
+/** Shared clipping plane: capture the normal, sweep range and every material. */
+function initClipping(root) {
+  // The normal is the default camera view direction (setModel just framed it).
+  clipPlane.normal.copy(stage.controls.target).sub(stage.camera.position).normalize();
+
+  clipMaterials.length = 0;
+  root.traverse((node) => {
+    const material = node.material;
+    if (!material) return;
+    if (Array.isArray(material)) clipMaterials.push(...material);
+    else clipMaterials.push(material);
+  });
+
+  clipCorners.length = 0;
+  stage.measureBox(stage.modelRoot, _clipBox);
+  if (!_clipBox.isEmpty()) {
+    _clipInv.copy(stage.modelRoot.matrixWorld).invert();
+    for (const x of [_clipBox.min.x, _clipBox.max.x]) {
+      for (const y of [_clipBox.min.y, _clipBox.max.y]) {
+        for (const z of [_clipBox.min.z, _clipBox.max.z]) {
+          clipCorners.push(new THREE.Vector3(x, y, z).applyMatrix4(_clipInv));
+        }
+      }
+    }
+  }
+  applyClipMaterials(true);
+  updateClipPlane();
+}
+
+/** setView preset -> direction from the fitted model center toward the camera. */
+const VIEW_DIRECTIONS = {
+  anterior: new THREE.Vector3(0, 0, -1),
+  lateral: new THREE.Vector3(-1, 0, 0),
+  // LAO 50deg toward patient left from anterior, 20deg cranial elevation
+  lao: new THREE.Vector3(
+    -Math.sin(THREE.MathUtils.degToRad(50)) * Math.cos(THREE.MathUtils.degToRad(20)),
+    Math.sin(THREE.MathUtils.degToRad(20)),
+    -Math.cos(THREE.MathUtils.degToRad(50)) * Math.cos(THREE.MathUtils.degToRad(20)),
+  ),
+};
+
+/** Place the camera on a sphere around the fitted model center, then update. */
+function setCameraView(preset) {
+  const direction = VIEW_DIRECTIONS[preset];
+  if (!direction) return;
+  const { camera, controls } = stage;
+  const distance = camera.position.distanceTo(controls.target);
+  camera.position.copy(controls.target).addScaledVector(direction, distance);
+  controls.update();
+  updateHook();
+}
+
+stage.onFrame((dt) => {
+  interaction.update(dt);
+  updateClipPlane();
   // ready only after the GLB is loaded AND one frame has rendered since then
   if (modelLoaded && !hook.ready && stage.renderedFrames > loadFrameMark) {
     hook.ready = true;
@@ -228,6 +426,8 @@ loadModel(modelURL())
     ui.setStructures(structures);
     structureNames = structures.map((item) => item.name);
     hook.structures = structureNames;
+    initClipping(gltf.scene);
+    applyLoadDefaults();
     loadFrameMark = stage.renderedFrames;
     modelLoaded = true;
     ui.clearBoot();

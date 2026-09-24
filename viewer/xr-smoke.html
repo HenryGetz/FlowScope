@@ -57,7 +57,9 @@
       // Identity grip offset => the grip pose equals the target-ray pose, so
       // poseGrip(i, ...) sets grip poses exactly. Gamepad buttons follow the
       // xr-standard layout consumed by src/interaction.js (0=trigger,
-      // 1=squeeze); IWER synthesizes select*/squeeze* session events from
+      // 1=squeeze; thumbstick x/y sit at axes 2/3 here, so the clip nudge
+      // reads its y through the axes[3] fallback); IWER synthesizes
+      // select*/squeeze* session events from
       // their state, which three re-dispatches on the controller objects.
       const IDENTITY_16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
       const smokeGamepad = {
@@ -97,7 +99,7 @@
         scene: stage.scene,
         modelRoot: stage.modelRoot,
       });
-      stage.onFrame(() => interaction.update());
+      stage.onFrame((dt) => interaction.update(dt));
 
       const ready = loadModel(modelURL()).then((gltf) => {
         stage.setModel(gltf.scene);
