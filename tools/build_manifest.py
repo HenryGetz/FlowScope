@@ -216,28 +216,21 @@ BLOCKED = [
         "user_action": "confirm with the data provider that TotalSegmentator CT dataset v2 is the intended set",
     },
     {
-        "target": "TotalSegmentator heartchambers_highres outputs (data/segmentations/s0004_heartchambers_highres/)",
-        "reason": ("the task requires a TotalSegmentator license and none is set on this host: "
-                   "run attempted 2026-09-23 on data/raw/totalseg_ct/s0004/ct.nii.gz with "
-                   "TotalSegmentator 2.18.0 (`TotalSegmentator -i ... -o "
-                   "data/segmentations/s0004_heartchambers_highres -ta heartchambers_highres`), "
-                   "exited rc=1 after 47.5 s (cpu) with no output files, printing: 'In contrast "
-                   "to the other tasks this task is not openly available. It requires a license. "
-                   "For non-commercial usage a free license can be acquired here: "
-                   "https://backend.totalsegmentator.com/license-academic/ For commercial usage "
-                   "contact: jakob.wasserthal@usb.ch' (`TotalSegmentator -lc heartchambers_highres` "
-                   "lists the task as 'CT, license required, 7 classes'). Acquiring a license "
-                   "requires personally accepting its terms on the license form (Streamlit app "
-                   "requiring identity) and cannot be automated on the user's behalf. "
-                   "heartchambers_highres is documented as restricted to non-commercial use "
-                   "unless separately licensed."),
-        "user_action": ("acquire a free non-commercial license at "
-                        "https://backend.totalsegmentator.com/license-academic/ (returns an "
-                        "18-character number of the form 'aca_...'), then run "
-                        "`.venv/bin/totalseg_set_license -l aca_...` and rerun "
-                        "`.venv/bin/python tools/run_heartchambers.py s0004` (or pass the number "
-                        "directly: `tools/run_heartchambers.py s0004 aca_...` / env TOTALSEG_LICENSE); "
-                        "for commercial use contact jakob.wasserthal@usb.ch to obtain a separate "
+        "target": "TotalSegmentator licensed tasks heartchambers_highres + coronary_arteries (informational: runnable on this host since 2026-09-23)",
+        "reason": ("current truth (supersedes the earlier license blocker): an "
+                   "academic license is registered machine-wide on this host, set "
+                   "2026-09-23 via `.venv/bin/totalseg_set_license` and stored in "
+                   "~/.totalsegmentator/config.json (validated online at registration). "
+                   "The license-required tasks are runnable on this host "
+                   "(TotalSegmentator 2.18.0): heartchambers_highres (CT, license "
+                   "required, 7 classes) and coronary_arteries (CT, license required, 1 "
+                   "class). Runs are recorded via tools/segmentation_runs.json (exposed "
+                   "as segmentation_runs in this manifest). The task weights remain "
+                   "restricted to non-commercial use unless separately licensed (see "
+                   "LICENSES.totalseg_heartchambers_highres)."),
+        "user_action": ("none needed for non-commercial use (free academic license form: "
+                        "https://backend.totalsegmentator.com/license-academic/); for "
+                        "commercial use contact jakob.wasserthal@usb.ch to obtain a separate "
                         "commercial license first"),
     },
     {

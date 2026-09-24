@@ -12,5 +12,95 @@
     "outputs": [],
     "stdout_tail": "No GPU detected. Running on CPU. This can be very slow. The '--fast' or the `--roi_subset` option can help to reduce runtime.\n\nIf you use this tool please cite: https://pubs.rsna.org/doi/10.1148/ryai.230024\n\nTotalSegmentator sends anonymous usage statistics. If you want to disable it check the documentation.\nIn contrast to the other tasks this task is not openly available.\nIt requires a license. For non-commercial usage a free license can be\nacquired here:\nhttps://backend.totalsegmentator.com/license-academic/\n\nFor commercial usage contact: jakob.wasserthal@usb.ch\n\n",
     "stderr_tail": "Matplotlib is building the font cache; this may take a moment.\n"
+  },
+  {
+    "task": "heartchambers_highres",
+    "case_id": "s0011",
+    "command": "/home/wavy/ai/flowscope/.venv/bin/TotalSegmentator -i data/raw/totalseg_ct/s0011/ct.nii.gz -o data/segmentations/s0011_heartchambers_highres -ta heartchambers_highres -d cpu",
+    "input": "data/raw/totalseg_ct/s0011/ct.nii.gz",
+    "output_dir": "data/segmentations/s0011_heartchambers_highres",
+    "output_alias_symlink": "data/segmentations/s0011",
+    "runtime_s": 39.6,
+    "device": "cpu",
+    "mode": "standard",
+    "backend": {
+      "platform": "Linux",
+      "machine": "x86_64",
+      "apple_silicon": false,
+      "device": "cpu",
+      "bin": "/home/wavy/ai/flowscope/.venv/bin/TotalSegmentator",
+      "torch_version": "2.14.0+cu130"
+    },
+    "returncode": 1,
+    "outputs": [],
+    "stdout_tail": "\nIf you use this tool please cite: https://pubs.rsna.org/doi/10.1148/ryai.230024\n\nDownloading model for Task 301 ...\nDownload finished. Extracting...\n",
+    "stderr_tail": "^^^^^^\n  File \"/home/wavy/ai/flowscope/.venv/lib/python3.12/site-packages/totalsegmentator/bin/TotalSegmentator.py\", line 282, in main\n    totalsegmentator(args.input, args.output, args.ml, args.nr_thr_resamp, args.nr_thr_saving,\n  File \"/home/wavy/ai/flowscope/.venv/lib/python3.12/site-packages/totalsegmentator/python_api.py\", line 321, in totalsegmentator\n    download_pretrained_weights(task_id)\n  File \"/home/wavy/ai/flowscope/.venv/lib/python3.12/site-packages/totalsegmentator/libs.py\", line 233, in download_pretrained_weights\n    download_model_with_license_and_unpack(download_task_name, weights_path.parent)\n  File \"/home/wavy/ai/flowscope/.venv/lib/python3.12/site-packages/totalsegmentator/libs.py\", line 116, in download_model_with_license_and_unpack\n    raise e\n  File \"/home/wavy/ai/flowscope/.venv/lib/python3.12/site-packages/totalsegmentator/libs.py\", line 108, in download_model_with_license_and_unpack\n    zip_f.extractall(config_dir)\n  File \"/home/wavy/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/zipfile/__init__.py\", line 1771, in extractall\n    self._extract_member(zipinfo, path, pwd)\n  File \"/home/wavy/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/zipfile/__init__.py\", line 1839, in _extract_member\n    shutil.copyfileobj(source, target)\n  File \"/home/wavy/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/shutil.py\", line 203, in copyfileobj\n    while buf := fsrc_read(length):\n                 ^^^^^^^^^^^^^^^^^\n  File \"/home/wavy/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/zipfile/__init__.py\", line 1008, in read\n    data = self._read1(n)\n           ^^^^^^^^^^^^^^\n  File \"/home/wavy/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/zipfile/__init__.py\", line 1084, in _read1\n    data = self._decompressor.decompress(data, n)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nzlib.error: Error -3 while decompressing data: invalid block type\n"
+  },
+  {
+    "task": "heartchambers_highres",
+    "case_id": "s0011",
+    "command": ".venv/bin/TotalSegmentator -i data/raw/totalseg_ct/s0011/ct.nii.gz -o data/segmentations/s0011/chambers -ta heartchambers_highres -d cpu",
+    "input": "data/raw/totalseg_ct/s0011/ct.nii.gz",
+    "output_dir": "data/segmentations/s0011/chambers",
+    "output_root": "data/segmentations/s0011",
+    "output_alias_symlink": null,
+    "runtime_s": 677.0,
+    "runtime_basis": "sum of per-stage times printed in the run log (single sequential 3-pass job, wall 1608.63s)",
+    "device": "cpu",
+    "mode": "sequential_3pass_cli",
+    "backend": "TotalSegmentator 2.18.0",
+    "returncode": 0,
+    "outputs": [
+      "heart_myocardium.nii.gz",
+      "heart_atrium_left.nii.gz",
+      "heart_ventricle_left.nii.gz",
+      "heart_atrium_right.nii.gz",
+      "heart_ventricle_right.nii.gz",
+      "aorta.nii.gz",
+      "pulmonary_artery.nii.gz"
+    ],
+    "stdout_tail": "Licensed task weights Task 301 (230M) + crop model Task 297 downloaded and extracted; Predicted in 283.67s (rough crop) and 343.98s (highres); postprocessing 2.25s; Saved in 7.13s (7 per-structure files).",
+    "stderr_tail": "torch.jit.interface FutureWarning only"
+  },
+  {
+    "task": "coronary_arteries",
+    "case_id": "s0011",
+    "command": ".venv/bin/TotalSegmentator -i data/raw/totalseg_ct/s0011/ct.nii.gz -o data/segmentations/s0011/coronaries -ta coronary_arteries -d cpu",
+    "input": "data/raw/totalseg_ct/s0011/ct.nii.gz",
+    "output_dir": "data/segmentations/s0011/coronaries",
+    "output_root": "data/segmentations/s0011",
+    "output_alias_symlink": null,
+    "runtime_s": 753.0,
+    "runtime_basis": "sum of per-stage times printed in the run log (single sequential 3-pass job, wall 1608.63s)",
+    "device": "cpu",
+    "mode": "sequential_3pass_cli",
+    "backend": "TotalSegmentator 2.18.0",
+    "returncode": 0,
+    "outputs": [
+      "coronary_arteries.nii.gz"
+    ],
+    "stdout_tail": "Licensed task weights Task 509 (234M) + crop model Task 298 downloaded and extracted; Predicted in 60.32s (rough crop) and 659.01s (highres); Saved in 5.56s (coronary_arteries.nii.gz).",
+    "stderr_tail": "torch.jit.interface FutureWarning only"
+  },
+  {
+    "task": "veins",
+    "case_id": "s0011",
+    "command": ".venv/bin/TotalSegmentator -i data/raw/totalseg_ct/s0011/ct.nii.gz -o data/segmentations/s0011/veins --roi_subset superior_vena_cava inferior_vena_cava --fast -d cpu",
+    "input": "data/raw/totalseg_ct/s0011/ct.nii.gz",
+    "output_dir": "data/segmentations/s0011/veins",
+    "output_root": "data/segmentations/s0011",
+    "output_alias_symlink": null,
+    "runtime_s": 129.0,
+    "runtime_basis": "sum of per-stage times printed in the run log (single sequential 3-pass job, wall 1608.63s)",
+    "device": "cpu",
+    "mode": "sequential_3pass_cli",
+    "backend": "TotalSegmentator 2.18.0",
+    "returncode": 0,
+    "outputs": [
+      "superior_vena_cava.nii.gz",
+      "inferior_vena_cava.nii.gz"
+    ],
+    "stdout_tail": "fast option (3mm resampling), default 117-class total task with --roi_subset superior_vena_cava inferior_vena_cava; Predicted in 58.06s (rough crop) and 64.14s; Saved in 4.47s (2 per-structure files).",
+    "stderr_tail": "torch.jit.interface FutureWarning only"
   }
 ]
