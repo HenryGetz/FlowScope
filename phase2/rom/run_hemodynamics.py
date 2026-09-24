@@ -42,6 +42,20 @@ sub-cycling), central diffusion D = 1e-3 mm^2/s, flow-weighted mixing of the
 outgoing concentrations at junctions. The scheme is in flux form so the
 per-profile contrast mass budget closes to machine precision; the discrete
 rel_error is recorded in "mass_balance".
+
+Phase 2.5 (Contract B "clinical" block): pressure-driven REST and maximal-
+hyperemia solves (roots at Pa = 90 mmHg, terminals = the same 3-element
+Windkessels with Rd -> 0.25*Rd_rest under hyperemia) with optional Young-Tsai
+(1979) stenosis losses from a Contract-A lesions file (--lesions, or
+auto-loaded out/clinical/lesions/case_<case>_lesions.json). Each lesion loss
+dP = Kv*mu/r0^2*u*L + Kt*rho/2*(A0/As-1)^2*u^2 (Kv = 32*(L/D0)*(A0/As)^2,
+Kt = 1.52, rho = 1050 kg/m^3) is coupled as a series quadratic dP(Q) term
+between its proximal/distal sub-segment nodes via Picard iteration on Q. The
+block also carries per-edge pressures/flows/velocities, per-lesion dP + vFFR
+(Pd sampled >= 20 mm distal of the lesion) and the resting major-trunk
+velocity calibration (kappa; transit_calibrated_ms is added beside each
+signals.<P>.branches transit_ms). The existing flow-BC solves used for
+transport are unchanged.
 """
 
 import os
@@ -85,6 +99,21 @@ DT_MAX_S = 0.002  # signal grid spacing bound (C2: dt <= 2 ms)
 CFL_MAX = 0.5  # 1D transport CFL bound
 Q_EPS_MLS = 1e-12  # near-zero-flow guard
 Q_MEAN_MIN_MLS = 1e-9  # below this a mean flow counts as zero (guards V/q)
+
+# ---- Phase 2.5 clinical hemodynamics (Contract B "clinical" block) --------
+RHO_YOUNG_TSAI = 1050.0  # kg/m^3, Young-Tsai inertial term only (spec)
+MU_YOUNG_TSAI = 3.5e-3  # Pa s (same blood viscosity as MU_PA_S)
+KT_YOUNG_TSAI = 1.52  # Young-Tsai inertial loss coefficient
+P_AORTA_MMHG = 90.0  # mean aortic pressure driving the clinical solves
+HYPER_RD_SCALE = 0.25  # maximal hyperemia: every terminal Rd -> 0.25*Rd_rest
+FLOW_INCREASE_BAND = (2.5, 4.0)  # accepted hyper.flow_increase_x
+TARGET_U_TRUNK_MS = 0.22  # resting major-trunk velocity benchmark (15-30 cm/s)
+U_TRUNK_BAND_MS = (0.15, 0.30)
+TRUNK_R_IN_MM = 0.75  # trunk = edge with r_in_mm >= 0.75
+PD_DISTAL_MM = 20.0  # per-lesion Pd sampled >= 20 mm distal of the lesion
+PICARD_TOL_MLS = 1e-9  # Picard residual on Q [mL/s]
+PICARD_MAX_ITER = 500
+CLIN_PERIOD_S = 4.0  # pysvzerod cross-check window (constant BCs, settled)
 
 MM3_PER_ML = 1.0e3  # 1 mL = 1e3 mm^3
 M3_PER_ML = 1.0e-6  # 1 mL = 1e-6 m^3
@@ -895,6 +924,665 @@ def transport_1d(edges_g, root_names, root_edge, q_proj, q_roots, c_roots, t_s):
 
 
 # --------------------------------------------------------------------------- #
+# Phase 2.5 clinical hemodynamics: Young-Tsai stenosis losses + pressure-driven
+# REST / maximal-hyperemia solves (Contract B "clinical" block)
+# --------------------------------------------------------------------------- #
+def load_lesions_doc(case, args):
+    """Contract C lesion selection: --lesions <path> (its `case` must match the
+    run) or auto-load out/clinical/lesions/case_<case>_lesions.json (canonical
+    spelling first, legacy <case>_lesions.json fallback) when present.
+
+    Returns (doc, path) or (None, None) when nothing is selected."""
+    if args.lesions:
+        path = args.lesions
+        if not os.path.isfile(path):
+            raise SystemExit(f"run_hemodynamics: --lesions {path}: missing")
+    else:
+        path = None
+        for cand in (f"out/clinical/lesions/case_{case}_lesions.json",
+                     f"out/clinical/lesions/{case}_lesions.json"):
+            if os.path.isfile(cand):
+                path = cand
+                break
+        if path is None:
+            return None, None
+    with open(path) as f:
+        doc = json.load(f)
+    if str(doc.get("case")) != str(case):
+        raise SystemExit(
+            f"run_hemodynamics: lesions file {path} carries case "
+            f"{doc.get('case')!r} but the run case is {case!r} (Contract C: the "
+            f"file's case must match the run)"
+        )
+    return doc, path
+
+
+def young_tsai_coefficients(lesion):
+    """Young-Tsai (1979) stenosis loss as dP = a*Q + b*Q^2 (Q [mL/s], dP [mmHg]).
+
+    dP = Kv*mu/r0^2*u*L + Kt*rho/2*(A0/As - 1)^2*u^2 with u = Q/As the throat
+    velocity, Kv = 32*(L/D0)*(A0/As)^2, Kt = 1.52, L = the lesion length and
+    A0 = pi*r_ref^2 at the lesion centroid (r_ref = d_ref_mm/2). The throat
+    area As = A0/A0_over_As with A0_over_As the Contract-A field
+    (= 1/(1 - as_pct/100), area stenosis). Evaluated in SI first (mu = 0.0035
+    Pa s, rho = 1050 kg/m^3 for the inertial term), converted to mmHg and mL/s
+    (1 mmHg = 133.322368 Pa)."""
+    r0 = 0.5 * float(lesion["d_ref_mm"]) * 1e-3
+    a0 = math.pi * r0**2
+    ratio = lesion.get("A0_over_As")
+    ratio = (1.0 / (1.0 - float(lesion["as_pct"]) / 100.0)
+             if ratio is None else float(ratio))
+    a_s = a0 / ratio  # throat area As = A0 / A0_over_As [m^2]
+    l_m = float(lesion["length_mm"]) * 1e-3
+    kv = 32.0 * (l_m / (2.0 * r0)) * ratio**2
+    # u = Q/As -> dP = (Kv*mu*L/r0^2/As)*Q + (Kt*rho/2*(A0/As-1)^2/As^2)*Q^2
+    a_si = kv * MU_YOUNG_TSAI * l_m / r0**2 / a_s  # Pa s/m^3
+    b_si = (KT_YOUNG_TSAI * RHO_YOUNG_TSAI / 2.0
+            * (ratio - 1.0) ** 2 / a_s**2)  # Pa s^2/m^6
+    return {
+        "kv": float(kv),
+        "kt": KT_YOUNG_TSAI,
+        "a0_m2": a0,
+        "as_m2": a_s,
+        "a0_over_as": ratio,
+        "a_si_Pa_s_m3": a_si,
+        "b_si_Pa_s2_m6": b_si,
+        "a_mmHg_s_mL": a_si / SI_PER_MMHG_ML,
+        "b_mmHg_s2_mL2": b_si * M3_PER_ML**2 / MMHG,
+    }
+
+
+def anchor_lesions(lesions, vessels, edges_g):
+    """Attach each lesion's series loss to the 0D sub-segment spanned by the
+    lesion centroid s_mm (its proximal/distal sub-segment nodes): the
+    sub-segment chain is in series, so folding (a, b) into that one element is
+    exactly a series Young-Tsai loss between those nodes."""
+    edge_of = {e["name"]: e for e in edges_g}
+    by_branch = {}
+    for v in vessels:
+        by_branch.setdefault(v["branch"], []).append(v)
+    for b in by_branch:
+        by_branch[b].sort(key=lambda v: v["sub_index"])
+    anchored = {}
+    records = {}
+    for les in lesions:
+        en = les.get("edge_name") or les.get("branch_id")
+        if en not in edge_of:
+            raise SystemExit(
+                f"run_hemodynamics: lesion {les.get('lesion_id')}: "
+                f"unknown edge {en!r}"
+            )
+        subs = by_branch[en]
+        l_mm = float(edge_of[en]["length_mm"])
+        s_mm = float(les["s_mm"])
+        k = (min(len(subs) - 1, max(0, int(s_mm / l_mm * len(subs))))
+             if l_mm > 0 else 0)
+        coef = young_tsai_coefficients(les)
+        anchored.setdefault(subs[k]["name"], []).append(coef)
+        records[str(les["lesion_id"])] = {
+            "lesion": les, "coef": coef, "vessel": subs[k]["name"], "edge": en,
+        }
+    return anchored, records
+
+
+def root_to_tip_paths(edges_g):
+    """Root -> tip edge chains (lists of edge records), longest first."""
+    by_id = {e["id"]: e for e in edges_g}
+    tips = [e for e in edges_g
+            if not any(c["parent_edge"] == e["id"] for c in edges_g)]
+    paths = []
+    for tip in tips:
+        chain = []
+        cur = tip
+        while cur is not None:
+            chain.append(cur)
+            cur = by_id[cur["parent_edge"]] if cur["parent_edge"] is not None else None
+        chain.reverse()
+        paths.append(chain)
+    paths.sort(key=lambda ch: -sum(e["length_mm"] for e in ch))
+    return paths
+
+
+def edge_boundaries(edges_g, vessels):
+    """{(s_mm, node_name)} per edge: s = 0 proximal node, then each
+    sub-segment distal node at its arc position."""
+    by_branch = {}
+    for v in vessels:
+        by_branch.setdefault(v["branch"], []).append(v)
+    out = {}
+    for e in edges_g:
+        subs = sorted(by_branch[e["name"]], key=lambda v: v["sub_index"])
+        n = len(subs)
+        l_mm = float(e["length_mm"])
+        pts = [(0.0, subs[0]["from_node"])]
+        pts += [((k + 1) * l_mm / n, subs[k]["to_node"]) for k in range(n)]
+        out[e["name"]] = pts
+    return out
+
+
+def sample_distal_pd(les_rec, edge_of, child_edges, bounds, q_edge):
+    """Per-lesion Pd sample node >= 20 mm distal of the lesion distal end
+    (s_mm + length_mm/2), continuing along the dominant-flow child path past a
+    branch end. Returns (node, pd_location_mm, edge_name, s_on_edge_mm,
+    distal_of_lesion_end_mm) with pd_location_mm the sample position measured
+    from the lesion edge's proximal end (the same branch-distance convention
+    as s_mm), continued over child edges."""
+    les = les_rec["lesion"]
+    target = (float(les["s_mm"]) + 0.5 * float(les["length_mm"]) + PD_DISTAL_MM)
+    end = target - PD_DISTAL_MM
+    e = edge_of[les_rec["edge"]]
+    base = 0.0
+    seen = set()
+    while True:
+        seen.add(e["name"])
+        l_mm = float(e["length_mm"])
+        for s1, node in bounds[e["name"]]:
+            if base + s1 >= target - 1e-9:
+                return node, base + s1, e["name"], s1, base + s1 - end
+        base += l_mm
+        kids = [c for c in child_edges.get(e["id"], [])
+                if c["name"] not in seen]
+        if not kids:  # path ends short of the target: deepest node reached
+            s1, node = bounds[e["name"]][-1]
+            return node, base - l_mm + s1, e["name"], s1, base - l_mm + s1 - end
+        e = max(kids, key=lambda c: abs(q_edge.get(c["name"], 0.0)))
+
+
+def wk_split(wk, rp_fraction):
+    """Terminal DC view of the 3-element Windkessels at a given Rp/Rd split
+    (R_total preserved; C is an open circuit at steady state)."""
+    out = {}
+    for name, w in wk.items():
+        r_tot = w["R_total_mmHg_s_mL"]
+        out[name] = {
+            "Rp_mmHg_s_mL": rp_fraction * r_tot,
+            "Rd_mmHg_s_mL": (1.0 - rp_fraction) * r_tot,
+        }
+    return out
+
+
+def solve_clinical_steady(vessels, nodes, elem, wrp, anchored, rd_scale,
+                          pa_mmHg):
+    """Steady pressure-driven solve of the 0D network with each lesion's
+    Young-Tsai loss coupled self-consistently (Picard iteration on Q).
+
+    The d/dt = 0 limit of the same R/L/C model: inertance and wall compliance
+    vanish, each sub-segment is its Poiseuille resistance, each anchored lesion
+    adds dP = a*Q + b*Q^2 in series between its proximal/distal sub-segment
+    nodes, each terminal is its 3-element Windkessel in DC (Rp + rd_scale*Rd
+    to Pd), each root is driven at pa_mmHg. The quadratic term is linearized as
+    b*|Q_k|*Q and iterated (damped Picard) to residual < PICARD_TOL_MLS mL/s.
+
+    Returns {"p": node->mmHg, "q": vessel->mL/s, "residual", "iterations"}."""
+    names = list(nodes)
+    idx = {n: i for i, n in enumerate(names)}
+    n = len(names)
+    els = []  # (i, j, a_lin [mmHg s/mL], b_quad [mmHg s^2/mL^2], vessel name)
+    for v in vessels:
+        r_si, _, _, _ = elem[v["name"]]
+        a_lin = r_si / SI_PER_MMHG_ML
+        b_quad = 0.0
+        for coef in anchored.get(v["name"], ()):
+            a_lin += coef["a_mmHg_s_mL"]
+            b_quad += coef["b_mmHg_s2_mL2"]
+        els.append((idx[v["from_node"]], idx[v["to_node"]], a_lin, b_quad,
+                    v["name"]))
+    term = [(idx[oname], w["Rp_mmHg_s_mL"] + rd_scale * w["Rd_mmHg_s_mL"])
+            for oname, w in sorted(wrp.items())]
+    roots = [idx[nm] for nm in names if nodes[nm]["kind"] == "inlet"]
+
+    def assemble(q_prev):
+        G = np.zeros((n, n))
+        rhs = np.zeros(n)
+        for k, (i, j, a_lin, b_quad, _) in enumerate(els):
+            g = 1.0 / (a_lin + b_quad * abs(q_prev[k]))
+            G[i, i] += g
+            G[j, j] += g
+            G[i, j] -= g
+            G[j, i] -= g
+        for ni, rt in term:
+            G[ni, ni] += 1.0 / rt
+            rhs[ni] += P_VENOUS_MMHG / rt
+        for ni in roots:
+            G[ni, :] = 0.0
+            G[ni, ni] = 1.0
+            rhs[ni] = pa_mmHg
+        return G, rhs
+
+    q = np.zeros(len(els))
+    lam = 1.0
+    prev_res = None
+    res = float("inf")
+    for it in range(1, PICARD_MAX_ITER + 1):
+        G, rhs = assemble(q)
+        p = np.linalg.solve(G, rhs)
+        q_star = np.array([
+            (p[i] - p[j]) / (a_lin + b_quad * abs(q[k]))
+            for k, (i, j, a_lin, b_quad, _) in enumerate(els)
+        ])
+        q_new = q + lam * (q_star - q)
+        res = float(np.max(np.abs(q_new - q))) if els else 0.0
+        q = q_new
+        if res < PICARD_TOL_MLS:
+            break
+        if prev_res is not None and res > 0.5 * prev_res and lam == 1.0:
+            lam = 0.5  # quadratic dominance -> damped Picard
+        prev_res = res
+    else:
+        raise SolveError(
+            f"clinical Picard iteration stalled at residual {res:.3g} mL/s"
+        )
+    G, rhs = assemble(q)  # pressures consistent with the converged flows
+    p = np.linalg.solve(G, rhs)
+    return {
+        "p": {nm: float(p[idx[nm]]) for nm in names},
+        "q": {els[k][4]: float(q[k]) for k in range(len(els))},
+        "residual": float(res),
+        "iterations": it,
+    }
+
+
+def build_clinical_svzero_config(vessels, nodes, elem, wrp, anchored, rd_scale,
+                                 pa_mmHg, period_s):
+    """pysvzerod clinical model: closest native element mapping of the
+    Young-Tsai loss (BloodVessel.stenosis_coefficient = Kt quadratic term,
+    R_poiseuille += Kv viscous term), constant PRESSURE roots at pa_mmHg and
+    RESISTANCE terminals equal to the Windkessel DC (Rp + rd_scale*Rd)."""
+    v_by_name = {v["name"]: v for v in vessels}
+    solver_vessels = []
+    for v in vessels:
+        r_el, l_el, c_el, _ = elem[v["name"]]
+        coefs = anchored.get(v["name"], ())
+        entry = {
+            "vessel_id": v["vessel_id"],
+            "vessel_name": v["name"],
+            "vessel_length": v["length_m"],
+            "zero_d_element_type": "BloodVessel",
+            "zero_d_element_values": {
+                "R_poiseuille": r_el + sum(c["a_si_Pa_s_m3"] for c in coefs),
+                "C": c_el,
+                "L": l_el,
+                "stenosis_coefficient": sum(c["b_si_Pa_s2_m6"] for c in coefs),
+            },
+        }
+        bc = {}
+        if nodes[v["from_node"]]["kind"] == "inlet":
+            bc["inlet"] = f"IN_{v['from_node']}"
+        if nodes[v["to_node"]]["kind"] == "outlet":
+            bc["outlet"] = f"CLIN_{v['to_node']}"
+        if bc:
+            entry["boundary_conditions"] = bc
+        solver_vessels.append(entry)
+
+    junctions = []
+    for name, nd in nodes.items():
+        if nd["kind"] in ("inlet", "outlet"):
+            continue
+        junctions.append(
+            {
+                "junction_name": f"JN_{name}",
+                "junction_type": "NORMAL_JUNCTION",
+                "inlet_vessels": [v_by_name[x]["vessel_id"] for x in nd["in_vessels"]],
+                "outlet_vessels": [v_by_name[x]["vessel_id"] for x in nd["out_vessels"]],
+            }
+        )
+
+    bcs = []
+    p_pa = pa_mmHg * MMHG
+    for rname in sorted(nm for nm in nodes if nodes[nm]["kind"] == "inlet"):
+        bcs.append({"bc_name": f"IN_{rname}", "bc_type": "PRESSURE",
+                    "bc_values": {"P": [p_pa, p_pa], "t": [0.0, period_s]}})
+    for oname in sorted(wrp):
+        w = wrp[oname]
+        r_si = (w["Rp_mmHg_s_mL"] + rd_scale * w["Rd_mmHg_s_mL"]) * SI_PER_MMHG_ML
+        bcs.append({"bc_name": f"CLIN_{oname}", "bc_type": "RESISTANCE",
+                    "bc_values": {"R": r_si, "Pd": P_VENOUS_MMHG * MMHG}})
+
+    return {
+        "simulation_parameters": {
+            "number_of_cardiac_cycles": 1,
+            "number_of_time_pts_per_cardiac_cycle": 512,
+            "steady_initial": True,
+            "output_variable_based": True,
+            "output_all_cycles": False,
+            "output_interval": 1,
+            "cardiac_period": float(period_s),
+            "absolute_tolerance": 1e-10,
+        },
+        "vessels": solver_vessels,
+        "junctions": junctions,
+        "boundary_conditions": bcs,
+    }
+
+
+def clinical_svzero_crosscheck(vessels, nodes, elem, wk, wrp, anchored,
+                               rd_scale, state):
+    """Run the same steady network through pysvzerod (constant BCs over one
+    settled window) and compare its settled means with the Picard solution."""
+    subs_by_edge = {}
+    for v in vessels:
+        subs_by_edge.setdefault(v["branch"], []).append(v)
+    for b in subs_by_edge:
+        subs_by_edge[b].sort(key=lambda v: v["sub_index"])
+
+    cfg = build_clinical_svzero_config(vessels, nodes, elem, wrp, anchored,
+                                       rd_scale, P_AORTA_MMHG, CLIN_PERIOD_S)
+    df, wall = solve_svzerodsolver(cfg)
+    dofs = parse_result_df(df)
+
+    def settled_mean(dof):
+        t, y = pick_dof(dofs, dof)
+        m = t >= 0.5 * CLIN_PERIOD_S
+        return float(np.mean(y[m]))
+
+    diffs = {}
+    q_in = 0.0
+    for oname in sorted(wk):
+        leaf = subs_by_edge[wk[oname]["outlet"]][-1]["name"]
+        face = settled_mean(f"pressure:{leaf}:CLIN_{oname}") / MMHG  # Pa -> mmHg
+        diffs[oname] = face - state["p"][oname]
+    for nm in sorted(n for n in nodes if nodes[n]["kind"] == "inlet"):
+        first = nodes[nm]["out_vessels"][0]
+        q_in += settled_mean(f"flow:IN_{nm}:{first}") * 1e6  # m^3/s -> mL/s
+    q_out = sum(
+        (state["p"][oname] - P_VENOUS_MMHG)
+        / (wrp[oname]["Rp_mmHg_s_mL"] + rd_scale * wrp[oname]["Rd_mmHg_s_mL"])
+        for oname in wrp
+    )
+    return {
+        "method": ("pysvzerod steady window (constant PRESSURE roots / "
+                   "RESISTANCE = Windkessel DC terminals), settled means over "
+                   "the second half of the window vs the Picard solution"),
+        "wall_time_s": round(wall["total"], 4),
+        "max_abs_outlet_pressure_diff_mmHg": round(
+            max(abs(d) for d in diffs.values()), 6),
+        "abs_total_inflow_diff_mLs": round(abs(q_in - q_out), 9),
+    }
+
+
+def edge_mean_area(edges_g):
+    """Mean lumen area A_mean = (1/L)*integral(pi r^2 ds) per edge [m^2]."""
+    out = {}
+    for e in edges_g:
+        s, rad = edge_radius_sampler(e)
+        l_mm = float(e["length_mm"])
+        if s.size > 1 and l_mm > 0:
+            v_mm3 = float(np.trapezoid(np.pi * rad**2, s))
+        else:
+            v_mm3 = math.pi * float(rad[0]) ** 2 * l_mm
+        out[e["name"]] = (v_mm3 / l_mm) * 1e-6 if l_mm > 0 else 1e-12
+    return out
+
+
+def build_clinical(vessels, nodes, elem, wk, edges_g, lesions_doc,
+                   lesions_path):
+    """Contract B "clinical" block: pressure-driven REST and maximal-hyperemia
+    solves (Pa = 90 mmHg, terminals = the existing 3-element Windkessels with
+    Rd -> 0.25*Rd_rest under hyperemia) with Young-Tsai lesion losses, the
+    per-edge/per-lesion read-outs and the resting-trunk velocity calibration."""
+    anchored, les_recs = anchor_lesions(
+        (lesions_doc or {}).get("lesions") or [], vessels, edges_g)
+    edge_of = {e["name"]: e for e in edges_g}
+    subs_by_edge = {}
+    for v in vessels:
+        subs_by_edge.setdefault(v["branch"], []).append(v)
+    for b in subs_by_edge:
+        subs_by_edge[b].sort(key=lambda v: v["sub_index"])
+    bounds = edge_boundaries(edges_g, vessels)
+    child_edges = {}
+    for e in edges_g:
+        if e["parent_edge"] is not None:
+            child_edges.setdefault(e["parent_edge"], []).append(e)
+
+    def terminal_total(st):
+        return sum(st["q"][v["name"]] for v in vessels
+                   if nodes[v["to_node"]]["kind"] == "outlet")
+
+    def solve_states(rp_fraction):
+        wrp = wk_split(wk, rp_fraction)
+        rest = solve_clinical_steady(vessels, nodes, elem, wrp, anchored,
+                                     1.0, P_AORTA_MMHG)
+        hyper = solve_clinical_steady(vessels, nodes, elem, wrp, anchored,
+                                      HYPER_RD_SCALE, P_AORTA_MMHG)
+        return wrp, rest, hyper
+
+    rp_fraction = RP_FRACTION
+    adjustments = []
+    wrp, rest, hyper = solve_states(rp_fraction)
+    q_rest, q_hyper = terminal_total(rest), terminal_total(hyper)
+    ratio = q_hyper / q_rest
+    if not (FLOW_INCREASE_BAND[0] <= ratio <= FLOW_INCREASE_BAND[1]):
+        # adjust the terminal Rp/Rd split (microvascular Rd ~85-90% of
+        # R_total) until flow_increase_x lands in the accepted band
+        adjustments.append({
+            "rp_fraction": RP_FRACTION,
+            "rd_share_of_R_total": 1.0 - RP_FRACTION,
+            "flow_increase_x": round(ratio, 6),
+            "accepted": False,
+            "reason": ("realized hyper.flow_increase_x outside [2.5, 4.0] at the "
+                       "default RP_FRACTION"),
+        })
+        cands = ([0.075, 0.05, 0.025] if ratio < FLOW_INCREASE_BAND[0]
+                 else [0.125, 0.15, 0.20])
+        for cand in cands:
+            wrp_c, rest_c, hyper_c = solve_states(cand)
+            q_r, q_h = terminal_total(rest_c), terminal_total(hyper_c)
+            ratio_c = q_h / q_r
+            adjustments.append({
+                "rp_fraction": cand,
+                "rd_share_of_R_total": 1.0 - cand,
+                "flow_increase_x": round(ratio_c, 6),
+                "accepted": FLOW_INCREASE_BAND[0] <= ratio_c <= FLOW_INCREASE_BAND[1],
+            })
+            if adjustments[-1]["accepted"]:
+                rp_fraction, wrp, rest, hyper = cand, wrp_c, rest_c, hyper_c
+                q_rest, q_hyper, ratio = q_r, q_h, ratio_c
+                break
+
+    a_mean = edge_mean_area(edges_g)
+    q_edge = {}
+    branches = {}
+    for tag, st, hyper_flag in (("rest", rest, False), ("hyper", hyper, True)):
+        bmap = {}
+        qmap = {}
+        for e in edges_g:
+            subs = subs_by_edge[e["name"]]
+            q_e = float(np.mean([st["q"][v["name"]] for v in subs]))
+            p_prox = st["p"][subs[0]["from_node"]]
+            p_dist = st["p"][subs[-1]["to_node"]]
+            u = q_e * M3_PER_ML / a_mean[e["name"]]
+            qmap[e["name"]] = q_e
+            rec = {
+                "p_prox_mmHg": round(p_prox, 4),
+                "p_dist_mmHg": round(p_dist, 4),
+                "q_ml_s": round(q_e, 6),
+                "u_m_s": round(u, 6),
+            }
+            if hyper_flag:
+                rec["vffr"] = round(p_dist / P_AORTA_MMHG, 6)
+            else:
+                rec["pd_pa"] = round(p_dist / P_AORTA_MMHG, 6)
+            bmap[e["name"]] = rec
+        branches[tag] = bmap
+        q_edge[tag] = qmap
+
+    les_block = {}
+    for lid, rec in sorted(les_recs.items()):
+        les, coef = rec["lesion"], rec["coef"]
+        q_r = rest["q"][rec["vessel"]]
+        q_h = hyper["q"][rec["vessel"]]
+        a, b = coef["a_mmHg_s_mL"], coef["b_mmHg_s2_mL2"]
+        node, loc, pd_edge, s_on, distal = sample_distal_pd(
+            rec, edge_of, child_edges, bounds, q_edge["hyper"])
+        les_block[lid] = {
+            "dp_rest_mmHg": a * q_r + b * q_r * q_r,
+            "dp_hyper_mmHg": a * q_h + b * q_h * q_h,
+            "kv": round(coef["kv"], 4),
+            "kt": coef["kt"],
+            "u_throat_m_s": round(q_h * M3_PER_ML / coef["as_m2"], 6),
+            "vffr": round(hyper["p"][node] / P_AORTA_MMHG, 6),
+            "pd_location_mm": round(loc, 3),
+            # additive detail keys
+            "edge_name": rec["edge"],
+            "u_throat_rest_m_s": round(q_r * M3_PER_ML / coef["as_m2"], 6),
+            "u_throat_hyper_m_s": round(q_h * M3_PER_ML / coef["as_m2"], 6),
+            "q_rest_ml_s": round(q_r, 6),
+            "q_hyper_ml_s": round(q_h, 6),
+            "pd_edge": pd_edge,
+            "pd_sample_s_mm": round(s_on, 3),
+            "pd_distal_of_lesion_end_mm": round(distal, 3),
+        }
+
+    # ---- velocity calibration (resting major-trunk benchmark 15-30 cm/s) ----
+    u_raw = {e["name"]: q_edge["rest"][e["name"]] * M3_PER_ML / a_mean[e["name"]]
+             for e in edges_g}
+    trunks = [e["name"] for e in edges_g
+              if float(e["r_in_mm"]) >= TRUNK_R_IN_MM]
+    trunk_method = "edges with r_in_mm >= 0.75 mm"
+    if len(trunks) < 3:
+        prox = []
+        for ch in root_to_tip_paths(edges_g)[:3]:
+            total = sum(e["length_mm"] for e in ch)
+            acc = 0.0
+            for e in ch:
+                if acc >= total / 3.0:
+                    break
+                prox.append(e["name"])
+                acc += e["length_mm"]
+        trunks = sorted(set(prox))
+        trunk_method = ("fewer than 3 edges with r_in_mm >= 0.75 mm; trunks = "
+                        "the proximal third of the 3 longest root-to-tip paths")
+    trunk_u = [u_raw[t] for t in trunks if u_raw[t] > Q_EPS_MLS]
+    kappa = (float(np.median([TARGET_U_TRUNK_MS / u for u in trunk_u]))
+             if trunk_u else 1.0)
+    transit_raw_s = {
+        e["name"]: (float(e["length_mm"]) * 1e-3 / u_raw[e["name"]]
+                    if u_raw[e["name"]] > Q_EPS_MLS else None)
+        for e in edges_g
+    }
+    transit_cal_s = {
+        k: (v / kappa if v is not None else None)
+        for k, v in transit_raw_s.items()
+    }
+    primary_paths = {}
+    for i, ch in enumerate(root_to_tip_paths(edges_g)[:3]):
+        t_raw = sum(transit_raw_s[e["name"]] for e in ch
+                    if transit_raw_s[e["name"]] is not None)
+        primary_paths[f"path_{i}"] = {
+            "tip_edge": ch[-1]["name"],
+            "edges": [e["name"] for e in ch],
+            "length_mm": round(sum(e["length_mm"] for e in ch), 3),
+            "transit_raw_s": round(t_raw, 6),
+            "transit_calibrated_s": round(t_raw / kappa, 6),
+        }
+    vel_cal = {
+        "target_u_trunk_m_s": TARGET_U_TRUNK_MS,
+        "u_trunk_band_m_s": list(U_TRUNK_BAND_MS),
+        "trunk_edges": trunks,
+        "kappa": kappa,
+        "u_cal_trunk_median_m_s": (round(float(np.median(
+            [kappa * u_raw[t] for t in trunks if u_raw[t] > Q_EPS_MLS])), 6)
+            if trunk_u else None),
+        "u_cal_trunk_band_ok": (None if not trunk_u else all(
+            U_TRUNK_BAND_MS[0] <= kappa * u <= U_TRUNK_BAND_MS[1]
+            for u in trunk_u)),
+        "u_raw_m_s": {k: round(v, 6) for k, v in u_raw.items()},
+        "u_cal_m_s": {k: round(kappa * v, 6) for k, v in u_raw.items()},
+        "transit_raw_s": {k: (round(v, 6) if v is not None else None)
+                          for k, v in transit_raw_s.items()},
+        "transit_calibrated_s": {k: (round(v, 6) if v is not None else None)
+                                 for k, v in transit_cal_s.items()},
+        "primary_paths": primary_paths,
+        "method": (
+            "rest-state edge velocities u_raw = Q/A_mean (A_mean = (1/L)*"
+            "integral(pi r^2 ds) over the edge arc); kappa = median over trunks "
+            f"of (0.22 m/s / u_raw) [{trunk_method}]; u_cal = kappa*u_raw; "
+            "per-edge convective transit t = L/u raw and L/(kappa*u) "
+            "calibrated"),
+    }
+
+    # ---- honest solver record + pysvzerod element cross-check --------------
+    xchecks = {}
+    for tag, st, rds in (("rest", rest, 1.0), ("hyper", hyper, HYPER_RD_SCALE)):
+        try:
+            xchecks[tag] = clinical_svzero_crosscheck(
+                vessels, nodes, elem, wk, wrp, anchored, rds, st)
+        except Exception as exc:  # recorded, never fabricated
+            xchecks[tag] = {"status": "error", "error": str(exc)[:400]}
+    backend = (
+        "steady pressure-driven 0D network solve (reference nodal solver, "
+        f"Picard iteration on Q coupling each lesion's Young-Tsai dP = a*Q + "
+        f"b*Q^2 series loss to residual < {PICARD_TOL_MLS:g} mL/s); terminals = "
+        "3-element Windkessels in DC (Rp + rd_scale*Rd, C open), roots at Pa. "
+        "pysvzerod has no native Kv/Kt stenosis/valve element (no "
+        "pysvzerod.solver module; BloodVessel.stenosis_coefficient is a pure "
+        "quadratic Ks*Q^2 verified numerically and ValveTanh/PiecewiseValve are "
+        "closed-loop heart blocks): the closest native element mapping "
+        "(stenosis_coefficient = Kt quadratic term, R_poiseuille += Kv viscous "
+        "term) is run through pysvzerod as a cross-check "
+        "(see solver.pysvzerod.cross_check)"
+    )
+    solver_info = {
+        "backend": backend,
+        "residual": max(rest["residual"], hyper["residual"]),
+        "rho_young_tsai": RHO_YOUNG_TSAI,
+        "mu_young_tsai_Pa_s": MU_YOUNG_TSAI,
+        "kt": KT_YOUNG_TSAI,
+        "picard": {
+            "scheme": ("dP = a*Q + b*|Q_k|*Q Picard on Q, damping 0.5 on "
+                       "stall, residual = max |dQ| between iterates"),
+            "tolerance_mLs": PICARD_TOL_MLS,
+            "residual_rest_mLs": rest["residual"],
+            "residual_hyper_mLs": hyper["residual"],
+            "iterations_rest": rest["iterations"],
+            "iterations_hyper": hyper["iterations"],
+        },
+        "rp_fraction_used": rp_fraction,
+        "rp_fraction_default": RP_FRACTION,
+        "rd_share_of_R_total": 1.0 - rp_fraction,
+        "rp_rd_adjustments": adjustments,
+        "lesions_file": lesions_path,
+        "lesion_placement": (
+            "each lesion's Young-Tsai loss is a series dP = a*Q + b*Q^2 between "
+            "the proximal/distal nodes of the 0D sub-segment containing the "
+            "lesion centroid s_mm (recorded per lesion in solver-independent "
+            "units via kv/kt/u_throat_m_s)"),
+        "pd_sampling": (
+            "per-lesion Pd sampled at the first sub-segment node >= 20 mm "
+            "distal of the lesion distal end (s_mm + length_mm/2), continuing "
+            "along the dominant-hyperemia-flow child path past a branch end; "
+            "pd_location_mm is that sample's position in mm along the path "
+            "measured from the lesion edge's proximal end (s_mm convention)"),
+        "pysvzerod": {
+            "version": dist_version("pysvzerod"),
+            "element_mapping": (
+                "BloodVessel.stenosis_coefficient = Kt*rho/2*(A0/As-1)^2/As^2 "
+                "(dP = Ks*Q^2, verified numerically), R_poiseuille += "
+                "Kv*mu*L/(r0^2*As) (Young-Tsai viscous term)"),
+            "cross_check": xchecks,
+        },
+    }
+
+    return {
+        "pa_mmHg": P_AORTA_MMHG,
+        "q_rest_ml_min": round(q_rest * 60.0, 4),
+        "rest": {
+            "q_total_ml_min": round(q_rest * 60.0, 4),
+            "branches": branches["rest"],
+        },
+        "hyper": {
+            "rd_scale": HYPER_RD_SCALE,
+            "q_total_ml_min": round(q_hyper * 60.0, 4),
+            "flow_increase_x": round(ratio, 6),
+            "branches": branches["hyper"],
+        },
+        "lesions": les_block,
+        "velocity_calibration": vel_cal,
+        "solver": solver_info,
+    }
+
+
+# --------------------------------------------------------------------------- #
 # per-case driver
 # --------------------------------------------------------------------------- #
 def make_signal_grid(total_s):
@@ -961,6 +1649,16 @@ def run_case(case, args):
         subs_by_edge[b].sort(key=lambda v: v["sub_index"])
     rows, _, _ = dof_map(vessels, nodes, inlets, outlets, wk, elem)
     row_of = {r["vessel_name"]: r for r in rows}
+
+    # ---------------- Phase 2.5 clinical block (Contract B) ----------------
+    lesions_doc, lesions_path = load_lesions_doc(case, args)
+    if lesions_path is not None:
+        print(f"[run_hemodynamics] case {case}: lesions <- {lesions_path} "
+              f"({len((lesions_doc or {}).get('lesions') or [])} lesions)",
+              flush=True)
+    clinical = build_clinical(vessels, nodes, elem, wk, edges_g,
+                              lesions_doc, lesions_path)
+    kappa_cal = clinical["velocity_calibration"]["kappa"]
 
     def ref_outlet_tip(p_node_ref, flows_ref):
         """Vessel-tip (pre-Rp) pressure series per outlet.
@@ -1144,6 +1842,8 @@ def run_case(case, args):
                 "t_arrival_s": round(t_arr, 6) if t_arr is not None else None,
                 "t_peak_s": round(t_pk, 6) if t_pk is not None else None,
                 "transit_ms": round(transit_ms, 4) if ok else None,
+                "transit_calibrated_ms": (round(transit_ms / kappa_cal, 4)
+                                          if ok else None),
                 "timi_frames_30fps": (int(round(transit_ms / 1000.0 * 30))
                                       if ok else None),
                 "q_mean_mLs": round(q_mean_e, 6),
@@ -1267,6 +1967,7 @@ def run_case(case, args):
         },
         "profiles": PROFILES,
         "signals": signals,
+        "clinical": clinical,
         "mass_balance": mass_balance,
         "timings": timings,
         "inflow": {
@@ -1320,6 +2021,12 @@ def main():
     ap.add_argument("--inflow-mode", choices=["replace", "additive"], default="replace")
     ap.add_argument("--injection-root", choices=["all", "root_0", "root_1"],
                     default="all")
+    ap.add_argument("--lesions", default=None,
+                    help="Contract-A lesions JSON (flowscope.clinical.lesions "
+                         "v1; its case must match the run). Without the flag "
+                         "auto-load out/clinical/lesions/case_<case>_lesions."
+                         "json (canonical spelling first, legacy "
+                         "<case>_lesions.json fallback) when present.")
     args = ap.parse_args()
 
     for case in args.cases:
