@@ -30,12 +30,38 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 10px;
       }
+      /* ACIST RXi-style pullback console (contract D): the one canvas is the
+         desktop DOM overlay and the source of the in-XR texture plane. */
+      #fs-console {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 10;
+        background: rgba(13, 16, 22, 0.88);
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+      #fs-console[hidden] {
+        display: none;
+      }
+      #fs-console canvas {
+        display: block;
+        width: 420px;
+        height: auto;
+        border-radius: 6px;
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="overlay">
       <div id="boot">Loading <code>assets/cardiac.glb</code>&hellip;</div>
+      <div id="fs-console" hidden>
+        <canvas data-fs="pullback" width="560" height="315"></canvas>
+      </div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

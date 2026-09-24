@@ -1,7 +1,17 @@
 import * as THREE from 'three';
 import { createStage } from './scene.js';
 import { loadModel, collectStructures, modelURL, assetsBaseURL, payloadURL } from './loader.js';
-import { createCfdPlayback, initialCaseId, initialProfile } from '../js/cfd_playback.js';
+import {
+  createCfdPlayback,
+  initialCaseId,
+  initialProfile,
+  loadClinical,
+  clinicalOverride,
+  createClinicalModel,
+  cathCardLines,
+  drawCathCard,
+  drawPullback,
+} from '../js/cfd_playback.js';
 import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
 import { structureGroup, GROUPS } from './structures.js';
@@ -52,6 +62,7 @@ const interaction = createInteraction({
   renderer: stage.renderer,
   scene: stage.scene,
   modelRoot: stage.modelRoot,
+  camera: stage.camera,
   onToggle: (name, visible) => {
     // Trigger picks (and UI rows routed through setStructureVisible) are
     // explicit user toggles and stand the chambers auto rule down; the rule's
@@ -59,6 +70,14 @@ const interaction = createInteraction({
     if (!applyingAuto && structureGroup(name) === 'chambers') chambersOverridden = true;
     ui.setVisibility(name, visible);
     updateHook();
+  },
+  // Contract D Navvus probe: consume the click/trigger hit only when clinical
+  // data is loaded and the hit lands on a coronaries structure (the virtual
+  // catheter gesture); every other hit keeps the existing pick/toggle path.
+  onProbe: (hit) => {
+    if (!clinicalModel || structureGroup(hit.name) !== 'coronaries') return false;
+    placeProbeWorld(hit.point);
+    return true;
   },
   onClipNudge: (delta) => setClipOffset(clipOffset01 + delta),
   // XR scrub modifier: only fired while a grip holds the model (interaction.js)
@@ -73,6 +92,7 @@ const ui = createUI(overlay, {
   onToggleVisible: (name, visible) => interaction.setStructureVisible(name, visible),
   onToggleGroup: (group, visible) => toggleGroup(group, visible),
   onClipChange: (offset01) => setClipOffset(offset01),
+  onMode: (mode) => setViewMode(mode),
   onPlayToggle: () => togglePlaying(),
   onPlayLoop: (on) => {
     if (playback) playback.setLoop(!!on);
@@ -99,12 +119,14 @@ const ui = createUI(overlay, {
     const session = await enterVR(stage.renderer, stage);
     xrActive = true;
     ui.setActive(true);
+    syncProbeVisibility();
     updateHook();
     session.addEventListener(
       'end',
       () => {
         xrActive = false;
         ui.setActive(false);
+        syncProbeVisibility();
         updateHook();
       },
       { once: true },
@@ -112,6 +134,70 @@ const ui = createUI(overlay, {
   },
   onExitVR: () => exitVR(stage.renderer),
 });
+
+// ---- Navvus probe widget + pullback console (contract D) ------------------
+// Probe state (null until placed) plus the one pullback canvas shared by the
+// desktop DOM console (data-fs="pullback") and the in-XR texture plane.
+// A missing clinical payload keeps all of this inert.
+let clinicalModel = null; // createClinicalModel queries (null until loaded)
+let probe = null; // last probeAt() descriptor (null until placed)
+let probeReadout = null; // last readoutFor() result (hook.clinical.readout)
+let probePullback = null; // selected pullbacks[] entry (auto or selectPath)
+let viewMode = 'A'; // 'A' contrast playback | 'B' vFFR ischemia map
+
+// Probe widget: a GLB-frame anchor (rides model grabs) plus a scene-space
+// billboard group (small marker, Navvus diagnostic card, pullback graph).
+// Geometry/textures are created once here; the canvases redraw only on probe
+// or selection changes and the per-frame hook only copies preallocated
+// vectors — zero render-loop allocation.
+const probeAnchor = new THREE.Object3D();
+const probeGroup = new THREE.Group();
+const probeMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(0.004, 16, 12),
+  new THREE.MeshBasicMaterial({ color: 0x67e0c2 }),
+);
+const cardCanvas = document.createElement('canvas');
+cardCanvas.width = 512;
+cardCanvas.height = 320;
+const cardCtx = cardCanvas.getContext('2d');
+const cardTexture = new THREE.CanvasTexture(cardCanvas);
+cardTexture.colorSpace = THREE.SRGBColorSpace;
+const cardPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.12, 0.075),
+  new THREE.MeshBasicMaterial({
+    map: cardTexture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  }),
+);
+const pullbackCanvas = ui.pullbackCanvas;
+const pullbackCtx = pullbackCanvas.getContext('2d');
+const pullbackTexture = new THREE.CanvasTexture(pullbackCanvas);
+pullbackTexture.colorSpace = THREE.SRGBColorSpace;
+const pullbackPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.16, 0.09),
+  new THREE.MeshBasicMaterial({
+    map: pullbackTexture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  }),
+);
+cardPlane.position.set(0, 0.075, 0);
+pullbackPlane.position.set(0, -0.075, 0);
+cardPlane.renderOrder = 901;
+pullbackPlane.renderOrder = 902;
+probeGroup.add(probeMarker, cardPlane, pullbackPlane);
+probeGroup.visible = false;
+stage.scene.add(probeGroup);
+
+// onFrame scratch (preallocated: the render loop never allocates).
+const probeWorldPos = new THREE.Vector3();
+const probeCamPos = new THREE.Vector3();
+const probeRas = new THREE.Vector3();
 
 // Automation hook: mutated in place, refreshed every second and once at load.
 const hook = {
@@ -132,6 +218,16 @@ const hook = {
     speed: 1,
     profile: 'A',
     transitMs: null,
+  },
+  /** Contract D clinical state (read-only; readout() returns the card fields). */
+  clinical: {
+    ready: false,
+    mode: 'A',
+    probe: null,
+    path_id: null,
+    readout() {
+      return probeReadout;
+    },
   },
   xrSupported: false,
   xrActive: false,
@@ -163,6 +259,25 @@ const hook = {
   /** Contrast playback: scrub the timeline to `t01` in 0..1. */
   scrub(t01) {
     playback?.scrub(t01);
+  },
+  /** Contract D visualization mode: 'A' (contrast) | 'B' (vFFR map). */
+  setMode(mode) {
+    setViewMode(mode);
+  },
+  /**
+   * Place the Navvus probe at a GLB model-frame point (contract D *_xyz_ras
+   * meters — the centerline_ras frame). Returns the card readout or null.
+   */
+  placeProbe(x, y, z) {
+    return placeProbeRas(x, y, z);
+  },
+  /** Select a pullback path by id (overrides the longest-match selection). */
+  selectPath(path_id) {
+    return selectPullbackPath(path_id);
+  },
+  /** Selected `pullbacks[]` entry (contract D), or null before selection. */
+  getPullback() {
+    return probePullback;
   },
   // Per-frame render debug (data-driven verification), mutated in place after
   // every rendered frame.
@@ -200,6 +315,8 @@ function updateHook() {
   for (const group of Object.keys(hook.groups)) hook.groups[group] = groupVisible(group);
   hook.clip.enabled = clipOffset01 > 0;
   hook.clip.offset01 = clipOffset01;
+  hook.clinical.ready = !!clinicalModel;
+  hook.clinical.mode = viewMode;
 }
 
 /** Playback readout -> Contrast HUD + automation hook (every state change). */
@@ -220,6 +337,93 @@ function togglePlaying() {
   if (!playback) return;
   if (playState && playState.playing) playback.pause();
   else playback.play();
+}
+
+// ---- Navvus probe + pullback console (contract D) ------------------------
+
+/** Visualization mode (contract D): 'A' contrast playback | 'B' vFFR map. */
+function setViewMode(mode) {
+  viewMode = mode === 'B' ? 'B' : 'A';
+  if (playback) playback.setMode(viewMode);
+  ui.setMode(viewMode);
+  updateHook();
+}
+
+/** Redraw the Navvus card + DOM mirror for the current probe/selection. */
+function refreshProbeCard() {
+  probeReadout = probe && clinicalModel ? clinicalModel.readoutFor(probe, probePullback) : null;
+  const lines = cathCardLines(probeReadout);
+  drawCathCard(cardCtx, lines, cardCanvas.width, cardCanvas.height);
+  cardTexture.needsUpdate = true;
+  ui.setReadout(probeReadout, lines);
+  hook.clinical.probe = probe
+    ? { position: probe.position, branch_id: probe.branch_id, s_mm: probe.s_mm }
+    : null;
+}
+
+/** Redraw the pullback graph (only ever called on a selection change). */
+function refreshPullback() {
+  if (probePullback) {
+    drawPullback(pullbackCtx, probePullback, pullbackCanvas.width, pullbackCanvas.height);
+    pullbackTexture.needsUpdate = true;
+  }
+  ui.setPullbackVisible(!!probePullback);
+  syncProbeVisibility();
+}
+
+/** Probe widget visibility (mode-independent; the graph plane is XR-only). */
+function syncProbeVisibility() {
+  const placed = !!probe;
+  probeGroup.visible = placed;
+  cardPlane.visible = placed;
+  pullbackPlane.visible = placed && !!probePullback && xrActive;
+}
+
+/** Place the probe at a world-space surface hit (raycast pick result). */
+function placeProbeWorld(point) {
+  if (!clinicalModel || !loadedRoot) return null;
+  loadedRoot.updateWorldMatrix(true, false);
+  probeRas.copy(point);
+  loadedRoot.worldToLocal(probeRas);
+  return placeProbeRas(probeRas.x, probeRas.y, probeRas.z);
+}
+
+/**
+ * Place the probe at a GLB model-frame point (contract D *_xyz_ras meters):
+ * snaps to the nearest centerline sample, selects the longest-match pullback
+ * and redraws the card/graph only where the state actually changed.
+ */
+function placeProbeRas(x, y, z) {
+  if (!clinicalModel || !loadedRoot) return null;
+  const placed = clinicalModel.probeAt(x, y, z);
+  if (!placed) return null;
+  probe = placed;
+  probeAnchor.position.set(placed.position[0], placed.position[1], placed.position[2]);
+  const auto = clinicalModel.pullbackFor(placed);
+  if (auto !== probePullback) {
+    probePullback = auto;
+    hook.clinical.path_id = auto ? auto.path_id : null;
+    refreshPullback();
+  }
+  refreshProbeCard();
+  syncProbeVisibility();
+  updateHook();
+  return probeReadout;
+}
+
+/** Select a pullback path by id (automation override of the longest match). */
+function selectPullbackPath(pathId) {
+  if (!clinicalModel) return false;
+  const entry = clinicalModel.pullbackById(pathId);
+  if (!entry) return false;
+  if (entry !== probePullback) {
+    probePullback = entry;
+    hook.clinical.path_id = entry.path_id;
+    refreshPullback();
+    refreshProbeCard(); // Pa/Pd/vFFR of the card follow the selected path
+    updateHook();
+  }
+  return true;
 }
 
 /** All loaded structure names belonging to a contract group. */
@@ -404,6 +608,14 @@ stage.onFrame((dt) => {
   interaction.update(dt);
   if (playback) playback.update(dt); // dt in ms (stage.onFrame convention)
   updateClipPlane();
+  // Navvus probe widget: follow the GLB-frame anchor and billboard toward the
+  // camera — preallocated vectors only, zero per-frame allocation.
+  if (probeGroup.visible) {
+    probeAnchor.getWorldPosition(probeWorldPos);
+    probeGroup.position.copy(probeWorldPos);
+    stage.camera.getWorldPosition(probeCamPos);
+    probeGroup.lookAt(probeCamPos);
+  }
   // ready only after the GLB is loaded AND one frame has rendered since then
   if (modelLoaded && !hook.ready && stage.renderedFrames > loadFrameMark) {
     hook.ready = true;
@@ -540,6 +752,7 @@ loadModel(modelURL())
     stage.setModel(gltf.scene);
     const structures = collectStructures(gltf.scene);
     loadedRoot = gltf.scene;
+    loadedRoot.add(probeAnchor); // the probe rides the GLB model frame
     scanAttributeBasis(gltf.scene);
     hook.debug.model.bindings = scanBindings(gltf.scene);
     interaction.setStructures(structures);
@@ -562,6 +775,7 @@ loadModel(modelURL())
     ui.clearBoot();
     updateHook();
     loadContrastPayload();
+    loadClinicalPayload();
   })
   .catch((err) => {
     console.error(err);
@@ -598,4 +812,40 @@ function loadContrastPayload() {
     );
     ui.setPlayback(null);
   });
+}
+
+/**
+ * Kick off the contract D clinical payload load. A missing/unfetchable
+ * payload is a graceful no-op (console notice only): no vFFR map, probe or
+ * pullback console, but anatomy, contrast playback, groups, picking and
+ * clipping keep working untouched. An explicit `?clinical=<url>` failure
+ * additionally surfaces the error banner (the user asked for that file).
+ */
+function loadClinicalPayload() {
+  const caseId = initialCaseId();
+  const override = clinicalOverride();
+  if (!caseId && !override) {
+    console.warn(
+      '[main] no clinical payload for model',
+      modelURL(),
+      '— open with ?case=<id> or ?clinical=<url> to enable the ischemia map and Navvus probe',
+    );
+    return;
+  }
+  loadClinical(caseId)
+    .then(({ json, vffr }) => {
+      clinicalModel = createClinicalModel(json);
+      if (playback) playback.attachVFFR(vffr, json);
+      hook.clinical.ready = true;
+      updateHook();
+    })
+    .catch((err) => {
+      console.warn('[main] clinical payload unavailable:', err);
+      if (override) {
+        ui.showError(
+          `Could not load the clinical payload "${override}".\n` +
+            `The viewer remains fully usable without it. (${err.message})`,
+        );
+      }
+    });
 }

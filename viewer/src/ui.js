@@ -26,6 +26,8 @@ const STYLE = `
 .fs-btn.fs-on{background:#5a3a10;border-color:#c98a2e;color:#ffe1ad;font-weight:700}
 .fs-btn:disabled{opacity:.5;cursor:not-allowed}
 .fs-transit{color:#ffcf8a}
+.fs-cath{color:#cfe0f4;margin:2px 0 8px}
+.fs-cath>div{overflow-wrap:anywhere}
 .fs-vr{width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
 .fs-vr:hover:not(:disabled){background:#274b78}
 .fs-vr:disabled{opacity:.55;cursor:not-allowed}
@@ -67,9 +69,13 @@ function ensureStyle() {
  * Cross-section slider (0-100, fires onClipChange(offset01)), the Contrast
  * playback HUD (scrub timeline + Play/Pause + Loop + speed 0.25/0.5/1/2 +
  * profile A/B/C + distal transit-time readout, driven by setPlayback and the
- * onPlay* callbacks) and the Enter VR button. Also mirrors the stats (plus
- * contrast time/transit when a payload is active) into the in-XR head-locked
- * quad and hosts the on-screen error banner.
+ * onPlay* callbacks), the Mode segmented control (data-fs="mode-a" Contrast
+ * Angiography / data-fs="mode-b" Hemodynamic Ischemia Map, contract D), the
+ * Navvus probe readout mirror (data-fs="cath-readout", setReadout) and the
+ * Enter VR button. Also mirrors the stats (plus contrast time/transit when a
+ * payload is active) into the in-XR head-locked quad, hosts the on-screen
+ * error banner and manages the pullback console (data-fs="pullback" canvas,
+ * shared with the in-XR texture plane).
  */
 export function createUI(
   container,
@@ -78,6 +84,7 @@ export function createUI(
     onToggleVisible,
     onToggleGroup = () => {},
     onClipChange = () => {},
+    onMode = () => {},
     onPlayToggle = () => {},
     onPlayLoop = () => {},
     onPlaySpeed = () => {},
@@ -97,6 +104,11 @@ export function createUI(
       <div data-fs="fps"></div>
       <div data-fs="frame"></div>
       <div data-fs="tris"></div>
+    </div>
+    <div class="fs-section">Mode</div>
+    <div class="fs-btnrow">
+      <button class="fs-btn fs-on" type="button" data-fs="mode-a">Contrast Angiography</button>
+      <button class="fs-btn" type="button" data-fs="mode-b">Hemodynamic Ischemia Map</button>
     </div>
     <div class="fs-section">Groups</div>
     <div class="fs-groups"></div>
@@ -131,6 +143,8 @@ export function createUI(
       <span class="fs-name">Transit</span>
       <span class="fs-transit" data-fs="transit">&mdash;</span>
     </div>
+    <div class="fs-section">Navvus Probe</div>
+    <div class="fs-cath" data-fs="cath-readout">&mdash;</div>
     <button class="fs-vr" type="button">Enter VR</button>
   `;
   container.appendChild(panel);
@@ -147,6 +161,12 @@ export function createUI(
   const clipSlider = panel.querySelector('[data-fs="clip"]');
   const clipPct = panel.querySelector('[data-fs="clip-pct"]');
   const vrButton = panel.querySelector('.fs-vr');
+  const modeAButton = panel.querySelector('[data-fs="mode-a"]');
+  const modeBButton = panel.querySelector('[data-fs="mode-b"]');
+  const cathEl = panel.querySelector('[data-fs="cath-readout"]');
+  /** The one pullback canvas (DOM console + in-XR CanvasTexture source). */
+  const pullbackCanvas = container.querySelector('[data-fs="pullback"]');
+  const consoleEl = pullbackCanvas ? pullbackCanvas.parentElement : null;
   const checkboxes = new Map();
   const rowGroups = new Map();
   /** group -> { checkbox, members: [{ name, checkbox }] } */
@@ -190,6 +210,10 @@ export function createUI(
     clipPct.textContent = `${pct}%`;
     onClipChange(pct / 100);
   });
+
+  // ---- visualization mode (contract D, segmented control) ----------------
+  modeAButton.addEventListener('click', () => onMode('A'));
+  modeBButton.addEventListener('click', () => onMode('B'));
 
   // ---- contrast playback (state-driven render, see setPlayback) -----------
   const playScrub = panel.querySelector('[data-fs="play-scrub"]');
@@ -365,6 +389,37 @@ export function createUI(
       vrReason = reason || '';
       renderVRButton();
     },
+    /** Mirror the visualization mode segmented control ('A' | 'B'). */
+    setMode(mode) {
+      const next = mode === 'B' ? 'B' : 'A';
+      modeAButton.classList.toggle('fs-on', next === 'A');
+      modeBButton.classList.toggle('fs-on', next === 'B');
+    },
+    /**
+     * DOM mirror of the Navvus diagnostic card (contract D fields): styled
+     * text lines plus a `data-readout` JSON attribute for automation.
+     */
+    setReadout(readout, lines) {
+      cathEl.textContent = '';
+      if (!readout) {
+        cathEl.textContent = '—';
+        delete cathEl.dataset.readout;
+        return;
+      }
+      for (const line of lines) {
+        const row = document.createElement('div');
+        row.textContent = line.text;
+        if (line.color) row.style.color = line.color;
+        if (line.bold) row.style.fontWeight = '700';
+        cathEl.appendChild(row);
+      }
+      cathEl.dataset.readout = JSON.stringify(readout);
+    },
+    /** Pullback console visibility (desktop twin of the XR texture plane). */
+    setPullbackVisible(visible) {
+      if (consoleEl) consoleEl.hidden = !visible;
+    },
+    pullbackCanvas,
     setActive(active) {
       xrActive = active;
       renderVRButton();

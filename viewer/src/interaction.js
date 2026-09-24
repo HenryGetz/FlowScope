@@ -20,6 +20,7 @@ const CLIP_NUDGE_MAX_STEP = 0.05; // hard per-frame bound (offset01)
 const SCRUB_RATE = 0.5; // time01 per second at full deflection
 const SCRUB_MAX_STEP = 0.05; // hard per-frame bound (time01)
 const TAP_DOUBLE_MS = 300; // two trigger presses within this => play/pause
+const CLICK_MOVE_PX = 5; // desktop click vs orbit drag: max pointer travel
 
 const _delta = new THREE.Matrix4();
 const _model = new THREE.Matrix4();
@@ -34,6 +35,7 @@ const _v1 = new THREE.Vector3();
 const _mid = new THREE.Vector3();
 const _origin = new THREE.Vector3();
 const _dir = new THREE.Vector3();
+const _ndc = new THREE.Vector2();
 
 /**
  * 6DOF controller interaction, shared by the desktop page and the XR smoke
@@ -45,6 +47,11 @@ const _dir = new THREE.Vector3();
  *  - `select` (trigger) ray-picks a structure and toggles its visibility; two
  *    trigger presses within TAP_DOUBLE_MS additionally flip playback
  *    (`onPlayPause()`) while every press still runs the pick (onToggle intact).
+ *  - probe placement (contract D): a desktop click (pointer travel below
+ *    CLICK_MOVE_PX, so orbit drags are exempt) and every XR trigger ray-hit
+ *    offer the hit {point, object, name} to `onProbe(hit)`; a truthy return
+ *    consumes the press (no visibility toggle) — main places the Navvus
+ *    probe when the hit lands on a coronaries structure with clinical data.
  *  - while no hand grips the model, thumbstick/touchpad Y of either controller
  *    nudges the cross-section clip offset through `onClipNudge(delta01)`.
  *  - while a grip holds the model, the same axes scrub the playback timeline
@@ -56,7 +63,9 @@ export function createInteraction({
   renderer,
   scene,
   modelRoot,
+  camera = null,
   onToggle = () => {},
+  onProbe = () => {},
   onClipNudge = () => {},
   onScrub = () => {},
   onPlayPause = () => {},
@@ -308,24 +317,70 @@ export function createInteraction({
     if (delta !== 0) onClipNudge(delta);
   }
 
-  // ---- trigger picking ---------------------------------------------------
+  // ---- trigger / click picking -------------------------------------------
+
+  /** Raycast every visible structure along the current raycaster ray. */
+  function visibleHits() {
+    if (structures.length === 0) return null;
+    const targets = structures
+      .filter((entry) => entry.object.visible)
+      .map((entry) => entry.object);
+    return raycaster.intersectObjects(targets, true);
+  }
+
+  /** Best hit -> { entry, hit } (structure entry owning the hit object). */
+  function bestHit(hits) {
+    if (!hits || hits.length === 0) return null;
+    const entry = entryFor(hits[0].object);
+    if (!entry) return null;
+    return { entry, hit: hits[0] };
+  }
 
   function pick(hand) {
-    if (structures.length === 0) return null;
     hand.targetRay.updateWorldMatrix(true, false);
     _origin.setFromMatrixPosition(hand.targetRay.matrixWorld);
     _dir.set(0, 0, -1).transformDirection(hand.targetRay.matrixWorld);
     raycaster.set(_origin, _dir);
-    const targets = structures
-      .filter((entry) => entry.object.visible)
-      .map((entry) => entry.object);
-    const hits = raycaster.intersectObjects(targets, true);
-    if (hits.length === 0) return null;
-    const entry = entryFor(hits[0].object);
-    if (!entry) return null;
-    setStructureVisible(entry.name, !entry.object.visible);
-    return entry.name;
+    const found = bestHit(visibleHits());
+    if (!found) return null;
+    if (onProbe({ point: found.hit.point, object: found.hit.object, name: found.entry.name })) {
+      return found.entry.name; // consumed (Navvus probe placement): no toggle
+    }
+    setStructureVisible(found.entry.name, !found.entry.object.visible);
+    return found.entry.name;
   }
+
+  // ---- desktop click probe placement -------------------------------------
+  // A click (pointer travel below CLICK_MOVE_PX, so OrbitControls drags stay
+  // exempt) offers the surface hit to `onProbe` exactly like an XR trigger.
+
+  let pointerDown = false;
+  let downX = 0;
+  let downY = 0;
+  renderer.domElement.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    pointerDown = true;
+    downX = event.clientX;
+    downY = event.clientY;
+  });
+  renderer.domElement.addEventListener('pointerup', (event) => {
+    if (!pointerDown || event.button !== 0) return;
+    pointerDown = false;
+    const dx = event.clientX - downX;
+    const dy = event.clientY - downY;
+    if (dx * dx + dy * dy > CLICK_MOVE_PX * CLICK_MOVE_PX) return; // orbit drag
+    if (!camera) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (!(rect.width > 0) || !(rect.height > 0)) return;
+    _ndc.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(_ndc, camera);
+    const found = bestHit(visibleHits());
+    if (!found) return;
+    onProbe({ point: found.hit.point, object: found.hit.object, name: found.entry.name });
+  });
 
   function entryFor(object) {
     let node = object;
