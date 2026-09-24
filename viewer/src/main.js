@@ -4,7 +4,7 @@ import { loadModel, loadVolume, collectStructures, modelURL } from './loader.js'
 import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
 import { structureGroup, GROUPS } from './structures.js';
-import { XR_MODES, xrAvailability, enterXR, exitXR } from './xr.js';
+import { sessionMode, xrAvailability, enterXR, exitXR } from './xr.js';
 import { assertSharedParent } from './coordinates.js';
 import { MprSlice } from './mprSlice.js';
 import { ClippingSync } from './clippingSync.js';
@@ -15,8 +15,11 @@ const worldScaleVec = new THREE.Vector3();
 const overlay = document.getElementById('overlay');
 const stage = createStage(document.getElementById('app'));
 
-/** Running immersive session mode ('immersive-vr' | 'immersive-ar' | null). */
-let xrMode = null;
+/** Immersive mode configured by the loading link (`?xr=vr|ar`; default AR). */
+const xrMode = sessionMode();
+
+/** True while the immersive session presents. */
+let xrRunning = false;
 
 // ---- MPR slicing + hardware mesh clipping --------------------------------
 // One authoritative slice plane (ClippingSync, modelRoot-local) drives both
@@ -114,16 +117,17 @@ const ui = createUI(overlay, {
   onWindowChange: (widthHu) => applyWindow(widthHu),
   onLevelChange: (centerHu) => applyLevel(centerHu),
   onPreset: (name) => applyPreset(name),
-  onEnter: async (mode) => {
-    const session = await enterXR(stage.renderer, stage, mode);
-    xrMode = mode;
-    ui.setActive(mode);
+  mode: xrMode,
+  onEnter: async () => {
+    const session = await enterXR(stage.renderer, stage, xrMode);
+    xrRunning = true;
+    ui.setActive(true);
     updateHook();
     session.addEventListener(
       'end',
       () => {
-        xrMode = null;
-        ui.setActive(null);
+        xrRunning = false;
+        ui.setActive(false);
         updateHook();
       },
       { once: true },
@@ -165,9 +169,11 @@ const hook = {
   },
   /** Frame/GPU telemetry (refreshed in updateHook). */
   telemetry: { fps: 0, frameMs: 0, gpuMs: null, triangles: 0, drawCalls: 0 },
+  /** Boot probe of the configured mode only (`?xr=`); the other stays false. */
   xrSupported: false,
   arSupported: false,
   xrActive: false,
+  /** Running session mode (configured mode while presenting, else null). */
   xrMode: null,
   /** Set a contract group's visibility (toggles all its member structures). */
   setGroup(name, visible) {
@@ -213,8 +219,8 @@ function updateHook() {
   hook.frameMs = stage.metrics.frameMs;
   hook.triangles = stage.renderer.info.render.triangles;
   hook.structures = structureNames;
-  hook.xrActive = xrMode !== null;
-  hook.xrMode = xrMode;
+  hook.xrActive = xrRunning;
+  hook.xrMode = xrRunning ? xrMode : null;
   for (const group of Object.keys(hook.groups)) hook.groups[group] = groupVisible(group);
   hook.clip.enabled = !!mpr;
   hook.clip.offset01 = clipOffset01;
@@ -522,13 +528,11 @@ function scanBindings(root) {
 updateHook();
 setInterval(updateHook, 1000);
 
-for (const mode of XR_MODES) {
-  xrAvailability(mode).then(({ supported, reason }) => {
-    hook[mode === 'immersive-ar' ? 'arSupported' : 'xrSupported'] = supported;
-    ui.setSessionState(mode, { supported, reason });
-    updateHook();
-  });
-}
+xrAvailability(xrMode).then(({ supported, reason }) => {
+  hook[xrMode === 'immersive-ar' ? 'arSupported' : 'xrSupported'] = supported;
+  ui.setSessionState({ supported, reason });
+  updateHook();
+});
 
 Promise.all([loadModel(modelURL()), loadVolume(modelURL())])
   .then(([gltf, volume]) => {

@@ -52,7 +52,7 @@
       import { createInteraction } from './src/interaction.js';
       import { createUI } from './src/ui.js';
       import { createTelemetry } from './src/telemetry.js';
-      import { XR_MODES, enterXR, exitXR } from './src/xr.js';
+      import { XR_MODES, sessionMode, enterXR, exitXR } from './src/xr.js';
 
       const statusEl = document.getElementById('status');
       function setStatus(text) {
@@ -157,7 +157,8 @@
         onWindowChange: (widthHu) => record('window', { widthHu }),
         onLevelChange: (levelHu) => record('level', { levelHu }),
         onPreset: (name) => record('preset', { name }),
-        onEnter: (mode) => enterXR(stage.renderer, stage, mode),
+        mode: sessionMode(),
+        onEnter: () => enterXR(stage.renderer, stage, sessionMode()),
         onExit: () => exitXR(stage.renderer),
       });
 
@@ -185,25 +186,26 @@
       }
 
       let session = null;
-      let sessionMode = null;
+      let startedMode = null;
 
       window.__XRTEST__ = {
         /**
          * Boot an emulated immersive session (waits for the GLB): 'immersive-vr'
          * (opaque backdrop) or 'immersive-ar' (transparent clear over the
-         * passthrough feed — the Quest 3 MR path).
+         * passthrough feed — the Quest 3 MR path). Defaults to the page's
+         * configured mode (`?xr=`, immersive-ar by default).
          */
-        async startXR(mode = 'immersive-vr') {
+        async startXR(mode = sessionMode()) {
           if (!XR_MODES.includes(mode)) {
             throw new Error(`startXR: mode must be one of ${XR_MODES.join(', ')}, got ${mode}`);
           }
           await ready;
           if (!session) {
-            sessionMode = mode;
+            startedMode = mode;
             session = await enterXR(stage.renderer, stage, mode);
             session.addEventListener('end', () => {
               session = null;
-              sessionMode = null;
+              startedMode = null;
             });
             // let frames run so both controllers connect
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -224,7 +226,7 @@
         /** Session + backdrop state (AR passthrough smoke assertions). */
         xrState() {
           return {
-            mode: sessionMode,
+            mode: startedMode,
             presenting: !!stage.renderer.xr.getSession(),
             backgroundTransparent: stage.scene.background === null,
             clearAlpha: stage.renderer.getClearAlpha(),
@@ -320,7 +322,7 @@
         },
       };
 
-      setStatus(`__XRTEST__ installed — call startXR('immersive-vr'|'immersive-ar') (${modelURL()})`);
+      setStatus(`__XRTEST__ installed — call startXR(mode?) (${modelURL()}; default ${sessionMode()})`);
     </script>
   </body>
 </html>

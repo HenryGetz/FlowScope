@@ -1,6 +1,25 @@
 /** Immersive session modes the viewer can start. */
 export const XR_MODES = ['immersive-vr', 'immersive-ar'];
 
+/** `?xr=` values accepted on the loading link. */
+const MODE_ALIASES = { vr: 'immersive-vr', ar: 'immersive-ar' };
+
+/**
+ * Immersive mode configured by the loading link: `?xr=vr` or `?xr=ar` (bare or
+ * `immersive-` prefixed). Default immersive-ar (Quest 3 passthrough MR);
+ * unknown values fall back to the default with a console warning.
+ */
+export function sessionMode() {
+  const raw = new URLSearchParams(window.location.search).get('xr');
+  const key = raw ? raw.trim().toLowerCase().replace(/^immersive-/, '') : '';
+  const mode = MODE_ALIASES[key];
+  if (mode) return mode;
+  if (raw) {
+    console.warn(`[flowscope] unknown ?xr=${raw} — use ?xr=vr or ?xr=ar; defaulting to immersive-ar`);
+  }
+  return 'immersive-ar';
+}
+
 /** Session options per the shared contract (all optional features). */
 const SESSION_OPTIONS = {
   optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'],

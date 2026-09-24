@@ -1,9 +1,8 @@
 import { resolveStructure } from './structures.js';
-import { XR_MODES } from './xr.js';
 
 const STYLE_ID = 'flowscope-viewer-style';
 
-/** Immersive session button label per session mode (XR_MODES order). */
+/** Session button label per immersive mode. */
 const MODE_LABELS = { 'immersive-vr': 'VR', 'immersive-ar': 'AR' };
 
 const STYLE = `
@@ -26,8 +25,7 @@ const STYLE = `
 .fs-preset:hover:not(:disabled){background:#274b78}
 .fs-preset:disabled{opacity:.55;cursor:not-allowed}
 .fs-preset.fs-active{background:#2f6399;border-color:rgba(160,210,255,.6)}
-.fs-sessions{display:flex;gap:4px;margin:6px 0 0}
-.fs-session{flex:1;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
+.fs-session{width:100%;margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
 .fs-session:hover:not(:disabled){background:#274b78}
 .fs-session:disabled{opacity:.55;cursor:not-allowed}
 .fs-error{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:20;display:none;max-width:min(680px,92vw);background:rgba(60,12,16,.95);color:#ffd9dd;border:1px solid #aa3333;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:12px 16px;border-radius:10px;white-space:pre-wrap}
@@ -68,10 +66,10 @@ function ensureStyle() {
  * swatch per GLB node name, coherent with the group state both ways), the MPR
  * section (Axial/Coronal/Sagittal preset buttons firing onPreset(name),
  * Window/Level sliders firing onWindowChange/onLevelChange in HU), the
- * Cross-section slider (0-100, fires onClipChange(offset01)) and the Enter VR
- * / Enter AR session buttons (immersive-vr over an opaque backdrop,
- * immersive-ar over the passthrough feed; each fires onEnter(mode) /
- * onExit(mode)). Also mirrors the stats into the in-XR head-locked quad and hosts the
+ * Cross-section slider (0-100, fires onClipChange(offset01)) and the session
+ * button (starts the configured immersive `mode` — immersive-ar by default,
+ * `?xr=vr` on the loading link; fires onEnter()/onExit()). Also mirrors the
+ * stats into the in-XR head-locked quad and hosts the
  * on-screen error banner. The MPR rows are disabled until setVolumeReady(true).
  */
 export function createUI(
@@ -85,6 +83,7 @@ export function createUI(
     onWindowChange = () => {},
     onLevelChange = () => {},
     onPreset = () => {},
+    mode = 'immersive-ar',
     onEnter,
     onExit,
   },
@@ -126,10 +125,7 @@ export function createUI(
       <input data-fs="clip" type="range" min="0" max="100" step="1" value="0" />
       <span class="fs-clip-pct" data-fs="clip-pct">0%</span>
     </div>
-    <div class="fs-sessions">
-      <button class="fs-session" type="button" data-mode="immersive-vr">Enter VR</button>
-      <button class="fs-session" type="button" data-mode="immersive-ar">Enter AR</button>
-    </div>
+    <button class="fs-session" type="button">Enter AR</button>
   `;
   container.appendChild(panel);
 
@@ -150,56 +146,45 @@ export function createUI(
   const windowPct = panel.querySelector('[data-fs="window-pct"]');
   const levelSlider = panel.querySelector('[data-fs="level"]');
   const levelPct = panel.querySelector('[data-fs="level-pct"]');
-  const sessionButtons = new Map();
-  for (const button of panel.querySelectorAll('[data-mode]')) {
-    sessionButtons.set(button.getAttribute('data-mode'), button);
-  }
+  const sessionButton = panel.querySelector('.fs-session');
   const checkboxes = new Map();
   const rowGroups = new Map();
   /** group -> { checkbox, members: [{ name, checkbox }] } */
   const groupRows = new Map();
 
-  /** mode -> { supported, reason } availability report (xrAvailability). */
-  const modes = new Map(
-    XR_MODES.map((mode) => [mode, { supported: false, reason: 'Checking WebXR support…' }]),
-  );
-  let activeMode = null; // running immersive mode (null = desktop)
+  /** Availability report for the configured mode (xrAvailability). */
+  let sessionState = { supported: false, reason: 'Checking WebXR support…' };
+  let active = false; // immersive session presenting
   let busy = false;
 
-  function renderSessionButtons() {
-    for (const [mode, button] of sessionButtons) {
-      const label = MODE_LABELS[mode];
-      const active = activeMode === mode;
-      const state = modes.get(mode);
-      button.textContent = active ? `Exit ${label}` : `Enter ${label}`;
-      button.disabled = busy || (activeMode !== null && !active) || (!active && !state.supported);
-      button.title = active
-        ? `End the ${mode} session`
-        : state.supported
-          ? `Start a ${mode} session`
-          : state.reason;
-    }
+  function renderSessionButton() {
+    const label = MODE_LABELS[mode] || mode;
+    sessionButton.textContent = active ? `Exit ${label}` : `Enter ${label}`;
+    sessionButton.disabled = busy || (!active && !sessionState.supported);
+    sessionButton.title = active
+      ? `End the ${mode} session`
+      : sessionState.supported
+        ? `Start a ${mode} session`
+        : sessionState.reason;
   }
 
-  for (const [mode, button] of sessionButtons) {
-    button.addEventListener('click', async () => {
-      if (activeMode === mode) {
-        onExit(mode);
-        return;
-      }
-      busy = true;
-      renderSessionButtons();
-      try {
-        await onEnter(mode);
-      } catch (err) {
-        console.error(err);
-        showError(`Could not start a WebXR session: ${err && err.message ? err.message : err}`);
-      } finally {
-        busy = false;
-        renderSessionButtons();
-      }
-    });
-  }
+  sessionButton.addEventListener('click', async () => {
+    if (active) {
+      onExit();
+      return;
+    }
+    busy = true;
+    renderSessionButton();
+    try {
+      await onEnter();
+    } catch (err) {
+      console.error(err);
+      showError(`Could not start a WebXR session: ${err && err.message ? err.message : err}`);
+    } finally {
+      busy = false;
+      renderSessionButton();
+    }
+  });
 
   clipSlider.addEventListener('input', () => {
     const pct = Number(clipSlider.value);
@@ -367,7 +352,7 @@ export function createUI(
     error.classList.add('fs-visible');
   }
 
-  renderSessionButtons();
+  renderSessionButton();
   setVolumeReady(false);
 
   return {
@@ -377,18 +362,15 @@ export function createUI(
     setWindowLevel,
     setPresetActive,
     setVolumeReady,
-    /** Availability report for an immersive mode ({ supported, reason }). */
-    setSessionState(mode, { supported, reason }) {
-      const state = modes.get(mode);
-      if (!state) return;
-      state.supported = supported;
-      state.reason = reason || '';
-      renderSessionButtons();
+    /** Availability report for the configured mode ({ supported, reason }). */
+    setSessionState({ supported, reason }) {
+      sessionState = { supported: !!supported, reason: reason || '' };
+      renderSessionButton();
     },
-    /** Reflect the running session (immersive mode, or null back on desktop). */
-    setActive(mode) {
-      activeMode = mode || null;
-      renderSessionButtons();
+    /** Reflect the running session. */
+    setActive(running) {
+      active = !!running;
+      renderSessionButton();
     },
     showError,
     clearBoot() {
