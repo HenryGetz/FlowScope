@@ -5,8 +5,8 @@
   "name": "phase2/rom/build_network_graph.py",
   "version": "0.1.0",
   "command": "phase2/rom/build_network_graph.py --cases 700 --networks-dir out/rom/networks --out-dir out/rom/graphs",
-  "generated": "2026-09-24T07:10:52.901725+00:00",
-  "runtime_s": 0.014163
+  "generated": "2026-09-24T08:50:29.455650+00:00",
+  "runtime_s": 0.016394
  },
  "case": "700",
  "gamma_murray": 2.7,

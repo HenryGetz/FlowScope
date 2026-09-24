@@ -1,0 +1,5135 @@
+{
+  "schema": "flowscope.cfd.overnight_report",
+  "schema_version": 1,
+  "tool": {
+    "name": "tools/run_cfd_overnight.py",
+    "version": "0.1.0",
+    "command": "tools/run_cfd_overnight.py --cases 601 700 798 --probe-base https://127.0.0.1:8543",
+    "generated": "2026-09-24T09:11:55.473673+00:00",
+    "runtime_s": 2312.447
+  },
+  "out_dir": "out",
+  "cases_requested": [
+    "601",
+    "700",
+    "798"
+  ],
+  "profiles": [
+    "A",
+    "B",
+    "C"
+  ],
+  "probe_base": "https://127.0.0.1:8543",
+  "skip_probe": false,
+  "interrupted": false,
+  "cases": [
+    {
+      "case": "601",
+      "status": "ok",
+      "failing_stage": null,
+      "runtime_s": 1026.063,
+      "stages": [
+        {
+          "stage": "graph",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/build_network_graph.py --cases 601 --networks-dir out/rom/networks --out-dir out/rom/graphs",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 0.314,
+          "log": "out/cfd_logs/601_graph.log",
+          "reason": null
+        },
+        {
+          "stage": "hemodynamics",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 601 --graph-dir out/rom/graphs --out-dir out/rom/hemodynamics",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 157.556,
+          "log": "out/cfd_logs/601_hemodynamics.log",
+          "reason": null
+        },
+        {
+          "stage": "carrier",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/transport/build_carrier.py --cases 601 --graph-dir out/rom/graphs --out-dir out/transport/carrier",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 7.433,
+          "log": "out/cfd_logs/601_carrier.log",
+          "reason": null
+        },
+        {
+          "stage": "advection",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/transport/solve_advection.py --cases 601 --profiles A B C --carrier-dir out/transport/carrier --hemo-dir out/rom/hemodynamics --out-dir out/transport/contrast",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 853.57,
+          "log": "out/cfd_logs/601_advection.log",
+          "reason": null
+        },
+        {
+          "stage": "export_A",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 601 --profile A --glb out/coronary_601.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.296,
+          "log": "out/cfd_logs/601_export_A.log",
+          "reason": null
+        },
+        {
+          "stage": "export_B",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 601 --profile B --glb out/coronary_601.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.805,
+          "log": "out/cfd_logs/601_export_B.log",
+          "reason": null
+        },
+        {
+          "stage": "export_C",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 601 --profile C --glb out/coronary_601.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.089,
+          "log": "out/cfd_logs/601_export_C.log",
+          "reason": null
+        }
+      ],
+      "metrics": {
+        "mesh": {
+          "triangles": 100498,
+          "branch_count": 21,
+          "n_nodes": 23,
+          "n_terminals": 8,
+          "n_roots": 2,
+          "total_length_mm": 712.6748341522687,
+          "unavailable_reason": null
+        },
+        "rom_1d": {
+          "solve_s": 29.2564,
+          "transport_1d_s": 126.4931,
+          "total_s": 156.3753,
+          "mass_balance": {
+            "A": {
+              "rel_error": 1.8385071243186239e-13,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            },
+            "B": {
+              "rel_error": 1.503234362384532e-13,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            },
+            "C": {
+              "rel_error": 1.6626170810476846e-13,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            }
+          },
+          "unavailable_reason": null
+        },
+        "transport_3d": {
+          "profiles": {
+            "A": {
+              "runtime_s": 278.635878873989,
+              "eps_mass_max": 3.782012296702239e-15,
+              "dt_s_mean": 0.00015088361215367496,
+              "pe": 1562746.8425249024,
+              "cfl": 0.45000000000000007,
+              "verdict": "pass",
+              "unavailable_reason": null
+            },
+            "B": {
+              "runtime_s": 337.275413797237,
+              "eps_mass_max": 1.7288023462829633e-15,
+              "dt_s_mean": 0.000196475843812045,
+              "pe": 1465074.70703125,
+              "cfl": 0.45,
+              "verdict": "pass",
+              "unavailable_reason": null
+            },
+            "C": {
+              "runtime_s": 236.57436616998166,
+              "eps_mass_max": 5.062433458903678e-15,
+              "dt_s_mean": 0.00015011008072586565,
+              "pe": 1562746.8425249024,
+              "cfl": 0.45000000000000007,
+              "verdict": "pass",
+              "unavailable_reason": null
+            }
+          },
+          "solve_s_total": 852.486,
+          "eps_mass_max": 5.062433458903678e-15,
+          "unavailable_reason": null
+        },
+        "transit_ms": {
+          "A": {
+            "branches": [
+              {
+                "name": "601_b002",
+                "transit_ms": 2016.2475,
+                "t_arrival_ms": 1912.736,
+                "t_peak_ms": 2782.0,
+                "timi_frames_30fps": 60
+              },
+              {
+                "name": "601_b003",
+                "transit_ms": 4465.3559,
+                "t_arrival_ms": 3306.3959999999997,
+                "t_peak_ms": 5098.0,
+                "timi_frames_30fps": 134
+              },
+              {
+                "name": "601_b004",
+                "transit_ms": 2138.2042,
+                "t_arrival_ms": 2025.2669999999998,
+                "t_peak_ms": 3796.0,
+                "timi_frames_30fps": 64
+              },
+              {
+                "name": "601_b005",
+                "transit_ms": 4527.7453,
+                "t_arrival_ms": 3372.3869999999997,
+                "t_peak_ms": 5184.0,
+                "timi_frames_30fps": 136
+              },
+              {
+                "name": "601_b008",
+                "transit_ms": 236.7658,
+                "t_arrival_ms": 220.78400000000002,
+                "t_peak_ms": 2044.0,
+                "timi_frames_30fps": 7
+              },
+              {
+                "name": "601_b009",
+                "transit_ms": 493.0212,
+                "t_arrival_ms": 457.42100000000005,
+                "t_peak_ms": 2048.0,
+                "timi_frames_30fps": 15
+              },
+              {
+                "name": "601_b010",
+                "transit_ms": 423.7748,
+                "t_arrival_ms": 425.175,
+                "t_peak_ms": 2044.0,
+                "timi_frames_30fps": 13
+              },
+              {
+                "name": "601_b011",
+                "transit_ms": 419.1316,
+                "t_arrival_ms": 414.60200000000003,
+                "t_peak_ms": 2066.0,
+                "timi_frames_30fps": 13
+              },
+              {
+                "name": "601_b012",
+                "transit_ms": 1608.6071,
+                "t_arrival_ms": 1500.626,
+                "t_peak_ms": 3126.0,
+                "timi_frames_30fps": 48
+              },
+              {
+                "name": "601_b013",
+                "transit_ms": 1098.7948,
+                "t_arrival_ms": 951.607,
+                "t_peak_ms": 2114.0,
+                "timi_frames_30fps": 33
+              },
+              {
+                "name": "601_b015",
+                "transit_ms": 3804.0947,
+                "t_arrival_ms": 3706.696,
+                "t_peak_ms": 5320.0,
+                "timi_frames_30fps": 114
+              },
+              {
+                "name": "601_b016",
+                "transit_ms": 489.6488,
+                "t_arrival_ms": 484.962,
+                "t_peak_ms": 2045.9999999999998,
+                "timi_frames_30fps": 15
+              },
+              {
+                "name": "601_b017",
+                "transit_ms": 585.6116,
+                "t_arrival_ms": 522.506,
+                "t_peak_ms": 2032.0,
+                "timi_frames_30fps": 18
+              },
+              {
+                "name": "601_b018",
+                "transit_ms": 1275.144,
+                "t_arrival_ms": 1256.0610000000001,
+                "t_peak_ms": 2098.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "601_b019",
+                "transit_ms": 699.3498,
+                "t_arrival_ms": 585.9459999999999,
+                "t_peak_ms": 2512.0,
+                "timi_frames_30fps": 21
+              },
+              {
+                "name": "601_b020",
+                "transit_ms": 904.841,
+                "t_arrival_ms": 801.905,
+                "t_peak_ms": 2100.0,
+                "timi_frames_30fps": 27
+              }
+            ],
+            "unavailable_reason": null
+          },
+          "B": {
+            "branches": [
+              {
+                "name": "601_b002",
+                "transit_ms": 2639.3146,
+                "t_arrival_ms": 4141.431,
+                "t_peak_ms": 5040.0,
+                "timi_frames_30fps": 79
+              },
+              {
+                "name": "601_b003",
+                "transit_ms": 5844.0272,
+                "t_arrival_ms": 5466.762,
+                "t_peak_ms": 6794.0,
+                "timi_frames_30fps": 175
+              },
+              {
+                "name": "601_b004",
+                "transit_ms": 2799.5723,
+                "t_arrival_ms": 4261.163,
+                "t_peak_ms": 5600.0,
+                "timi_frames_30fps": 84
+              },
+              {
+                "name": "601_b005",
+                "transit_ms": 5926.0609,
+                "t_arrival_ms": 5532.408,
+                "t_peak_ms": 6880.0,
+                "timi_frames_30fps": 178
+              },
+              {
+                "name": "601_b008",
+                "transit_ms": 309.4401,
+                "t_arrival_ms": 579.648,
+                "t_peak_ms": 3594.0,
+                "timi_frames_30fps": 9
+              },
+              {
+                "name": "601_b009",
+                "transit_ms": 642.0625,
+                "t_arrival_ms": 1247.781,
+                "t_peak_ms": 3796.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "601_b010",
+                "transit_ms": 553.828,
+                "t_arrival_ms": 1125.392,
+                "t_peak_ms": 3684.0,
+                "timi_frames_30fps": 17
+              },
+              {
+                "name": "601_b011",
+                "transit_ms": 548.4516,
+                "t_arrival_ms": 1082.0939999999998,
+                "t_peak_ms": 3656.0,
+                "timi_frames_30fps": 16
+              },
+              {
+                "name": "601_b012",
+                "transit_ms": 2085.8236,
+                "t_arrival_ms": 3712.5789999999997,
+                "t_peak_ms": 4898.0,
+                "timi_frames_30fps": 63
+              },
+              {
+                "name": "601_b013",
+                "transit_ms": 1434.901,
+                "t_arrival_ms": 2557.473,
+                "t_peak_ms": 4051.9999999999995,
+                "timi_frames_30fps": 43
+              },
+              {
+                "name": "601_b015",
+                "transit_ms": 4948.9705,
+                "t_arrival_ms": 5837.734,
+                "t_peak_ms": 7024.0,
+                "timi_frames_30fps": 148
+              },
+              {
+                "name": "601_b016",
+                "transit_ms": 639.962,
+                "t_arrival_ms": 1283.635,
+                "t_peak_ms": 3736.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "601_b017",
+                "transit_ms": 765.5866,
+                "t_arrival_ms": 1382.25,
+                "t_peak_ms": 3720.0,
+                "timi_frames_30fps": 23
+              },
+              {
+                "name": "601_b018",
+                "transit_ms": 1668.5896,
+                "t_arrival_ms": 3347.054,
+                "t_peak_ms": 4380.0,
+                "timi_frames_30fps": 50
+              },
+              {
+                "name": "601_b019",
+                "transit_ms": 914.6385,
+                "t_arrival_ms": 1556.1750000000002,
+                "t_peak_ms": 4022.0000000000005,
+                "timi_frames_30fps": 27
+              },
+              {
+                "name": "601_b020",
+                "transit_ms": 1183.7278,
+                "t_arrival_ms": 2122.477,
+                "t_peak_ms": 3782.0,
+                "timi_frames_30fps": 36
+              }
+            ],
+            "unavailable_reason": null
+          },
+          "C": {
+            "branches": [
+              {
+                "name": "601_b002",
+                "transit_ms": 2005.1556,
+                "t_arrival_ms": 1912.6799999999998,
+                "t_peak_ms": 3030.0,
+                "timi_frames_30fps": 60
+              },
+              {
+                "name": "601_b003",
+                "transit_ms": 4440.8183,
+                "t_arrival_ms": 3198.402,
+                "t_peak_ms": 4638.0,
+                "timi_frames_30fps": 133
+              },
+              {
+                "name": "601_b004",
+                "transit_ms": 2126.4291,
+                "t_arrival_ms": 2023.59,
+                "t_peak_ms": 3494.0,
+                "timi_frames_30fps": 64
+              },
+              {
+                "name": "601_b005",
+                "transit_ms": 4502.8572,
+                "t_arrival_ms": 3264.406,
+                "t_peak_ms": 4724.0,
+                "timi_frames_30fps": 135
+              },
+              {
+                "name": "601_b008",
+                "transit_ms": 235.4733,
+                "t_arrival_ms": 220.75300000000001,
+                "t_peak_ms": 490.0,
+                "timi_frames_30fps": 7
+              },
+              {
+                "name": "601_b009",
+                "transit_ms": 490.3752,
+                "t_arrival_ms": 457.609,
+                "t_peak_ms": 1164.0,
+                "timi_frames_30fps": 15
+              },
+              {
+                "name": "601_b010",
+                "transit_ms": 421.4619,
+                "t_arrival_ms": 425.137,
+                "t_peak_ms": 742.0,
+                "timi_frames_30fps": 13
+              },
+              {
+                "name": "601_b011",
+                "transit_ms": 416.8303,
+                "t_arrival_ms": 414.491,
+                "t_peak_ms": 928.0,
+                "timi_frames_30fps": 13
+              },
+              {
+                "name": "601_b012",
+                "transit_ms": 1600.1573,
+                "t_arrival_ms": 1501.893,
+                "t_peak_ms": 2770.0,
+                "timi_frames_30fps": 48
+              },
+              {
+                "name": "601_b013",
+                "transit_ms": 1092.8191,
+                "t_arrival_ms": 951.801,
+                "t_peak_ms": 1664.0,
+                "timi_frames_30fps": 33
+              },
+              {
+                "name": "601_b015",
+                "transit_ms": 3783.7829,
+                "t_arrival_ms": 3636.478,
+                "t_peak_ms": 4960.0,
+                "timi_frames_30fps": 114
+              },
+              {
+                "name": "601_b016",
+                "transit_ms": 486.9756,
+                "t_arrival_ms": 484.928,
+                "t_peak_ms": 824.0,
+                "timi_frames_30fps": 15
+              },
+              {
+                "name": "601_b017",
+                "transit_ms": 582.4103,
+                "t_arrival_ms": 522.464,
+                "t_peak_ms": 876.0,
+                "timi_frames_30fps": 17
+              },
+              {
+                "name": "601_b018",
+                "transit_ms": 1268.143,
+                "t_arrival_ms": 1256.0690000000002,
+                "t_peak_ms": 1986.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "601_b019",
+                "transit_ms": 695.5196,
+                "t_arrival_ms": 585.909,
+                "t_peak_ms": 1984.0,
+                "timi_frames_30fps": 21
+              },
+              {
+                "name": "601_b020",
+                "transit_ms": 899.8785,
+                "t_arrival_ms": 801.8349999999999,
+                "t_peak_ms": 1208.0,
+                "timi_frames_30fps": 27
+              }
+            ],
+            "unavailable_reason": null
+          }
+        },
+        "payload": {
+          "A": {
+            "total_mb": 4.5305,
+            "frames": 90,
+            "vertices": 50253,
+            "bin_file": "case_601_A_contrast.bin",
+            "unavailable_reason": null
+          },
+          "B": {
+            "total_mb": 4.5305,
+            "frames": 90,
+            "vertices": 50253,
+            "bin_file": "case_601_B_contrast.bin",
+            "unavailable_reason": null
+          },
+          "C": {
+            "total_mb": 4.5304,
+            "frames": 90,
+            "vertices": 50253,
+            "bin_file": "case_601_C_contrast.bin",
+            "unavailable_reason": null
+          }
+        },
+        "load_time_benchmark": {
+          "unavailable_reason": null,
+          "site": {
+            "unavailable_reason": null,
+            "base": "https://127.0.0.1:8543",
+            "samples_per_resource": 3,
+            "resources": [
+              {
+                "name": "page_root",
+                "url": "https://127.0.0.1:8543/",
+                "kind": "page_html",
+                "bytes": 1127,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 17.604,
+                  "median": 18.333,
+                  "max": 66.717,
+                  "samples": [
+                    17.604,
+                    18.333,
+                    66.717
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.769,
+                  "median": 1.142,
+                  "max": 3.774,
+                  "samples": [
+                    0.769,
+                    1.142,
+                    3.774
+                  ]
+                },
+                "total_ms": {
+                  "min": 18.372,
+                  "median": 19.474,
+                  "max": 70.491,
+                  "samples": [
+                    18.372,
+                    19.474,
+                    70.491
+                  ]
+                }
+              },
+              {
+                "name": "page_model_coronary_601",
+                "url": "https://127.0.0.1:8543/?model=assets/coronary_601.glb",
+                "kind": "page_html",
+                "bytes": 1127,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 14.986,
+                  "median": 23.514,
+                  "max": 26.116,
+                  "samples": [
+                    14.986,
+                    23.514,
+                    26.116
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.404,
+                  "median": 0.813,
+                  "max": 1.831,
+                  "samples": [
+                    0.404,
+                    0.813,
+                    1.831
+                  ]
+                },
+                "total_ms": {
+                  "min": 15.39,
+                  "median": 25.346,
+                  "max": 26.929,
+                  "samples": [
+                    15.39,
+                    25.346,
+                    26.929
+                  ]
+                }
+              },
+              {
+                "name": "coronary_601",
+                "url": "https://127.0.0.1:8543/assets/coronary_601.glb",
+                "kind": "glb",
+                "bytes": 1056532,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 14.982,
+                  "median": 18.826,
+                  "max": 19.691,
+                  "samples": [
+                    14.982,
+                    18.826,
+                    19.691
+                  ]
+                },
+                "download_ms": {
+                  "min": 25.52,
+                  "median": 27.93,
+                  "max": 28.202,
+                  "samples": [
+                    25.52,
+                    27.93,
+                    28.202
+                  ]
+                },
+                "total_ms": {
+                  "min": 40.502,
+                  "median": 46.756,
+                  "max": 47.893,
+                  "samples": [
+                    40.502,
+                    46.756,
+                    47.893
+                  ]
+                }
+              },
+              {
+                "name": "coronary_700",
+                "url": "https://127.0.0.1:8543/assets/coronary_700.glb",
+                "kind": "glb",
+                "bytes": 1056548,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 12.699,
+                  "median": 15.209,
+                  "max": 43.256,
+                  "samples": [
+                    12.699,
+                    15.209,
+                    43.256
+                  ]
+                },
+                "download_ms": {
+                  "min": 13.997,
+                  "median": 18.016,
+                  "max": 20.606,
+                  "samples": [
+                    13.997,
+                    18.016,
+                    20.606
+                  ]
+                },
+                "total_ms": {
+                  "min": 30.715,
+                  "median": 35.816,
+                  "max": 57.252,
+                  "samples": [
+                    30.715,
+                    35.816,
+                    57.252
+                  ]
+                }
+              },
+              {
+                "name": "coronary_798",
+                "url": "https://127.0.0.1:8543/assets/coronary_798.glb",
+                "kind": "glb",
+                "bytes": 1056460,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 8.688,
+                  "median": 13.387,
+                  "max": 16.884,
+                  "samples": [
+                    8.688,
+                    13.387,
+                    16.884
+                  ]
+                },
+                "download_ms": {
+                  "min": 21.744,
+                  "median": 25.155,
+                  "max": 25.923,
+                  "samples": [
+                    21.744,
+                    25.155,
+                    25.923
+                  ]
+                },
+                "total_ms": {
+                  "min": 34.611,
+                  "median": 38.542,
+                  "max": 38.628,
+                  "samples": [
+                    34.611,
+                    38.542,
+                    38.628
+                  ]
+                }
+              },
+              {
+                "name": "cardiac_s0004",
+                "url": "https://127.0.0.1:8543/assets/cardiac.glb",
+                "kind": "glb",
+                "bytes": 1134044,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 6.59,
+                  "median": 7.203,
+                  "max": 12.862,
+                  "samples": [
+                    6.59,
+                    7.203,
+                    12.862
+                  ]
+                },
+                "download_ms": {
+                  "min": 17.327,
+                  "median": 17.494,
+                  "max": 20.138,
+                  "samples": [
+                    17.327,
+                    17.494,
+                    20.138
+                  ]
+                },
+                "total_ms": {
+                  "min": 24.084,
+                  "median": 24.531,
+                  "max": 33,
+                  "samples": [
+                    24.084,
+                    24.531,
+                    33
+                  ]
+                }
+              },
+              {
+                "name": "cardiac_s0015",
+                "url": "https://127.0.0.1:8543/assets/cardiac_s0015.glb",
+                "kind": "glb",
+                "bytes": 1267532,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 7.786,
+                  "median": 8.958,
+                  "max": 9.024,
+                  "samples": [
+                    7.786,
+                    8.958,
+                    9.024
+                  ]
+                },
+                "download_ms": {
+                  "min": 15.885,
+                  "median": 18.815,
+                  "max": 31.01,
+                  "samples": [
+                    15.885,
+                    18.815,
+                    31.01
+                  ]
+                },
+                "total_ms": {
+                  "min": 24.908,
+                  "median": 26.601,
+                  "max": 39.969,
+                  "samples": [
+                    24.908,
+                    26.601,
+                    39.969
+                  ]
+                }
+              },
+              {
+                "name": "single_aorta",
+                "url": "https://127.0.0.1:8543/assets/single_aorta.glb",
+                "kind": "glb",
+                "bytes": 456428,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 9,
+                  "median": 22.842,
+                  "max": 48.418,
+                  "samples": [
+                    9,
+                    22.842,
+                    48.418
+                  ]
+                },
+                "download_ms": {
+                  "min": 7.593,
+                  "median": 15.213,
+                  "max": 22.966,
+                  "samples": [
+                    7.593,
+                    15.213,
+                    22.966
+                  ]
+                },
+                "total_ms": {
+                  "min": 30.436,
+                  "median": 31.966,
+                  "max": 63.631,
+                  "samples": [
+                    30.436,
+                    31.966,
+                    63.631
+                  ]
+                }
+              }
+            ]
+          },
+          "payloads": {
+            "unavailable_reason": null,
+            "measurements": [
+              {
+                "case": "601",
+                "profile": "A",
+                "name": "case_601_A_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_601_A_contrast.bin",
+                "bytes": 4522770,
+                "samples": [
+                  {
+                    "ttfb_ms": 17.061,
+                    "download_ms": 52.358,
+                    "total_ms": 69.419,
+                    "bytes": 4522770,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 15.203,
+                    "download_ms": 193.022,
+                    "total_ms": 208.225,
+                    "bytes": 4522770,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 70.823,
+                    "download_ms": 207.728,
+                    "total_ms": 278.551,
+                    "bytes": 4522770,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 15.203,
+                  "median": 17.061,
+                  "max": 70.823,
+                  "samples": [
+                    15.203,
+                    17.061,
+                    70.823
+                  ]
+                },
+                "download_ms": {
+                  "min": 52.358,
+                  "median": 193.022,
+                  "max": 207.728,
+                  "samples": [
+                    52.358,
+                    193.022,
+                    207.728
+                  ]
+                },
+                "total_ms": {
+                  "min": 69.419,
+                  "median": 208.225,
+                  "max": 278.551,
+                  "samples": [
+                    69.419,
+                    208.225,
+                    278.551
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "601",
+                "profile": "A",
+                "name": "case_601_A_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_601_A_metadata.json",
+                "bytes": 7754,
+                "samples": [
+                  {
+                    "ttfb_ms": 46.559,
+                    "download_ms": 0.396,
+                    "total_ms": 46.955,
+                    "bytes": 7754,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 17.92,
+                    "download_ms": 0.222,
+                    "total_ms": 18.142,
+                    "bytes": 7754,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 16.12,
+                    "download_ms": 0.19,
+                    "total_ms": 16.311,
+                    "bytes": 7754,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 16.12,
+                  "median": 17.92,
+                  "max": 46.559,
+                  "samples": [
+                    16.12,
+                    17.92,
+                    46.559
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.19,
+                  "median": 0.222,
+                  "max": 0.396,
+                  "samples": [
+                    0.19,
+                    0.222,
+                    0.396
+                  ]
+                },
+                "total_ms": {
+                  "min": 16.311,
+                  "median": 18.142,
+                  "max": 46.955,
+                  "samples": [
+                    16.311,
+                    18.142,
+                    46.955
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "601",
+                "profile": "B",
+                "name": "case_601_B_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_601_B_contrast.bin",
+                "bytes": 4522770,
+                "samples": [
+                  {
+                    "ttfb_ms": 15.923,
+                    "download_ms": 180.369,
+                    "total_ms": 196.292,
+                    "bytes": 4522770,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 15.209,
+                    "download_ms": 134.743,
+                    "total_ms": 149.952,
+                    "bytes": 4522770,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 11.741,
+                    "download_ms": 61.069,
+                    "total_ms": 72.81,
+                    "bytes": 4522770,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 11.741,
+                  "median": 15.209,
+                  "max": 15.923,
+                  "samples": [
+                    11.741,
+                    15.209,
+                    15.923
+                  ]
+                },
+                "download_ms": {
+                  "min": 61.069,
+                  "median": 134.743,
+                  "max": 180.369,
+                  "samples": [
+                    61.069,
+                    134.743,
+                    180.369
+                  ]
+                },
+                "total_ms": {
+                  "min": 72.81,
+                  "median": 149.952,
+                  "max": 196.292,
+                  "samples": [
+                    72.81,
+                    149.952,
+                    196.292
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "601",
+                "profile": "B",
+                "name": "case_601_B_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_601_B_metadata.json",
+                "bytes": 7715,
+                "samples": [
+                  {
+                    "ttfb_ms": 14.915,
+                    "download_ms": 0.223,
+                    "total_ms": 15.138,
+                    "bytes": 7715,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 10.212,
+                    "download_ms": 0.268,
+                    "total_ms": 10.48,
+                    "bytes": 7715,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 14.076,
+                    "download_ms": 0.24,
+                    "total_ms": 14.316,
+                    "bytes": 7715,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 10.212,
+                  "median": 14.076,
+                  "max": 14.915,
+                  "samples": [
+                    10.212,
+                    14.076,
+                    14.915
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.223,
+                  "median": 0.24,
+                  "max": 0.268,
+                  "samples": [
+                    0.223,
+                    0.24,
+                    0.268
+                  ]
+                },
+                "total_ms": {
+                  "min": 10.48,
+                  "median": 14.316,
+                  "max": 15.138,
+                  "samples": [
+                    10.48,
+                    14.316,
+                    15.138
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "601",
+                "profile": "C",
+                "name": "case_601_C_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_601_C_contrast.bin",
+                "bytes": 4522770,
+                "samples": [
+                  {
+                    "ttfb_ms": 12.746,
+                    "download_ms": 97.872,
+                    "total_ms": 110.618,
+                    "bytes": 4522770,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 19.037,
+                    "download_ms": 98.029,
+                    "total_ms": 117.065,
+                    "bytes": 4522770,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 14.2,
+                    "download_ms": 107.453,
+                    "total_ms": 121.653,
+                    "bytes": 4522770,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 12.746,
+                  "median": 14.2,
+                  "max": 19.037,
+                  "samples": [
+                    12.746,
+                    14.2,
+                    19.037
+                  ]
+                },
+                "download_ms": {
+                  "min": 97.872,
+                  "median": 98.029,
+                  "max": 107.453,
+                  "samples": [
+                    97.872,
+                    98.029,
+                    107.453
+                  ]
+                },
+                "total_ms": {
+                  "min": 110.618,
+                  "median": 117.065,
+                  "max": 121.653,
+                  "samples": [
+                    110.618,
+                    117.065,
+                    121.653
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "601",
+                "profile": "C",
+                "name": "case_601_C_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_601_C_metadata.json",
+                "bytes": 7677,
+                "samples": [
+                  {
+                    "ttfb_ms": 14.107,
+                    "download_ms": 0.197,
+                    "total_ms": 14.304,
+                    "bytes": 7677,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 13.075,
+                    "download_ms": 0.221,
+                    "total_ms": 13.296,
+                    "bytes": 7677,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 11.023,
+                    "download_ms": 0.24,
+                    "total_ms": 11.263,
+                    "bytes": 7677,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 11.023,
+                  "median": 13.075,
+                  "max": 14.107,
+                  "samples": [
+                    11.023,
+                    13.075,
+                    14.107
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.197,
+                  "median": 0.221,
+                  "max": 0.24,
+                  "samples": [
+                    0.197,
+                    0.221,
+                    0.24
+                  ]
+                },
+                "total_ms": {
+                  "min": 11.263,
+                  "median": 13.296,
+                  "max": 14.304,
+                  "samples": [
+                    11.263,
+                    13.296,
+                    14.304
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "700",
+      "status": "ok",
+      "failing_stage": null,
+      "runtime_s": 440.702,
+      "stages": [
+        {
+          "stage": "graph",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/build_network_graph.py --cases 700 --networks-dir out/rom/networks --out-dir out/rom/graphs",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 0.31,
+          "log": "out/cfd_logs/700_graph.log",
+          "reason": null
+        },
+        {
+          "stage": "hemodynamics",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 700 --graph-dir out/rom/graphs --out-dir out/rom/hemodynamics",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 113.374,
+          "log": "out/cfd_logs/700_hemodynamics.log",
+          "reason": null
+        },
+        {
+          "stage": "carrier",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/transport/build_carrier.py --cases 700 --graph-dir out/rom/graphs --out-dir out/transport/carrier",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 3.439,
+          "log": "out/cfd_logs/700_carrier.log",
+          "reason": null
+        },
+        {
+          "stage": "advection",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/transport/solve_advection.py --cases 700 --profiles A B C --carrier-dir out/transport/carrier --hemo-dir out/rom/hemodynamics --out-dir out/transport/contrast",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 317.561,
+          "log": "out/cfd_logs/700_advection.log",
+          "reason": null
+        },
+        {
+          "stage": "export_A",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 700 --profile A --glb out/coronary_700.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 1.866,
+          "log": "out/cfd_logs/700_export_A.log",
+          "reason": null
+        },
+        {
+          "stage": "export_B",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 700 --profile B --glb out/coronary_700.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.121,
+          "log": "out/cfd_logs/700_export_B.log",
+          "reason": null
+        },
+        {
+          "stage": "export_C",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 700 --profile C --glb out/coronary_700.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.031,
+          "log": "out/cfd_logs/700_export_C.log",
+          "reason": null
+        }
+      ],
+      "metrics": {
+        "mesh": {
+          "triangles": 100500,
+          "branch_count": 16,
+          "n_nodes": 18,
+          "n_terminals": 9,
+          "n_roots": 2,
+          "total_length_mm": 508.95989034411167,
+          "unavailable_reason": null
+        },
+        "rom_1d": {
+          "solve_s": 22.6223,
+          "transport_1d_s": 89.2485,
+          "total_s": 112.3163,
+          "mass_balance": {
+            "A": {
+              "rel_error": 8.719780453247943e-14,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            },
+            "B": {
+              "rel_error": 1.0134369534041215e-13,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            },
+            "C": {
+              "rel_error": 6.836368508326519e-14,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            }
+          },
+          "unavailable_reason": null
+        },
+        "transport_3d": {
+          "profiles": {
+            "A": {
+              "runtime_s": 114.84448566799983,
+              "eps_mass_max": 8.58774270944592e-15,
+              "dt_s_mean": 0.0002422847451467337,
+              "pe": 973560.7534563905,
+              "cfl": 0.4500000075231039,
+              "verdict": "pass",
+              "unavailable_reason": null
+            },
+            "B": {
+              "runtime_s": 92.04564141109586,
+              "eps_mass_max": 2.5339501917630774e-15,
+              "dt_s_mean": 0.00031566705432796145,
+              "pe": 912712.9211425781,
+              "cfl": 0.45000000752310226,
+              "verdict": "pass",
+              "unavailable_reason": null
+            },
+            "C": {
+              "runtime_s": 109.8821047632955,
+              "eps_mass_max": 1.137623396985753e-15,
+              "dt_s_mean": 0.0002407704654895666,
+              "pe": 973560.7534563905,
+              "cfl": 0.4500000075231039,
+              "verdict": "pass",
+              "unavailable_reason": null
+            }
+          },
+          "solve_s_total": 316.772,
+          "eps_mass_max": 8.58774270944592e-15,
+          "unavailable_reason": null
+        },
+        "transit_ms": {
+          "A": {
+            "branches": [
+              {
+                "name": "700_b000",
+                "transit_ms": 1505.2232,
+                "t_arrival_ms": 1418.269,
+                "t_peak_ms": 2466.0,
+                "timi_frames_30fps": 45
+              },
+              {
+                "name": "700_b003",
+                "transit_ms": 314.7633,
+                "t_arrival_ms": 266.894,
+                "t_peak_ms": 810.0,
+                "timi_frames_30fps": 9
+              },
+              {
+                "name": "700_b004",
+                "transit_ms": 1188.8256,
+                "t_arrival_ms": 1107.852,
+                "t_peak_ms": 2384.0,
+                "timi_frames_30fps": 36
+              },
+              {
+                "name": "700_b006",
+                "transit_ms": 1121.5951,
+                "t_arrival_ms": 1042.332,
+                "t_peak_ms": 2630.0,
+                "timi_frames_30fps": 34
+              },
+              {
+                "name": "700_b007",
+                "transit_ms": 962.6075,
+                "t_arrival_ms": 858.928,
+                "t_peak_ms": 2256.0,
+                "timi_frames_30fps": 29
+              },
+              {
+                "name": "700_b008",
+                "transit_ms": 1259.7804,
+                "t_arrival_ms": 1175.387,
+                "t_peak_ms": 2712.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b009",
+                "transit_ms": 1258.1533,
+                "t_arrival_ms": 1156.1570000000002,
+                "t_peak_ms": 2580.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b010",
+                "transit_ms": 1274.8469,
+                "t_arrival_ms": 1183.607,
+                "t_peak_ms": 2472.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b011",
+                "transit_ms": 320.1486,
+                "t_arrival_ms": 296.75800000000004,
+                "t_peak_ms": 2062.0,
+                "timi_frames_30fps": 10
+              },
+              {
+                "name": "700_b012",
+                "transit_ms": 478.0827,
+                "t_arrival_ms": 473.59000000000003,
+                "t_peak_ms": 866.0,
+                "timi_frames_30fps": 14
+              },
+              {
+                "name": "700_b013",
+                "transit_ms": 503.1363,
+                "t_arrival_ms": 466.615,
+                "t_peak_ms": 2041.9999999999998,
+                "timi_frames_30fps": 15
+              },
+              {
+                "name": "700_b014",
+                "transit_ms": 626.1607,
+                "t_arrival_ms": 563.859,
+                "t_peak_ms": 2064.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "700_b015",
+                "transit_ms": 750.5408,
+                "t_arrival_ms": 700.742,
+                "t_peak_ms": 2064.0,
+                "timi_frames_30fps": 23
+              }
+            ],
+            "unavailable_reason": null
+          },
+          "B": {
+            "branches": [
+              {
+                "name": "700_b000",
+                "transit_ms": 1976.1111,
+                "t_arrival_ms": 3610.703,
+                "t_peak_ms": 4644.0,
+                "timi_frames_30fps": 59
+              },
+              {
+                "name": "700_b003",
+                "transit_ms": 410.5875,
+                "t_arrival_ms": 718.884,
+                "t_peak_ms": 3662.0,
+                "timi_frames_30fps": 12
+              },
+              {
+                "name": "700_b004",
+                "transit_ms": 1554.7932,
+                "t_arrival_ms": 2944.751,
+                "t_peak_ms": 4340.0,
+                "timi_frames_30fps": 47
+              },
+              {
+                "name": "700_b006",
+                "transit_ms": 1464.3298,
+                "t_arrival_ms": 2792.999,
+                "t_peak_ms": 4250.0,
+                "timi_frames_30fps": 44
+              },
+              {
+                "name": "700_b007",
+                "transit_ms": 1257.0153,
+                "t_arrival_ms": 2297.67,
+                "t_peak_ms": 4086.0000000000005,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b008",
+                "transit_ms": 1647.7776,
+                "t_arrival_ms": 3124.437,
+                "t_peak_ms": 4454.0,
+                "timi_frames_30fps": 49
+              },
+              {
+                "name": "700_b009",
+                "transit_ms": 1645.6421,
+                "t_arrival_ms": 3073.604,
+                "t_peak_ms": 4276.0,
+                "timi_frames_30fps": 49
+              },
+              {
+                "name": "700_b010",
+                "transit_ms": 1667.5115,
+                "t_arrival_ms": 3146.317,
+                "t_peak_ms": 4472.0,
+                "timi_frames_30fps": 50
+              },
+              {
+                "name": "700_b011",
+                "transit_ms": 418.1867,
+                "t_arrival_ms": 784.4870000000001,
+                "t_peak_ms": 3628.0,
+                "timi_frames_30fps": 13
+              },
+              {
+                "name": "700_b012",
+                "transit_ms": 624.652,
+                "t_arrival_ms": 1255.089,
+                "t_peak_ms": 3812.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "700_b013",
+                "transit_ms": 657.5285,
+                "t_arrival_ms": 1235.392,
+                "t_peak_ms": 3738.0,
+                "timi_frames_30fps": 20
+              },
+              {
+                "name": "700_b014",
+                "transit_ms": 818.3443,
+                "t_arrival_ms": 1497.2810000000002,
+                "t_peak_ms": 3906.0,
+                "timi_frames_30fps": 25
+              },
+              {
+                "name": "700_b015",
+                "transit_ms": 981.0434,
+                "t_arrival_ms": 1862.4080000000001,
+                "t_peak_ms": 3988.0,
+                "timi_frames_30fps": 29
+              }
+            ],
+            "unavailable_reason": null
+          },
+          "C": {
+            "branches": [
+              {
+                "name": "700_b000",
+                "transit_ms": 1496.8232,
+                "t_arrival_ms": 1417.227,
+                "t_peak_ms": 2392.0,
+                "timi_frames_30fps": 45
+              },
+              {
+                "name": "700_b003",
+                "transit_ms": 313.0604,
+                "t_arrival_ms": 266.983,
+                "t_peak_ms": 586.0,
+                "timi_frames_30fps": 9
+              },
+              {
+                "name": "700_b004",
+                "transit_ms": 1182.3172,
+                "t_arrival_ms": 1107.06,
+                "t_peak_ms": 1646.0,
+                "timi_frames_30fps": 35
+              },
+              {
+                "name": "700_b006",
+                "transit_ms": 1115.5014,
+                "t_arrival_ms": 1041.938,
+                "t_peak_ms": 1540.0,
+                "timi_frames_30fps": 33
+              },
+              {
+                "name": "700_b007",
+                "transit_ms": 957.3726,
+                "t_arrival_ms": 858.3340000000001,
+                "t_peak_ms": 1254.0,
+                "timi_frames_30fps": 29
+              },
+              {
+                "name": "700_b008",
+                "transit_ms": 1252.8799,
+                "t_arrival_ms": 1174.48,
+                "t_peak_ms": 1714.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b009",
+                "transit_ms": 1251.2619,
+                "t_arrival_ms": 1155.295,
+                "t_peak_ms": 1708.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b010",
+                "transit_ms": 1267.8634,
+                "t_arrival_ms": 1182.645,
+                "t_peak_ms": 1746.0,
+                "timi_frames_30fps": 38
+              },
+              {
+                "name": "700_b011",
+                "transit_ms": 318.4057,
+                "t_arrival_ms": 296.709,
+                "t_peak_ms": 534.0,
+                "timi_frames_30fps": 10
+              },
+              {
+                "name": "700_b012",
+                "transit_ms": 475.4765,
+                "t_arrival_ms": 473.54,
+                "t_peak_ms": 742.0,
+                "timi_frames_30fps": 14
+              },
+              {
+                "name": "700_b013",
+                "transit_ms": 500.3906,
+                "t_arrival_ms": 466.56,
+                "t_peak_ms": 742.0,
+                "timi_frames_30fps": 15
+              },
+              {
+                "name": "700_b014",
+                "transit_ms": 622.7428,
+                "t_arrival_ms": 563.812,
+                "t_peak_ms": 1436.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "700_b015",
+                "transit_ms": 746.4412,
+                "t_arrival_ms": 700.699,
+                "t_peak_ms": 1008.0,
+                "timi_frames_30fps": 22
+              }
+            ],
+            "unavailable_reason": null
+          }
+        },
+        "payload": {
+          "A": {
+            "total_mb": 4.5295,
+            "frames": 90,
+            "vertices": 50254,
+            "bin_file": "case_700_A_contrast.bin",
+            "unavailable_reason": null
+          },
+          "B": {
+            "total_mb": 4.5295,
+            "frames": 90,
+            "vertices": 50254,
+            "bin_file": "case_700_B_contrast.bin",
+            "unavailable_reason": null
+          },
+          "C": {
+            "total_mb": 4.5295,
+            "frames": 90,
+            "vertices": 50254,
+            "bin_file": "case_700_C_contrast.bin",
+            "unavailable_reason": null
+          }
+        },
+        "load_time_benchmark": {
+          "unavailable_reason": null,
+          "site": {
+            "unavailable_reason": null,
+            "base": "https://127.0.0.1:8543",
+            "samples_per_resource": 3,
+            "resources": [
+              {
+                "name": "page_root",
+                "url": "https://127.0.0.1:8543/",
+                "kind": "page_html",
+                "bytes": 1127,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 17.604,
+                  "median": 18.333,
+                  "max": 66.717,
+                  "samples": [
+                    17.604,
+                    18.333,
+                    66.717
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.769,
+                  "median": 1.142,
+                  "max": 3.774,
+                  "samples": [
+                    0.769,
+                    1.142,
+                    3.774
+                  ]
+                },
+                "total_ms": {
+                  "min": 18.372,
+                  "median": 19.474,
+                  "max": 70.491,
+                  "samples": [
+                    18.372,
+                    19.474,
+                    70.491
+                  ]
+                }
+              },
+              {
+                "name": "page_model_coronary_601",
+                "url": "https://127.0.0.1:8543/?model=assets/coronary_601.glb",
+                "kind": "page_html",
+                "bytes": 1127,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 14.986,
+                  "median": 23.514,
+                  "max": 26.116,
+                  "samples": [
+                    14.986,
+                    23.514,
+                    26.116
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.404,
+                  "median": 0.813,
+                  "max": 1.831,
+                  "samples": [
+                    0.404,
+                    0.813,
+                    1.831
+                  ]
+                },
+                "total_ms": {
+                  "min": 15.39,
+                  "median": 25.346,
+                  "max": 26.929,
+                  "samples": [
+                    15.39,
+                    25.346,
+                    26.929
+                  ]
+                }
+              },
+              {
+                "name": "coronary_601",
+                "url": "https://127.0.0.1:8543/assets/coronary_601.glb",
+                "kind": "glb",
+                "bytes": 1056532,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 14.982,
+                  "median": 18.826,
+                  "max": 19.691,
+                  "samples": [
+                    14.982,
+                    18.826,
+                    19.691
+                  ]
+                },
+                "download_ms": {
+                  "min": 25.52,
+                  "median": 27.93,
+                  "max": 28.202,
+                  "samples": [
+                    25.52,
+                    27.93,
+                    28.202
+                  ]
+                },
+                "total_ms": {
+                  "min": 40.502,
+                  "median": 46.756,
+                  "max": 47.893,
+                  "samples": [
+                    40.502,
+                    46.756,
+                    47.893
+                  ]
+                }
+              },
+              {
+                "name": "coronary_700",
+                "url": "https://127.0.0.1:8543/assets/coronary_700.glb",
+                "kind": "glb",
+                "bytes": 1056548,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 12.699,
+                  "median": 15.209,
+                  "max": 43.256,
+                  "samples": [
+                    12.699,
+                    15.209,
+                    43.256
+                  ]
+                },
+                "download_ms": {
+                  "min": 13.997,
+                  "median": 18.016,
+                  "max": 20.606,
+                  "samples": [
+                    13.997,
+                    18.016,
+                    20.606
+                  ]
+                },
+                "total_ms": {
+                  "min": 30.715,
+                  "median": 35.816,
+                  "max": 57.252,
+                  "samples": [
+                    30.715,
+                    35.816,
+                    57.252
+                  ]
+                }
+              },
+              {
+                "name": "coronary_798",
+                "url": "https://127.0.0.1:8543/assets/coronary_798.glb",
+                "kind": "glb",
+                "bytes": 1056460,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 8.688,
+                  "median": 13.387,
+                  "max": 16.884,
+                  "samples": [
+                    8.688,
+                    13.387,
+                    16.884
+                  ]
+                },
+                "download_ms": {
+                  "min": 21.744,
+                  "median": 25.155,
+                  "max": 25.923,
+                  "samples": [
+                    21.744,
+                    25.155,
+                    25.923
+                  ]
+                },
+                "total_ms": {
+                  "min": 34.611,
+                  "median": 38.542,
+                  "max": 38.628,
+                  "samples": [
+                    34.611,
+                    38.542,
+                    38.628
+                  ]
+                }
+              },
+              {
+                "name": "cardiac_s0004",
+                "url": "https://127.0.0.1:8543/assets/cardiac.glb",
+                "kind": "glb",
+                "bytes": 1134044,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 6.59,
+                  "median": 7.203,
+                  "max": 12.862,
+                  "samples": [
+                    6.59,
+                    7.203,
+                    12.862
+                  ]
+                },
+                "download_ms": {
+                  "min": 17.327,
+                  "median": 17.494,
+                  "max": 20.138,
+                  "samples": [
+                    17.327,
+                    17.494,
+                    20.138
+                  ]
+                },
+                "total_ms": {
+                  "min": 24.084,
+                  "median": 24.531,
+                  "max": 33,
+                  "samples": [
+                    24.084,
+                    24.531,
+                    33
+                  ]
+                }
+              },
+              {
+                "name": "cardiac_s0015",
+                "url": "https://127.0.0.1:8543/assets/cardiac_s0015.glb",
+                "kind": "glb",
+                "bytes": 1267532,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 7.786,
+                  "median": 8.958,
+                  "max": 9.024,
+                  "samples": [
+                    7.786,
+                    8.958,
+                    9.024
+                  ]
+                },
+                "download_ms": {
+                  "min": 15.885,
+                  "median": 18.815,
+                  "max": 31.01,
+                  "samples": [
+                    15.885,
+                    18.815,
+                    31.01
+                  ]
+                },
+                "total_ms": {
+                  "min": 24.908,
+                  "median": 26.601,
+                  "max": 39.969,
+                  "samples": [
+                    24.908,
+                    26.601,
+                    39.969
+                  ]
+                }
+              },
+              {
+                "name": "single_aorta",
+                "url": "https://127.0.0.1:8543/assets/single_aorta.glb",
+                "kind": "glb",
+                "bytes": 456428,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 9,
+                  "median": 22.842,
+                  "max": 48.418,
+                  "samples": [
+                    9,
+                    22.842,
+                    48.418
+                  ]
+                },
+                "download_ms": {
+                  "min": 7.593,
+                  "median": 15.213,
+                  "max": 22.966,
+                  "samples": [
+                    7.593,
+                    15.213,
+                    22.966
+                  ]
+                },
+                "total_ms": {
+                  "min": 30.436,
+                  "median": 31.966,
+                  "max": 63.631,
+                  "samples": [
+                    30.436,
+                    31.966,
+                    63.631
+                  ]
+                }
+              }
+            ]
+          },
+          "payloads": {
+            "unavailable_reason": null,
+            "measurements": [
+              {
+                "case": "700",
+                "profile": "A",
+                "name": "case_700_A_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_700_A_contrast.bin",
+                "bytes": 4522860,
+                "samples": [
+                  {
+                    "ttfb_ms": 22.862,
+                    "download_ms": 115.486,
+                    "total_ms": 138.349,
+                    "bytes": 4522860,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 10.745,
+                    "download_ms": 71.436,
+                    "total_ms": 82.181,
+                    "bytes": 4522860,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 10.329,
+                    "download_ms": 45.955,
+                    "total_ms": 56.284,
+                    "bytes": 4522860,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 10.329,
+                  "median": 10.745,
+                  "max": 22.862,
+                  "samples": [
+                    10.329,
+                    10.745,
+                    22.862
+                  ]
+                },
+                "download_ms": {
+                  "min": 45.955,
+                  "median": 71.436,
+                  "max": 115.486,
+                  "samples": [
+                    45.955,
+                    71.436,
+                    115.486
+                  ]
+                },
+                "total_ms": {
+                  "min": 56.284,
+                  "median": 82.181,
+                  "max": 138.349,
+                  "samples": [
+                    56.284,
+                    82.181,
+                    138.349
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "700",
+                "profile": "A",
+                "name": "case_700_A_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_700_A_metadata.json",
+                "bytes": 6681,
+                "samples": [
+                  {
+                    "ttfb_ms": 9.577,
+                    "download_ms": 0.196,
+                    "total_ms": 9.772,
+                    "bytes": 6681,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 9.259,
+                    "download_ms": 0.993,
+                    "total_ms": 10.252,
+                    "bytes": 6681,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 11.596,
+                    "download_ms": 0.184,
+                    "total_ms": 11.78,
+                    "bytes": 6681,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 9.259,
+                  "median": 9.577,
+                  "max": 11.596,
+                  "samples": [
+                    9.259,
+                    9.577,
+                    11.596
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.184,
+                  "median": 0.196,
+                  "max": 0.993,
+                  "samples": [
+                    0.184,
+                    0.196,
+                    0.993
+                  ]
+                },
+                "total_ms": {
+                  "min": 9.772,
+                  "median": 10.252,
+                  "max": 11.78,
+                  "samples": [
+                    9.772,
+                    10.252,
+                    11.78
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "700",
+                "profile": "B",
+                "name": "case_700_B_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_700_B_contrast.bin",
+                "bytes": 4522860,
+                "samples": [
+                  {
+                    "ttfb_ms": 21.666,
+                    "download_ms": 111.32,
+                    "total_ms": 132.986,
+                    "bytes": 4522860,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 21.058,
+                    "download_ms": 120.74,
+                    "total_ms": 141.798,
+                    "bytes": 4522860,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 22.308,
+                    "download_ms": 158.719,
+                    "total_ms": 181.027,
+                    "bytes": 4522860,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 21.058,
+                  "median": 21.666,
+                  "max": 22.308,
+                  "samples": [
+                    21.058,
+                    21.666,
+                    22.308
+                  ]
+                },
+                "download_ms": {
+                  "min": 111.32,
+                  "median": 120.74,
+                  "max": 158.719,
+                  "samples": [
+                    111.32,
+                    120.74,
+                    158.719
+                  ]
+                },
+                "total_ms": {
+                  "min": 132.986,
+                  "median": 141.798,
+                  "max": 181.027,
+                  "samples": [
+                    132.986,
+                    141.798,
+                    181.027
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "700",
+                "profile": "B",
+                "name": "case_700_B_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_700_B_metadata.json",
+                "bytes": 6680,
+                "samples": [
+                  {
+                    "ttfb_ms": 22.015,
+                    "download_ms": 0.333,
+                    "total_ms": 22.348,
+                    "bytes": 6680,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 22.069,
+                    "download_ms": 0.258,
+                    "total_ms": 22.328,
+                    "bytes": 6680,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 21.933,
+                    "download_ms": 0.395,
+                    "total_ms": 22.328,
+                    "bytes": 6680,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 21.933,
+                  "median": 22.015,
+                  "max": 22.069,
+                  "samples": [
+                    21.933,
+                    22.015,
+                    22.069
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.258,
+                  "median": 0.333,
+                  "max": 0.395,
+                  "samples": [
+                    0.258,
+                    0.333,
+                    0.395
+                  ]
+                },
+                "total_ms": {
+                  "min": 22.328,
+                  "median": 22.328,
+                  "max": 22.348,
+                  "samples": [
+                    22.328,
+                    22.328,
+                    22.348
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "700",
+                "profile": "C",
+                "name": "case_700_C_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_700_C_contrast.bin",
+                "bytes": 4522860,
+                "samples": [
+                  {
+                    "ttfb_ms": 20.874,
+                    "download_ms": 117.751,
+                    "total_ms": 138.625,
+                    "bytes": 4522860,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 13.077,
+                    "download_ms": 81.026,
+                    "total_ms": 94.104,
+                    "bytes": 4522860,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 13.138,
+                    "download_ms": 61.088,
+                    "total_ms": 74.226,
+                    "bytes": 4522860,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 13.077,
+                  "median": 13.138,
+                  "max": 20.874,
+                  "samples": [
+                    13.077,
+                    13.138,
+                    20.874
+                  ]
+                },
+                "download_ms": {
+                  "min": 61.088,
+                  "median": 81.026,
+                  "max": 117.751,
+                  "samples": [
+                    61.088,
+                    81.026,
+                    117.751
+                  ]
+                },
+                "total_ms": {
+                  "min": 74.226,
+                  "median": 94.104,
+                  "max": 138.625,
+                  "samples": [
+                    74.226,
+                    94.104,
+                    138.625
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "700",
+                "profile": "C",
+                "name": "case_700_C_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_700_C_metadata.json",
+                "bytes": 6635,
+                "samples": [
+                  {
+                    "ttfb_ms": 11.103,
+                    "download_ms": 0.243,
+                    "total_ms": 11.346,
+                    "bytes": 6635,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 9.32,
+                    "download_ms": 0.16,
+                    "total_ms": 9.48,
+                    "bytes": 6635,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 8.285,
+                    "download_ms": 0.148,
+                    "total_ms": 8.433,
+                    "bytes": 6635,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 8.285,
+                  "median": 9.32,
+                  "max": 11.103,
+                  "samples": [
+                    8.285,
+                    9.32,
+                    11.103
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.148,
+                  "median": 0.16,
+                  "max": 0.243,
+                  "samples": [
+                    0.148,
+                    0.16,
+                    0.243
+                  ]
+                },
+                "total_ms": {
+                  "min": 8.433,
+                  "median": 9.48,
+                  "max": 11.346,
+                  "samples": [
+                    8.433,
+                    9.48,
+                    11.346
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "798",
+      "status": "ok",
+      "failing_stage": null,
+      "runtime_s": 830.258,
+      "stages": [
+        {
+          "stage": "graph",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/build_network_graph.py --cases 798 --networks-dir out/rom/networks --out-dir out/rom/graphs",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 0.282,
+          "log": "out/cfd_logs/798_graph.log",
+          "reason": null
+        },
+        {
+          "stage": "hemodynamics",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 798 --graph-dir out/rom/graphs --out-dir out/rom/hemodynamics",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 303.547,
+          "log": "out/cfd_logs/798_hemodynamics.log",
+          "reason": null
+        },
+        {
+          "stage": "carrier",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/transport/build_carrier.py --cases 798 --graph-dir out/rom/graphs --out-dir out/transport/carrier",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 7.519,
+          "log": "out/cfd_logs/798_carrier.log",
+          "reason": null
+        },
+        {
+          "stage": "advection",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/transport/solve_advection.py --cases 798 --profiles A B C --carrier-dir out/transport/carrier --hemo-dir out/rom/hemodynamics --out-dir out/transport/contrast",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 512.508,
+          "log": "out/cfd_logs/798_advection.log",
+          "reason": null
+        },
+        {
+          "stage": "export_A",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 798 --profile A --glb out/coronary_798.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.251,
+          "log": "out/cfd_logs/798_export_A.log",
+          "reason": null
+        },
+        {
+          "stage": "export_B",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 798 --profile B --glb out/coronary_798.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.037,
+          "log": "out/cfd_logs/798_export_B.log",
+          "reason": null
+        },
+        {
+          "stage": "export_C",
+          "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_cfd_payload.py --case 798 --profile C --glb out/coronary_798.glb --contrast-dir out/transport/contrast --hemo-dir out/rom/hemodynamics --assets-dir viewer/public/assets",
+          "status": "ok",
+          "exit_code": 0,
+          "runtime_s": 2.114,
+          "log": "out/cfd_logs/798_export_C.log",
+          "reason": null
+        }
+      ],
+      "metrics": {
+        "mesh": {
+          "triangles": 100500,
+          "branch_count": 35,
+          "n_nodes": 37,
+          "n_terminals": 13,
+          "n_roots": 2,
+          "total_length_mm": 1053.693294774766,
+          "unavailable_reason": null
+        },
+        "rom_1d": {
+          "solve_s": 39.511,
+          "transport_1d_s": 262.1917,
+          "total_s": 302.445,
+          "mass_balance": {
+            "A": {
+              "rel_error": 6.104983185651821e-14,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            },
+            "B": {
+              "rel_error": 6.01027641962319e-10,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            },
+            "C": {
+              "rel_error": 4.7672680617936403e-14,
+              "method": "1D finite-volume MUSCL-TVD (Superbee limiter) explicit advection + central diffusion (D=1e-3 mm^2/s), adaptive CFL<=0.5 sub-cycling, flow-weighted junction mixing, discrete face-flux mass budget"
+            }
+          },
+          "unavailable_reason": null
+        },
+        "transport_3d": {
+          "profiles": {
+            "A": {
+              "runtime_s": 164.4357444071211,
+              "eps_mass_max": 2.810589140256466e-15,
+              "dt_s_mean": 0.0002789400278940028,
+              "pe": 723476.6095499115,
+              "cfl": 0.4500002844073437,
+              "verdict": "pass",
+              "unavailable_reason": null
+            },
+            "B": {
+              "runtime_s": 151.67964294785634,
+              "eps_mass_max": 3.2053376901386594e-15,
+              "dt_s_mean": 0.00036356678147722924,
+              "pe": 678259.1094970703,
+              "cfl": 0.4500007110149889,
+              "verdict": "pass",
+              "unavailable_reason": null
+            },
+            "C": {
+              "runtime_s": 195.26651322795078,
+              "eps_mass_max": 2.6700600895406998e-15,
+              "dt_s_mean": 0.00027781207556488454,
+              "pe": 723476.6095499115,
+              "cfl": 0.4500002844073437,
+              "verdict": "pass",
+              "unavailable_reason": null
+            }
+          },
+          "solve_s_total": 511.382,
+          "eps_mass_max": 3.2053376901386594e-15,
+          "unavailable_reason": null
+        },
+        "transit_ms": {
+          "A": {
+            "branches": [
+              {
+                "name": "798_b005",
+                "transit_ms": 3733.176,
+                "t_arrival_ms": 3157.9519999999998,
+                "t_peak_ms": 5288.0,
+                "timi_frames_30fps": 112
+              },
+              {
+                "name": "798_b007",
+                "transit_ms": 11559.6267,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 347
+              },
+              {
+                "name": "798_b008",
+                "transit_ms": 4786.5859,
+                "t_arrival_ms": 4278.581,
+                "t_peak_ms": 6370.0,
+                "timi_frames_30fps": 144
+              },
+              {
+                "name": "798_b009",
+                "transit_ms": 5944.8999,
+                "t_arrival_ms": 5660.631,
+                "t_peak_ms": 7584.0,
+                "timi_frames_30fps": 178
+              },
+              {
+                "name": "798_b010",
+                "transit_ms": 9283.0954,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 278
+              },
+              {
+                "name": "798_b011",
+                "transit_ms": 9950.1891,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 299
+              },
+              {
+                "name": "798_b012",
+                "transit_ms": 6584.6706,
+                "t_arrival_ms": 6100.787,
+                "t_peak_ms": 7986.0,
+                "timi_frames_30fps": 198
+              },
+              {
+                "name": "798_b013",
+                "transit_ms": 6115.1895,
+                "t_arrival_ms": 5817.103999999999,
+                "t_peak_ms": 7784.0,
+                "timi_frames_30fps": 183
+              },
+              {
+                "name": "798_b014",
+                "transit_ms": 7316.3278,
+                "t_arrival_ms": 7084.151000000001,
+                "t_peak_ms": 8000.0,
+                "timi_frames_30fps": 219
+              },
+              {
+                "name": "798_b015",
+                "transit_ms": 6639.6102,
+                "t_arrival_ms": 6270.418000000001,
+                "t_peak_ms": 8000.0,
+                "timi_frames_30fps": 199
+              },
+              {
+                "name": "798_b021",
+                "transit_ms": 457.6674,
+                "t_arrival_ms": 408.149,
+                "t_peak_ms": 2037.9999999999998,
+                "timi_frames_30fps": 14
+              },
+              {
+                "name": "798_b024",
+                "transit_ms": 231.45,
+                "t_arrival_ms": 231.005,
+                "t_peak_ms": 494.0,
+                "timi_frames_30fps": 7
+              },
+              {
+                "name": "798_b025",
+                "transit_ms": 8271.248,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 248
+              },
+              {
+                "name": "798_b026",
+                "transit_ms": 634.5038,
+                "t_arrival_ms": 626.7850000000001,
+                "t_peak_ms": 1376.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "798_b027",
+                "transit_ms": 521.9864,
+                "t_arrival_ms": 536.996,
+                "t_peak_ms": 2316.0,
+                "timi_frames_30fps": 16
+              },
+              {
+                "name": "798_b028",
+                "transit_ms": 478.0007,
+                "t_arrival_ms": 407.385,
+                "t_peak_ms": 770.0,
+                "timi_frames_30fps": 14
+              },
+              {
+                "name": "798_b029",
+                "transit_ms": 320.3106,
+                "t_arrival_ms": 323.87899999999996,
+                "t_peak_ms": 2016.0,
+                "timi_frames_30fps": 10
+              },
+              {
+                "name": "798_b030",
+                "transit_ms": 3094.7118,
+                "t_arrival_ms": 2120.8399999999997,
+                "t_peak_ms": 3834.0,
+                "timi_frames_30fps": 93
+              },
+              {
+                "name": "798_b031",
+                "transit_ms": 854.2202,
+                "t_arrival_ms": 847.698,
+                "t_peak_ms": 1430.0,
+                "timi_frames_30fps": 26
+              },
+              {
+                "name": "798_b032",
+                "transit_ms": 875.2748,
+                "t_arrival_ms": 878.417,
+                "t_peak_ms": 2662.0,
+                "timi_frames_30fps": 26
+              },
+              {
+                "name": "798_b033",
+                "transit_ms": 1664.6704,
+                "t_arrival_ms": 1355.365,
+                "t_peak_ms": 3398.0,
+                "timi_frames_30fps": 50
+              },
+              {
+                "name": "798_b034",
+                "transit_ms": 556.1418,
+                "t_arrival_ms": 532.43,
+                "t_peak_ms": 2140.0,
+                "timi_frames_30fps": 17
+              }
+            ],
+            "unavailable_reason": null
+          },
+          "B": {
+            "branches": [
+              {
+                "name": "798_b005",
+                "transit_ms": 4878.3387,
+                "t_arrival_ms": 5374.791,
+                "t_peak_ms": 6926.0,
+                "timi_frames_30fps": 146
+              },
+              {
+                "name": "798_b007",
+                "transit_ms": 15156.0175,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 455
+              },
+              {
+                "name": "798_b008",
+                "transit_ms": 6259.1503,
+                "t_arrival_ms": 6489.2339999999995,
+                "t_peak_ms": 8006.0,
+                "timi_frames_30fps": 188
+              },
+              {
+                "name": "798_b009",
+                "transit_ms": 7800.4177,
+                "t_arrival_ms": 7918.29,
+                "t_peak_ms": 9226.0,
+                "timi_frames_30fps": 234
+              },
+              {
+                "name": "798_b010",
+                "transit_ms": 12175.0821,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 365
+              },
+              {
+                "name": "798_b011",
+                "transit_ms": 13052.3864,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 392
+              },
+              {
+                "name": "798_b012",
+                "transit_ms": 8644.2458,
+                "t_arrival_ms": 8359.444,
+                "t_peak_ms": 9500.0,
+                "timi_frames_30fps": 259
+              },
+              {
+                "name": "798_b013",
+                "transit_ms": 8024.8649,
+                "t_arrival_ms": 8075.032999999999,
+                "t_peak_ms": 9326.0,
+                "timi_frames_30fps": 241
+              },
+              {
+                "name": "798_b014",
+                "transit_ms": 9608.6815,
+                "t_arrival_ms": 9337.755,
+                "t_peak_ms": 9500.0,
+                "timi_frames_30fps": 288
+              },
+              {
+                "name": "798_b015",
+                "transit_ms": 8716.6569,
+                "t_arrival_ms": 8529.122,
+                "t_peak_ms": 9500.0,
+                "timi_frames_30fps": 261
+              },
+              {
+                "name": "798_b021",
+                "transit_ms": 581.9454,
+                "t_arrival_ms": 1429.9850000000001,
+                "t_peak_ms": 3778.0,
+                "timi_frames_30fps": 17
+              },
+              {
+                "name": "798_b024",
+                "transit_ms": 302.756,
+                "t_arrival_ms": 604.386,
+                "t_peak_ms": 3560.0,
+                "timi_frames_30fps": 9
+              },
+              {
+                "name": "798_b025",
+                "transit_ms": 10628.5164,
+                "t_arrival_ms": 3522.372,
+                "t_peak_ms": 3536.0,
+                "timi_frames_30fps": 319
+              },
+              {
+                "name": "798_b026",
+                "transit_ms": 827.78,
+                "t_arrival_ms": 1696.579,
+                "t_peak_ms": 3656.0,
+                "timi_frames_30fps": 25
+              },
+              {
+                "name": "798_b027",
+                "transit_ms": 683.8719,
+                "t_arrival_ms": 1393.976,
+                "t_peak_ms": 3960.0,
+                "timi_frames_30fps": 21
+              },
+              {
+                "name": "798_b028",
+                "transit_ms": 627.1121,
+                "t_arrival_ms": 1047.913,
+                "t_peak_ms": 2854.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "798_b029",
+                "transit_ms": 419.1759,
+                "t_arrival_ms": 845.752,
+                "t_peak_ms": 3630.0,
+                "timi_frames_30fps": 13
+              },
+              {
+                "name": "798_b030",
+                "transit_ms": 4047.6651,
+                "t_arrival_ms": 4294.965999999999,
+                "t_peak_ms": 5484.0,
+                "timi_frames_30fps": 121
+              },
+              {
+                "name": "798_b031",
+                "transit_ms": 1116.9926,
+                "t_arrival_ms": 2282.213,
+                "t_peak_ms": 4088.0,
+                "timi_frames_30fps": 34
+              },
+              {
+                "name": "798_b032",
+                "transit_ms": 1148.3417,
+                "t_arrival_ms": 2280.425,
+                "t_peak_ms": 4364.0,
+                "timi_frames_30fps": 34
+              },
+              {
+                "name": "798_b033",
+                "transit_ms": 2184.2284,
+                "t_arrival_ms": 3531.936,
+                "t_peak_ms": 4930.0,
+                "timi_frames_30fps": 66
+              },
+              {
+                "name": "798_b034",
+                "transit_ms": 729.5884,
+                "t_arrival_ms": 1383.405,
+                "t_peak_ms": 3582.0,
+                "timi_frames_30fps": 22
+              }
+            ],
+            "unavailable_reason": null
+          },
+          "C": {
+            "branches": [
+              {
+                "name": "798_b005",
+                "transit_ms": 3712.8073,
+                "t_arrival_ms": 3086.967,
+                "t_peak_ms": 4782.0,
+                "timi_frames_30fps": 111
+              },
+              {
+                "name": "798_b007",
+                "transit_ms": 11495.53,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 345
+              },
+              {
+                "name": "798_b008",
+                "transit_ms": 4760.3824,
+                "t_arrival_ms": 4206.388,
+                "t_peak_ms": 5864.0,
+                "timi_frames_30fps": 143
+              },
+              {
+                "name": "798_b009",
+                "transit_ms": 5911.8122,
+                "t_arrival_ms": 5594.1140000000005,
+                "t_peak_ms": 7098.0,
+                "timi_frames_30fps": 177
+              },
+              {
+                "name": "798_b010",
+                "transit_ms": 9231.5412,
+                "t_arrival_ms": 8486.696,
+                "t_peak_ms": 9000.0,
+                "timi_frames_30fps": 277
+              },
+              {
+                "name": "798_b011",
+                "transit_ms": 9894.8848,
+                "t_arrival_ms": null,
+                "t_peak_ms": null,
+                "timi_frames_30fps": 297
+              },
+              {
+                "name": "798_b012",
+                "transit_ms": 6547.9335,
+                "t_arrival_ms": 6034.129,
+                "t_peak_ms": 7468.0,
+                "timi_frames_30fps": 196
+              },
+              {
+                "name": "798_b013",
+                "transit_ms": 6081.1336,
+                "t_arrival_ms": 5750.545,
+                "t_peak_ms": 7204.0,
+                "timi_frames_30fps": 182
+              },
+              {
+                "name": "798_b014",
+                "transit_ms": 7275.429,
+                "t_arrival_ms": 7017.416,
+                "t_peak_ms": 8486.0,
+                "timi_frames_30fps": 218
+              },
+              {
+                "name": "798_b015",
+                "transit_ms": 6602.5607,
+                "t_arrival_ms": 6203.754,
+                "t_peak_ms": 7634.0,
+                "timi_frames_30fps": 198
+              },
+              {
+                "name": "798_b021",
+                "transit_ms": 455.5098,
+                "t_arrival_ms": 409.514,
+                "t_peak_ms": 1762.0,
+                "timi_frames_30fps": 14
+              },
+              {
+                "name": "798_b024",
+                "transit_ms": 230.181,
+                "t_arrival_ms": 230.95,
+                "t_peak_ms": 1188.0,
+                "timi_frames_30fps": 7
+              },
+              {
+                "name": "798_b025",
+                "transit_ms": 8229.8688,
+                "t_arrival_ms": 8178.2699999999995,
+                "t_peak_ms": 9000.0,
+                "timi_frames_30fps": 247
+              },
+              {
+                "name": "798_b026",
+                "transit_ms": 631.0696,
+                "t_arrival_ms": 626.919,
+                "t_peak_ms": 1168.0,
+                "timi_frames_30fps": 19
+              },
+              {
+                "name": "798_b027",
+                "transit_ms": 519.1025,
+                "t_arrival_ms": 536.788,
+                "t_peak_ms": 1916.0,
+                "timi_frames_30fps": 16
+              },
+              {
+                "name": "798_b028",
+                "transit_ms": 475.3424,
+                "t_arrival_ms": 407.175,
+                "t_peak_ms": 1198.0,
+                "timi_frames_30fps": 14
+              },
+              {
+                "name": "798_b029",
+                "transit_ms": 318.5507,
+                "t_arrival_ms": 323.776,
+                "t_peak_ms": 1196.0,
+                "timi_frames_30fps": 10
+              },
+              {
+                "name": "798_b030",
+                "transit_ms": 3077.7557,
+                "t_arrival_ms": 2079.348,
+                "t_peak_ms": 3354.0,
+                "timi_frames_30fps": 92
+              },
+              {
+                "name": "798_b031",
+                "transit_ms": 849.5449,
+                "t_arrival_ms": 847.818,
+                "t_peak_ms": 1430.0,
+                "timi_frames_30fps": 25
+              },
+              {
+                "name": "798_b032",
+                "transit_ms": 870.4063,
+                "t_arrival_ms": 878.035,
+                "t_peak_ms": 2282.0,
+                "timi_frames_30fps": 26
+              },
+              {
+                "name": "798_b033",
+                "transit_ms": 1655.4089,
+                "t_arrival_ms": 1355.095,
+                "t_peak_ms": 2828.0,
+                "timi_frames_30fps": 50
+              },
+              {
+                "name": "798_b034",
+                "transit_ms": 553.05,
+                "t_arrival_ms": 532.226,
+                "t_peak_ms": 1206.0,
+                "timi_frames_30fps": 17
+              }
+            ],
+            "unavailable_reason": null
+          }
+        },
+        "payload": {
+          "A": {
+            "total_mb": 4.5326,
+            "frames": 90,
+            "vertices": 50244,
+            "bin_file": "case_798_A_contrast.bin",
+            "unavailable_reason": null
+          },
+          "B": {
+            "total_mb": 4.5326,
+            "frames": 90,
+            "vertices": 50244,
+            "bin_file": "case_798_B_contrast.bin",
+            "unavailable_reason": null
+          },
+          "C": {
+            "total_mb": 4.5325,
+            "frames": 90,
+            "vertices": 50244,
+            "bin_file": "case_798_C_contrast.bin",
+            "unavailable_reason": null
+          }
+        },
+        "load_time_benchmark": {
+          "unavailable_reason": null,
+          "site": {
+            "unavailable_reason": null,
+            "base": "https://127.0.0.1:8543",
+            "samples_per_resource": 3,
+            "resources": [
+              {
+                "name": "page_root",
+                "url": "https://127.0.0.1:8543/",
+                "kind": "page_html",
+                "bytes": 1127,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 17.604,
+                  "median": 18.333,
+                  "max": 66.717,
+                  "samples": [
+                    17.604,
+                    18.333,
+                    66.717
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.769,
+                  "median": 1.142,
+                  "max": 3.774,
+                  "samples": [
+                    0.769,
+                    1.142,
+                    3.774
+                  ]
+                },
+                "total_ms": {
+                  "min": 18.372,
+                  "median": 19.474,
+                  "max": 70.491,
+                  "samples": [
+                    18.372,
+                    19.474,
+                    70.491
+                  ]
+                }
+              },
+              {
+                "name": "page_model_coronary_601",
+                "url": "https://127.0.0.1:8543/?model=assets/coronary_601.glb",
+                "kind": "page_html",
+                "bytes": 1127,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 14.986,
+                  "median": 23.514,
+                  "max": 26.116,
+                  "samples": [
+                    14.986,
+                    23.514,
+                    26.116
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.404,
+                  "median": 0.813,
+                  "max": 1.831,
+                  "samples": [
+                    0.404,
+                    0.813,
+                    1.831
+                  ]
+                },
+                "total_ms": {
+                  "min": 15.39,
+                  "median": 25.346,
+                  "max": 26.929,
+                  "samples": [
+                    15.39,
+                    25.346,
+                    26.929
+                  ]
+                }
+              },
+              {
+                "name": "coronary_601",
+                "url": "https://127.0.0.1:8543/assets/coronary_601.glb",
+                "kind": "glb",
+                "bytes": 1056532,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 14.982,
+                  "median": 18.826,
+                  "max": 19.691,
+                  "samples": [
+                    14.982,
+                    18.826,
+                    19.691
+                  ]
+                },
+                "download_ms": {
+                  "min": 25.52,
+                  "median": 27.93,
+                  "max": 28.202,
+                  "samples": [
+                    25.52,
+                    27.93,
+                    28.202
+                  ]
+                },
+                "total_ms": {
+                  "min": 40.502,
+                  "median": 46.756,
+                  "max": 47.893,
+                  "samples": [
+                    40.502,
+                    46.756,
+                    47.893
+                  ]
+                }
+              },
+              {
+                "name": "coronary_700",
+                "url": "https://127.0.0.1:8543/assets/coronary_700.glb",
+                "kind": "glb",
+                "bytes": 1056548,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 12.699,
+                  "median": 15.209,
+                  "max": 43.256,
+                  "samples": [
+                    12.699,
+                    15.209,
+                    43.256
+                  ]
+                },
+                "download_ms": {
+                  "min": 13.997,
+                  "median": 18.016,
+                  "max": 20.606,
+                  "samples": [
+                    13.997,
+                    18.016,
+                    20.606
+                  ]
+                },
+                "total_ms": {
+                  "min": 30.715,
+                  "median": 35.816,
+                  "max": 57.252,
+                  "samples": [
+                    30.715,
+                    35.816,
+                    57.252
+                  ]
+                }
+              },
+              {
+                "name": "coronary_798",
+                "url": "https://127.0.0.1:8543/assets/coronary_798.glb",
+                "kind": "glb",
+                "bytes": 1056460,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 8.688,
+                  "median": 13.387,
+                  "max": 16.884,
+                  "samples": [
+                    8.688,
+                    13.387,
+                    16.884
+                  ]
+                },
+                "download_ms": {
+                  "min": 21.744,
+                  "median": 25.155,
+                  "max": 25.923,
+                  "samples": [
+                    21.744,
+                    25.155,
+                    25.923
+                  ]
+                },
+                "total_ms": {
+                  "min": 34.611,
+                  "median": 38.542,
+                  "max": 38.628,
+                  "samples": [
+                    34.611,
+                    38.542,
+                    38.628
+                  ]
+                }
+              },
+              {
+                "name": "cardiac_s0004",
+                "url": "https://127.0.0.1:8543/assets/cardiac.glb",
+                "kind": "glb",
+                "bytes": 1134044,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 6.59,
+                  "median": 7.203,
+                  "max": 12.862,
+                  "samples": [
+                    6.59,
+                    7.203,
+                    12.862
+                  ]
+                },
+                "download_ms": {
+                  "min": 17.327,
+                  "median": 17.494,
+                  "max": 20.138,
+                  "samples": [
+                    17.327,
+                    17.494,
+                    20.138
+                  ]
+                },
+                "total_ms": {
+                  "min": 24.084,
+                  "median": 24.531,
+                  "max": 33,
+                  "samples": [
+                    24.084,
+                    24.531,
+                    33
+                  ]
+                }
+              },
+              {
+                "name": "cardiac_s0015",
+                "url": "https://127.0.0.1:8543/assets/cardiac_s0015.glb",
+                "kind": "glb",
+                "bytes": 1267532,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 7.786,
+                  "median": 8.958,
+                  "max": 9.024,
+                  "samples": [
+                    7.786,
+                    8.958,
+                    9.024
+                  ]
+                },
+                "download_ms": {
+                  "min": 15.885,
+                  "median": 18.815,
+                  "max": 31.01,
+                  "samples": [
+                    15.885,
+                    18.815,
+                    31.01
+                  ]
+                },
+                "total_ms": {
+                  "min": 24.908,
+                  "median": 26.601,
+                  "max": 39.969,
+                  "samples": [
+                    24.908,
+                    26.601,
+                    39.969
+                  ]
+                }
+              },
+              {
+                "name": "single_aorta",
+                "url": "https://127.0.0.1:8543/assets/single_aorta.glb",
+                "kind": "glb",
+                "bytes": 456428,
+                "samples_ok": 3,
+                "errors": null,
+                "ttfb_ms": {
+                  "min": 9,
+                  "median": 22.842,
+                  "max": 48.418,
+                  "samples": [
+                    9,
+                    22.842,
+                    48.418
+                  ]
+                },
+                "download_ms": {
+                  "min": 7.593,
+                  "median": 15.213,
+                  "max": 22.966,
+                  "samples": [
+                    7.593,
+                    15.213,
+                    22.966
+                  ]
+                },
+                "total_ms": {
+                  "min": 30.436,
+                  "median": 31.966,
+                  "max": 63.631,
+                  "samples": [
+                    30.436,
+                    31.966,
+                    63.631
+                  ]
+                }
+              }
+            ]
+          },
+          "payloads": {
+            "unavailable_reason": null,
+            "measurements": [
+              {
+                "case": "798",
+                "profile": "A",
+                "name": "case_798_A_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_798_A_contrast.bin",
+                "bytes": 4521960,
+                "samples": [
+                  {
+                    "ttfb_ms": 9.738,
+                    "download_ms": 55.779,
+                    "total_ms": 65.517,
+                    "bytes": 4521960,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 12.554,
+                    "download_ms": 180.764,
+                    "total_ms": 193.318,
+                    "bytes": 4521960,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 9.28,
+                    "download_ms": 236.276,
+                    "total_ms": 245.556,
+                    "bytes": 4521960,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 9.28,
+                  "median": 9.738,
+                  "max": 12.554,
+                  "samples": [
+                    9.28,
+                    9.738,
+                    12.554
+                  ]
+                },
+                "download_ms": {
+                  "min": 55.779,
+                  "median": 180.764,
+                  "max": 236.276,
+                  "samples": [
+                    55.779,
+                    180.764,
+                    236.276
+                  ]
+                },
+                "total_ms": {
+                  "min": 65.517,
+                  "median": 193.318,
+                  "max": 245.556,
+                  "samples": [
+                    65.517,
+                    193.318,
+                    245.556
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "798",
+                "profile": "A",
+                "name": "case_798_A_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_798_A_metadata.json",
+                "bytes": 10682,
+                "samples": [
+                  {
+                    "ttfb_ms": 16.671,
+                    "download_ms": 0.222,
+                    "total_ms": 16.892,
+                    "bytes": 10682,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 12.603,
+                    "download_ms": 0.223,
+                    "total_ms": 12.826,
+                    "bytes": 10682,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 13.72,
+                    "download_ms": 0.205,
+                    "total_ms": 13.925,
+                    "bytes": 10682,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 12.603,
+                  "median": 13.72,
+                  "max": 16.671,
+                  "samples": [
+                    12.603,
+                    13.72,
+                    16.671
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.205,
+                  "median": 0.222,
+                  "max": 0.223,
+                  "samples": [
+                    0.205,
+                    0.222,
+                    0.223
+                  ]
+                },
+                "total_ms": {
+                  "min": 12.826,
+                  "median": 13.925,
+                  "max": 16.892,
+                  "samples": [
+                    12.826,
+                    13.925,
+                    16.892
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "798",
+                "profile": "B",
+                "name": "case_798_B_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_798_B_contrast.bin",
+                "bytes": 4521960,
+                "samples": [
+                  {
+                    "ttfb_ms": 16.849,
+                    "download_ms": 183.431,
+                    "total_ms": 200.28,
+                    "bytes": 4521960,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 24.806,
+                    "download_ms": 102.731,
+                    "total_ms": 127.537,
+                    "bytes": 4521960,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 9.597,
+                    "download_ms": 96.243,
+                    "total_ms": 105.84,
+                    "bytes": 4521960,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 9.597,
+                  "median": 16.849,
+                  "max": 24.806,
+                  "samples": [
+                    9.597,
+                    16.849,
+                    24.806
+                  ]
+                },
+                "download_ms": {
+                  "min": 96.243,
+                  "median": 102.731,
+                  "max": 183.431,
+                  "samples": [
+                    96.243,
+                    102.731,
+                    183.431
+                  ]
+                },
+                "total_ms": {
+                  "min": 105.84,
+                  "median": 127.537,
+                  "max": 200.28,
+                  "samples": [
+                    105.84,
+                    127.537,
+                    200.28
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "798",
+                "profile": "B",
+                "name": "case_798_B_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_798_B_metadata.json",
+                "bytes": 10614,
+                "samples": [
+                  {
+                    "ttfb_ms": 7.613,
+                    "download_ms": 0.181,
+                    "total_ms": 7.794,
+                    "bytes": 10614,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 7.349,
+                    "download_ms": 0.187,
+                    "total_ms": 7.536,
+                    "bytes": 10614,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 7.934,
+                    "download_ms": 0.181,
+                    "total_ms": 8.115,
+                    "bytes": 10614,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 7.349,
+                  "median": 7.613,
+                  "max": 7.934,
+                  "samples": [
+                    7.349,
+                    7.613,
+                    7.934
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.181,
+                  "median": 0.181,
+                  "max": 0.187,
+                  "samples": [
+                    0.181,
+                    0.181,
+                    0.187
+                  ]
+                },
+                "total_ms": {
+                  "min": 7.536,
+                  "median": 7.794,
+                  "max": 8.115,
+                  "samples": [
+                    7.536,
+                    7.794,
+                    8.115
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "798",
+                "profile": "C",
+                "name": "case_798_C_contrast.bin",
+                "url": "https://127.0.0.1:8543/assets/case_798_C_contrast.bin",
+                "bytes": 4521960,
+                "samples": [
+                  {
+                    "ttfb_ms": 7.112,
+                    "download_ms": 54.362,
+                    "total_ms": 61.475,
+                    "bytes": 4521960,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 8.614,
+                    "download_ms": 31.656,
+                    "total_ms": 40.27,
+                    "bytes": 4521960,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 8.139,
+                    "download_ms": 47.806,
+                    "total_ms": 55.946,
+                    "bytes": 4521960,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 7.112,
+                  "median": 8.139,
+                  "max": 8.614,
+                  "samples": [
+                    7.112,
+                    8.139,
+                    8.614
+                  ]
+                },
+                "download_ms": {
+                  "min": 31.656,
+                  "median": 47.806,
+                  "max": 54.362,
+                  "samples": [
+                    31.656,
+                    47.806,
+                    54.362
+                  ]
+                },
+                "total_ms": {
+                  "min": 40.27,
+                  "median": 55.946,
+                  "max": 61.475,
+                  "samples": [
+                    40.27,
+                    55.946,
+                    61.475
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              },
+              {
+                "case": "798",
+                "profile": "C",
+                "name": "case_798_C_metadata.json",
+                "url": "https://127.0.0.1:8543/assets/case_798_C_metadata.json",
+                "bytes": 10588,
+                "samples": [
+                  {
+                    "ttfb_ms": 8.386,
+                    "download_ms": 0.174,
+                    "total_ms": 8.56,
+                    "bytes": 10588,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 13.181,
+                    "download_ms": 0.262,
+                    "total_ms": 13.443,
+                    "bytes": 10588,
+                    "error": null
+                  },
+                  {
+                    "ttfb_ms": 11.29,
+                    "download_ms": 0.322,
+                    "total_ms": 11.612,
+                    "bytes": 10588,
+                    "error": null
+                  }
+                ],
+                "ttfb_ms": {
+                  "min": 8.386,
+                  "median": 11.29,
+                  "max": 13.181,
+                  "samples": [
+                    8.386,
+                    11.29,
+                    13.181
+                  ]
+                },
+                "download_ms": {
+                  "min": 0.174,
+                  "median": 0.262,
+                  "max": 0.322,
+                  "samples": [
+                    0.174,
+                    0.262,
+                    0.322
+                  ]
+                },
+                "total_ms": {
+                  "min": 8.56,
+                  "median": 11.612,
+                  "max": 13.443,
+                  "samples": [
+                    8.56,
+                    11.612,
+                    13.443
+                  ]
+                },
+                "error": null,
+                "unavailable_reason": null
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "load_time_benchmark": {
+    "unavailable_reason": null,
+    "site": {
+      "unavailable_reason": null,
+      "base": "https://127.0.0.1:8543",
+      "samples_per_resource": 3,
+      "resources": [
+        {
+          "name": "page_root",
+          "url": "https://127.0.0.1:8543/",
+          "kind": "page_html",
+          "bytes": 1127,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 17.604,
+            "median": 18.333,
+            "max": 66.717,
+            "samples": [
+              17.604,
+              18.333,
+              66.717
+            ]
+          },
+          "download_ms": {
+            "min": 0.769,
+            "median": 1.142,
+            "max": 3.774,
+            "samples": [
+              0.769,
+              1.142,
+              3.774
+            ]
+          },
+          "total_ms": {
+            "min": 18.372,
+            "median": 19.474,
+            "max": 70.491,
+            "samples": [
+              18.372,
+              19.474,
+              70.491
+            ]
+          }
+        },
+        {
+          "name": "page_model_coronary_601",
+          "url": "https://127.0.0.1:8543/?model=assets/coronary_601.glb",
+          "kind": "page_html",
+          "bytes": 1127,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 14.986,
+            "median": 23.514,
+            "max": 26.116,
+            "samples": [
+              14.986,
+              23.514,
+              26.116
+            ]
+          },
+          "download_ms": {
+            "min": 0.404,
+            "median": 0.813,
+            "max": 1.831,
+            "samples": [
+              0.404,
+              0.813,
+              1.831
+            ]
+          },
+          "total_ms": {
+            "min": 15.39,
+            "median": 25.346,
+            "max": 26.929,
+            "samples": [
+              15.39,
+              25.346,
+              26.929
+            ]
+          }
+        },
+        {
+          "name": "coronary_601",
+          "url": "https://127.0.0.1:8543/assets/coronary_601.glb",
+          "kind": "glb",
+          "bytes": 1056532,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 14.982,
+            "median": 18.826,
+            "max": 19.691,
+            "samples": [
+              14.982,
+              18.826,
+              19.691
+            ]
+          },
+          "download_ms": {
+            "min": 25.52,
+            "median": 27.93,
+            "max": 28.202,
+            "samples": [
+              25.52,
+              27.93,
+              28.202
+            ]
+          },
+          "total_ms": {
+            "min": 40.502,
+            "median": 46.756,
+            "max": 47.893,
+            "samples": [
+              40.502,
+              46.756,
+              47.893
+            ]
+          }
+        },
+        {
+          "name": "coronary_700",
+          "url": "https://127.0.0.1:8543/assets/coronary_700.glb",
+          "kind": "glb",
+          "bytes": 1056548,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 12.699,
+            "median": 15.209,
+            "max": 43.256,
+            "samples": [
+              12.699,
+              15.209,
+              43.256
+            ]
+          },
+          "download_ms": {
+            "min": 13.997,
+            "median": 18.016,
+            "max": 20.606,
+            "samples": [
+              13.997,
+              18.016,
+              20.606
+            ]
+          },
+          "total_ms": {
+            "min": 30.715,
+            "median": 35.816,
+            "max": 57.252,
+            "samples": [
+              30.715,
+              35.816,
+              57.252
+            ]
+          }
+        },
+        {
+          "name": "coronary_798",
+          "url": "https://127.0.0.1:8543/assets/coronary_798.glb",
+          "kind": "glb",
+          "bytes": 1056460,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 8.688,
+            "median": 13.387,
+            "max": 16.884,
+            "samples": [
+              8.688,
+              13.387,
+              16.884
+            ]
+          },
+          "download_ms": {
+            "min": 21.744,
+            "median": 25.155,
+            "max": 25.923,
+            "samples": [
+              21.744,
+              25.155,
+              25.923
+            ]
+          },
+          "total_ms": {
+            "min": 34.611,
+            "median": 38.542,
+            "max": 38.628,
+            "samples": [
+              34.611,
+              38.542,
+              38.628
+            ]
+          }
+        },
+        {
+          "name": "cardiac_s0004",
+          "url": "https://127.0.0.1:8543/assets/cardiac.glb",
+          "kind": "glb",
+          "bytes": 1134044,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 6.59,
+            "median": 7.203,
+            "max": 12.862,
+            "samples": [
+              6.59,
+              7.203,
+              12.862
+            ]
+          },
+          "download_ms": {
+            "min": 17.327,
+            "median": 17.494,
+            "max": 20.138,
+            "samples": [
+              17.327,
+              17.494,
+              20.138
+            ]
+          },
+          "total_ms": {
+            "min": 24.084,
+            "median": 24.531,
+            "max": 33,
+            "samples": [
+              24.084,
+              24.531,
+              33
+            ]
+          }
+        },
+        {
+          "name": "cardiac_s0015",
+          "url": "https://127.0.0.1:8543/assets/cardiac_s0015.glb",
+          "kind": "glb",
+          "bytes": 1267532,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 7.786,
+            "median": 8.958,
+            "max": 9.024,
+            "samples": [
+              7.786,
+              8.958,
+              9.024
+            ]
+          },
+          "download_ms": {
+            "min": 15.885,
+            "median": 18.815,
+            "max": 31.01,
+            "samples": [
+              15.885,
+              18.815,
+              31.01
+            ]
+          },
+          "total_ms": {
+            "min": 24.908,
+            "median": 26.601,
+            "max": 39.969,
+            "samples": [
+              24.908,
+              26.601,
+              39.969
+            ]
+          }
+        },
+        {
+          "name": "single_aorta",
+          "url": "https://127.0.0.1:8543/assets/single_aorta.glb",
+          "kind": "glb",
+          "bytes": 456428,
+          "samples_ok": 3,
+          "errors": null,
+          "ttfb_ms": {
+            "min": 9,
+            "median": 22.842,
+            "max": 48.418,
+            "samples": [
+              9,
+              22.842,
+              48.418
+            ]
+          },
+          "download_ms": {
+            "min": 7.593,
+            "median": 15.213,
+            "max": 22.966,
+            "samples": [
+              7.593,
+              15.213,
+              22.966
+            ]
+          },
+          "total_ms": {
+            "min": 30.436,
+            "median": 31.966,
+            "max": 63.631,
+            "samples": [
+              30.436,
+              31.966,
+              63.631
+            ]
+          }
+        }
+      ]
+    },
+    "payloads": {
+      "unavailable_reason": null,
+      "measurements": [
+        {
+          "case": "601",
+          "profile": "A",
+          "name": "case_601_A_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_601_A_contrast.bin",
+          "bytes": 4522770,
+          "samples": [
+            {
+              "ttfb_ms": 17.061,
+              "download_ms": 52.358,
+              "total_ms": 69.419,
+              "bytes": 4522770,
+              "error": null
+            },
+            {
+              "ttfb_ms": 15.203,
+              "download_ms": 193.022,
+              "total_ms": 208.225,
+              "bytes": 4522770,
+              "error": null
+            },
+            {
+              "ttfb_ms": 70.823,
+              "download_ms": 207.728,
+              "total_ms": 278.551,
+              "bytes": 4522770,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 15.203,
+            "median": 17.061,
+            "max": 70.823,
+            "samples": [
+              15.203,
+              17.061,
+              70.823
+            ]
+          },
+          "download_ms": {
+            "min": 52.358,
+            "median": 193.022,
+            "max": 207.728,
+            "samples": [
+              52.358,
+              193.022,
+              207.728
+            ]
+          },
+          "total_ms": {
+            "min": 69.419,
+            "median": 208.225,
+            "max": 278.551,
+            "samples": [
+              69.419,
+              208.225,
+              278.551
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "601",
+          "profile": "A",
+          "name": "case_601_A_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_601_A_metadata.json",
+          "bytes": 7754,
+          "samples": [
+            {
+              "ttfb_ms": 46.559,
+              "download_ms": 0.396,
+              "total_ms": 46.955,
+              "bytes": 7754,
+              "error": null
+            },
+            {
+              "ttfb_ms": 17.92,
+              "download_ms": 0.222,
+              "total_ms": 18.142,
+              "bytes": 7754,
+              "error": null
+            },
+            {
+              "ttfb_ms": 16.12,
+              "download_ms": 0.19,
+              "total_ms": 16.311,
+              "bytes": 7754,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 16.12,
+            "median": 17.92,
+            "max": 46.559,
+            "samples": [
+              16.12,
+              17.92,
+              46.559
+            ]
+          },
+          "download_ms": {
+            "min": 0.19,
+            "median": 0.222,
+            "max": 0.396,
+            "samples": [
+              0.19,
+              0.222,
+              0.396
+            ]
+          },
+          "total_ms": {
+            "min": 16.311,
+            "median": 18.142,
+            "max": 46.955,
+            "samples": [
+              16.311,
+              18.142,
+              46.955
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "601",
+          "profile": "B",
+          "name": "case_601_B_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_601_B_contrast.bin",
+          "bytes": 4522770,
+          "samples": [
+            {
+              "ttfb_ms": 15.923,
+              "download_ms": 180.369,
+              "total_ms": 196.292,
+              "bytes": 4522770,
+              "error": null
+            },
+            {
+              "ttfb_ms": 15.209,
+              "download_ms": 134.743,
+              "total_ms": 149.952,
+              "bytes": 4522770,
+              "error": null
+            },
+            {
+              "ttfb_ms": 11.741,
+              "download_ms": 61.069,
+              "total_ms": 72.81,
+              "bytes": 4522770,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 11.741,
+            "median": 15.209,
+            "max": 15.923,
+            "samples": [
+              11.741,
+              15.209,
+              15.923
+            ]
+          },
+          "download_ms": {
+            "min": 61.069,
+            "median": 134.743,
+            "max": 180.369,
+            "samples": [
+              61.069,
+              134.743,
+              180.369
+            ]
+          },
+          "total_ms": {
+            "min": 72.81,
+            "median": 149.952,
+            "max": 196.292,
+            "samples": [
+              72.81,
+              149.952,
+              196.292
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "601",
+          "profile": "B",
+          "name": "case_601_B_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_601_B_metadata.json",
+          "bytes": 7715,
+          "samples": [
+            {
+              "ttfb_ms": 14.915,
+              "download_ms": 0.223,
+              "total_ms": 15.138,
+              "bytes": 7715,
+              "error": null
+            },
+            {
+              "ttfb_ms": 10.212,
+              "download_ms": 0.268,
+              "total_ms": 10.48,
+              "bytes": 7715,
+              "error": null
+            },
+            {
+              "ttfb_ms": 14.076,
+              "download_ms": 0.24,
+              "total_ms": 14.316,
+              "bytes": 7715,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 10.212,
+            "median": 14.076,
+            "max": 14.915,
+            "samples": [
+              10.212,
+              14.076,
+              14.915
+            ]
+          },
+          "download_ms": {
+            "min": 0.223,
+            "median": 0.24,
+            "max": 0.268,
+            "samples": [
+              0.223,
+              0.24,
+              0.268
+            ]
+          },
+          "total_ms": {
+            "min": 10.48,
+            "median": 14.316,
+            "max": 15.138,
+            "samples": [
+              10.48,
+              14.316,
+              15.138
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "601",
+          "profile": "C",
+          "name": "case_601_C_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_601_C_contrast.bin",
+          "bytes": 4522770,
+          "samples": [
+            {
+              "ttfb_ms": 12.746,
+              "download_ms": 97.872,
+              "total_ms": 110.618,
+              "bytes": 4522770,
+              "error": null
+            },
+            {
+              "ttfb_ms": 19.037,
+              "download_ms": 98.029,
+              "total_ms": 117.065,
+              "bytes": 4522770,
+              "error": null
+            },
+            {
+              "ttfb_ms": 14.2,
+              "download_ms": 107.453,
+              "total_ms": 121.653,
+              "bytes": 4522770,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 12.746,
+            "median": 14.2,
+            "max": 19.037,
+            "samples": [
+              12.746,
+              14.2,
+              19.037
+            ]
+          },
+          "download_ms": {
+            "min": 97.872,
+            "median": 98.029,
+            "max": 107.453,
+            "samples": [
+              97.872,
+              98.029,
+              107.453
+            ]
+          },
+          "total_ms": {
+            "min": 110.618,
+            "median": 117.065,
+            "max": 121.653,
+            "samples": [
+              110.618,
+              117.065,
+              121.653
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "601",
+          "profile": "C",
+          "name": "case_601_C_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_601_C_metadata.json",
+          "bytes": 7677,
+          "samples": [
+            {
+              "ttfb_ms": 14.107,
+              "download_ms": 0.197,
+              "total_ms": 14.304,
+              "bytes": 7677,
+              "error": null
+            },
+            {
+              "ttfb_ms": 13.075,
+              "download_ms": 0.221,
+              "total_ms": 13.296,
+              "bytes": 7677,
+              "error": null
+            },
+            {
+              "ttfb_ms": 11.023,
+              "download_ms": 0.24,
+              "total_ms": 11.263,
+              "bytes": 7677,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 11.023,
+            "median": 13.075,
+            "max": 14.107,
+            "samples": [
+              11.023,
+              13.075,
+              14.107
+            ]
+          },
+          "download_ms": {
+            "min": 0.197,
+            "median": 0.221,
+            "max": 0.24,
+            "samples": [
+              0.197,
+              0.221,
+              0.24
+            ]
+          },
+          "total_ms": {
+            "min": 11.263,
+            "median": 13.296,
+            "max": 14.304,
+            "samples": [
+              11.263,
+              13.296,
+              14.304
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "700",
+          "profile": "A",
+          "name": "case_700_A_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_700_A_contrast.bin",
+          "bytes": 4522860,
+          "samples": [
+            {
+              "ttfb_ms": 22.862,
+              "download_ms": 115.486,
+              "total_ms": 138.349,
+              "bytes": 4522860,
+              "error": null
+            },
+            {
+              "ttfb_ms": 10.745,
+              "download_ms": 71.436,
+              "total_ms": 82.181,
+              "bytes": 4522860,
+              "error": null
+            },
+            {
+              "ttfb_ms": 10.329,
+              "download_ms": 45.955,
+              "total_ms": 56.284,
+              "bytes": 4522860,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 10.329,
+            "median": 10.745,
+            "max": 22.862,
+            "samples": [
+              10.329,
+              10.745,
+              22.862
+            ]
+          },
+          "download_ms": {
+            "min": 45.955,
+            "median": 71.436,
+            "max": 115.486,
+            "samples": [
+              45.955,
+              71.436,
+              115.486
+            ]
+          },
+          "total_ms": {
+            "min": 56.284,
+            "median": 82.181,
+            "max": 138.349,
+            "samples": [
+              56.284,
+              82.181,
+              138.349
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "700",
+          "profile": "A",
+          "name": "case_700_A_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_700_A_metadata.json",
+          "bytes": 6681,
+          "samples": [
+            {
+              "ttfb_ms": 9.577,
+              "download_ms": 0.196,
+              "total_ms": 9.772,
+              "bytes": 6681,
+              "error": null
+            },
+            {
+              "ttfb_ms": 9.259,
+              "download_ms": 0.993,
+              "total_ms": 10.252,
+              "bytes": 6681,
+              "error": null
+            },
+            {
+              "ttfb_ms": 11.596,
+              "download_ms": 0.184,
+              "total_ms": 11.78,
+              "bytes": 6681,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 9.259,
+            "median": 9.577,
+            "max": 11.596,
+            "samples": [
+              9.259,
+              9.577,
+              11.596
+            ]
+          },
+          "download_ms": {
+            "min": 0.184,
+            "median": 0.196,
+            "max": 0.993,
+            "samples": [
+              0.184,
+              0.196,
+              0.993
+            ]
+          },
+          "total_ms": {
+            "min": 9.772,
+            "median": 10.252,
+            "max": 11.78,
+            "samples": [
+              9.772,
+              10.252,
+              11.78
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "700",
+          "profile": "B",
+          "name": "case_700_B_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_700_B_contrast.bin",
+          "bytes": 4522860,
+          "samples": [
+            {
+              "ttfb_ms": 21.666,
+              "download_ms": 111.32,
+              "total_ms": 132.986,
+              "bytes": 4522860,
+              "error": null
+            },
+            {
+              "ttfb_ms": 21.058,
+              "download_ms": 120.74,
+              "total_ms": 141.798,
+              "bytes": 4522860,
+              "error": null
+            },
+            {
+              "ttfb_ms": 22.308,
+              "download_ms": 158.719,
+              "total_ms": 181.027,
+              "bytes": 4522860,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 21.058,
+            "median": 21.666,
+            "max": 22.308,
+            "samples": [
+              21.058,
+              21.666,
+              22.308
+            ]
+          },
+          "download_ms": {
+            "min": 111.32,
+            "median": 120.74,
+            "max": 158.719,
+            "samples": [
+              111.32,
+              120.74,
+              158.719
+            ]
+          },
+          "total_ms": {
+            "min": 132.986,
+            "median": 141.798,
+            "max": 181.027,
+            "samples": [
+              132.986,
+              141.798,
+              181.027
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "700",
+          "profile": "B",
+          "name": "case_700_B_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_700_B_metadata.json",
+          "bytes": 6680,
+          "samples": [
+            {
+              "ttfb_ms": 22.015,
+              "download_ms": 0.333,
+              "total_ms": 22.348,
+              "bytes": 6680,
+              "error": null
+            },
+            {
+              "ttfb_ms": 22.069,
+              "download_ms": 0.258,
+              "total_ms": 22.328,
+              "bytes": 6680,
+              "error": null
+            },
+            {
+              "ttfb_ms": 21.933,
+              "download_ms": 0.395,
+              "total_ms": 22.328,
+              "bytes": 6680,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 21.933,
+            "median": 22.015,
+            "max": 22.069,
+            "samples": [
+              21.933,
+              22.015,
+              22.069
+            ]
+          },
+          "download_ms": {
+            "min": 0.258,
+            "median": 0.333,
+            "max": 0.395,
+            "samples": [
+              0.258,
+              0.333,
+              0.395
+            ]
+          },
+          "total_ms": {
+            "min": 22.328,
+            "median": 22.328,
+            "max": 22.348,
+            "samples": [
+              22.328,
+              22.328,
+              22.348
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "700",
+          "profile": "C",
+          "name": "case_700_C_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_700_C_contrast.bin",
+          "bytes": 4522860,
+          "samples": [
+            {
+              "ttfb_ms": 20.874,
+              "download_ms": 117.751,
+              "total_ms": 138.625,
+              "bytes": 4522860,
+              "error": null
+            },
+            {
+              "ttfb_ms": 13.077,
+              "download_ms": 81.026,
+              "total_ms": 94.104,
+              "bytes": 4522860,
+              "error": null
+            },
+            {
+              "ttfb_ms": 13.138,
+              "download_ms": 61.088,
+              "total_ms": 74.226,
+              "bytes": 4522860,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 13.077,
+            "median": 13.138,
+            "max": 20.874,
+            "samples": [
+              13.077,
+              13.138,
+              20.874
+            ]
+          },
+          "download_ms": {
+            "min": 61.088,
+            "median": 81.026,
+            "max": 117.751,
+            "samples": [
+              61.088,
+              81.026,
+              117.751
+            ]
+          },
+          "total_ms": {
+            "min": 74.226,
+            "median": 94.104,
+            "max": 138.625,
+            "samples": [
+              74.226,
+              94.104,
+              138.625
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "700",
+          "profile": "C",
+          "name": "case_700_C_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_700_C_metadata.json",
+          "bytes": 6635,
+          "samples": [
+            {
+              "ttfb_ms": 11.103,
+              "download_ms": 0.243,
+              "total_ms": 11.346,
+              "bytes": 6635,
+              "error": null
+            },
+            {
+              "ttfb_ms": 9.32,
+              "download_ms": 0.16,
+              "total_ms": 9.48,
+              "bytes": 6635,
+              "error": null
+            },
+            {
+              "ttfb_ms": 8.285,
+              "download_ms": 0.148,
+              "total_ms": 8.433,
+              "bytes": 6635,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 8.285,
+            "median": 9.32,
+            "max": 11.103,
+            "samples": [
+              8.285,
+              9.32,
+              11.103
+            ]
+          },
+          "download_ms": {
+            "min": 0.148,
+            "median": 0.16,
+            "max": 0.243,
+            "samples": [
+              0.148,
+              0.16,
+              0.243
+            ]
+          },
+          "total_ms": {
+            "min": 8.433,
+            "median": 9.48,
+            "max": 11.346,
+            "samples": [
+              8.433,
+              9.48,
+              11.346
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "798",
+          "profile": "A",
+          "name": "case_798_A_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_798_A_contrast.bin",
+          "bytes": 4521960,
+          "samples": [
+            {
+              "ttfb_ms": 9.738,
+              "download_ms": 55.779,
+              "total_ms": 65.517,
+              "bytes": 4521960,
+              "error": null
+            },
+            {
+              "ttfb_ms": 12.554,
+              "download_ms": 180.764,
+              "total_ms": 193.318,
+              "bytes": 4521960,
+              "error": null
+            },
+            {
+              "ttfb_ms": 9.28,
+              "download_ms": 236.276,
+              "total_ms": 245.556,
+              "bytes": 4521960,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 9.28,
+            "median": 9.738,
+            "max": 12.554,
+            "samples": [
+              9.28,
+              9.738,
+              12.554
+            ]
+          },
+          "download_ms": {
+            "min": 55.779,
+            "median": 180.764,
+            "max": 236.276,
+            "samples": [
+              55.779,
+              180.764,
+              236.276
+            ]
+          },
+          "total_ms": {
+            "min": 65.517,
+            "median": 193.318,
+            "max": 245.556,
+            "samples": [
+              65.517,
+              193.318,
+              245.556
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "798",
+          "profile": "A",
+          "name": "case_798_A_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_798_A_metadata.json",
+          "bytes": 10682,
+          "samples": [
+            {
+              "ttfb_ms": 16.671,
+              "download_ms": 0.222,
+              "total_ms": 16.892,
+              "bytes": 10682,
+              "error": null
+            },
+            {
+              "ttfb_ms": 12.603,
+              "download_ms": 0.223,
+              "total_ms": 12.826,
+              "bytes": 10682,
+              "error": null
+            },
+            {
+              "ttfb_ms": 13.72,
+              "download_ms": 0.205,
+              "total_ms": 13.925,
+              "bytes": 10682,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 12.603,
+            "median": 13.72,
+            "max": 16.671,
+            "samples": [
+              12.603,
+              13.72,
+              16.671
+            ]
+          },
+          "download_ms": {
+            "min": 0.205,
+            "median": 0.222,
+            "max": 0.223,
+            "samples": [
+              0.205,
+              0.222,
+              0.223
+            ]
+          },
+          "total_ms": {
+            "min": 12.826,
+            "median": 13.925,
+            "max": 16.892,
+            "samples": [
+              12.826,
+              13.925,
+              16.892
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "798",
+          "profile": "B",
+          "name": "case_798_B_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_798_B_contrast.bin",
+          "bytes": 4521960,
+          "samples": [
+            {
+              "ttfb_ms": 16.849,
+              "download_ms": 183.431,
+              "total_ms": 200.28,
+              "bytes": 4521960,
+              "error": null
+            },
+            {
+              "ttfb_ms": 24.806,
+              "download_ms": 102.731,
+              "total_ms": 127.537,
+              "bytes": 4521960,
+              "error": null
+            },
+            {
+              "ttfb_ms": 9.597,
+              "download_ms": 96.243,
+              "total_ms": 105.84,
+              "bytes": 4521960,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 9.597,
+            "median": 16.849,
+            "max": 24.806,
+            "samples": [
+              9.597,
+              16.849,
+              24.806
+            ]
+          },
+          "download_ms": {
+            "min": 96.243,
+            "median": 102.731,
+            "max": 183.431,
+            "samples": [
+              96.243,
+              102.731,
+              183.431
+            ]
+          },
+          "total_ms": {
+            "min": 105.84,
+            "median": 127.537,
+            "max": 200.28,
+            "samples": [
+              105.84,
+              127.537,
+              200.28
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "798",
+          "profile": "B",
+          "name": "case_798_B_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_798_B_metadata.json",
+          "bytes": 10614,
+          "samples": [
+            {
+              "ttfb_ms": 7.613,
+              "download_ms": 0.181,
+              "total_ms": 7.794,
+              "bytes": 10614,
+              "error": null
+            },
+            {
+              "ttfb_ms": 7.349,
+              "download_ms": 0.187,
+              "total_ms": 7.536,
+              "bytes": 10614,
+              "error": null
+            },
+            {
+              "ttfb_ms": 7.934,
+              "download_ms": 0.181,
+              "total_ms": 8.115,
+              "bytes": 10614,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 7.349,
+            "median": 7.613,
+            "max": 7.934,
+            "samples": [
+              7.349,
+              7.613,
+              7.934
+            ]
+          },
+          "download_ms": {
+            "min": 0.181,
+            "median": 0.181,
+            "max": 0.187,
+            "samples": [
+              0.181,
+              0.181,
+              0.187
+            ]
+          },
+          "total_ms": {
+            "min": 7.536,
+            "median": 7.794,
+            "max": 8.115,
+            "samples": [
+              7.536,
+              7.794,
+              8.115
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "798",
+          "profile": "C",
+          "name": "case_798_C_contrast.bin",
+          "url": "https://127.0.0.1:8543/assets/case_798_C_contrast.bin",
+          "bytes": 4521960,
+          "samples": [
+            {
+              "ttfb_ms": 7.112,
+              "download_ms": 54.362,
+              "total_ms": 61.475,
+              "bytes": 4521960,
+              "error": null
+            },
+            {
+              "ttfb_ms": 8.614,
+              "download_ms": 31.656,
+              "total_ms": 40.27,
+              "bytes": 4521960,
+              "error": null
+            },
+            {
+              "ttfb_ms": 8.139,
+              "download_ms": 47.806,
+              "total_ms": 55.946,
+              "bytes": 4521960,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 7.112,
+            "median": 8.139,
+            "max": 8.614,
+            "samples": [
+              7.112,
+              8.139,
+              8.614
+            ]
+          },
+          "download_ms": {
+            "min": 31.656,
+            "median": 47.806,
+            "max": 54.362,
+            "samples": [
+              31.656,
+              47.806,
+              54.362
+            ]
+          },
+          "total_ms": {
+            "min": 40.27,
+            "median": 55.946,
+            "max": 61.475,
+            "samples": [
+              40.27,
+              55.946,
+              61.475
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        },
+        {
+          "case": "798",
+          "profile": "C",
+          "name": "case_798_C_metadata.json",
+          "url": "https://127.0.0.1:8543/assets/case_798_C_metadata.json",
+          "bytes": 10588,
+          "samples": [
+            {
+              "ttfb_ms": 8.386,
+              "download_ms": 0.174,
+              "total_ms": 8.56,
+              "bytes": 10588,
+              "error": null
+            },
+            {
+              "ttfb_ms": 13.181,
+              "download_ms": 0.262,
+              "total_ms": 13.443,
+              "bytes": 10588,
+              "error": null
+            },
+            {
+              "ttfb_ms": 11.29,
+              "download_ms": 0.322,
+              "total_ms": 11.612,
+              "bytes": 10588,
+              "error": null
+            }
+          ],
+          "ttfb_ms": {
+            "min": 8.386,
+            "median": 11.29,
+            "max": 13.181,
+            "samples": [
+              8.386,
+              11.29,
+              13.181
+            ]
+          },
+          "download_ms": {
+            "min": 0.174,
+            "median": 0.262,
+            "max": 0.322,
+            "samples": [
+              0.174,
+              0.262,
+              0.322
+            ]
+          },
+          "total_ms": {
+            "min": 8.56,
+            "median": 11.612,
+            "max": 13.443,
+            "samples": [
+              8.56,
+              11.612,
+              13.443
+            ]
+          },
+          "error": null,
+          "unavailable_reason": null
+        }
+      ]
+    }
+  },
+  "failures": []
+}
