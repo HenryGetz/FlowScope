@@ -229,17 +229,51 @@ function updateClipPlane() {
   clipPlane.constant = -(dMin + (dMax - dMin) * clipOffset01);
 }
 
+// Mirror of pipeline structures.STRUCTURE_GROUPS great_vessels membership.
+const GREAT_VESSEL_IDS = new Set([
+  'aorta',
+  'pulmonary_artery',
+  'pulmonary_veins',
+  'vena_cava_superior',
+  'vena_cava_inferior',
+]);
+
 /** Shared clipping plane: capture the normal, sweep range and every material. */
 function initClipping(root) {
   // The normal is the default camera view direction (setModel just framed it).
   clipPlane.normal.copy(stage.controls.target).sub(stage.camera.position).normalize();
 
   clipMaterials.length = 0;
+  // Interpenetrating masks (vessel roots through the heart envelope, coronaries
+  // lying on the epicardium) are coincident within a depth unit and z-fight as
+  // color flakes. Nudge each tier toward the camera so the anatomically outer
+  // surface wins cleanly: coronaries > pulmonary artery > other great vessels
+  // > everything else.
+  const depthRankOf = (name) => {
+    if (name.startsWith('coronary')) return -3;
+    // The PA trunk crosses anterior to the aortic arch in these masks and the
+    // two interpenetrate; it must win their shared-rank fight explicitly.
+    if (name === 'pulmonary_artery') return -2;
+    if (GREAT_VESSEL_IDS.has(name)) return -1;
+    return 0;
+  };
   root.traverse((node) => {
     const material = node.material;
     if (!material) return;
-    if (Array.isArray(material)) clipMaterials.push(...material);
-    else clipMaterials.push(material);
+    const rank = depthRankOf(node.name || '');
+    const mats = Array.isArray(material) ? material : [material];
+    clipMaterials.push(...mats);
+    if (rank !== 0) {
+      for (const mat of mats) {
+        mat.polygonOffset = true;
+        // ~millimeter-equivalent steps at this camera's depth precision:
+        // raw depth units are sub-micron here and cannot separate the ~1mm
+        // interpenetration of adjacent masks.
+        mat.polygonOffsetFactor = rank * 8;
+        mat.polygonOffsetUnits = rank * 2048;
+        mat.needsUpdate = true;
+      }
+    }
   });
 
   clipCorners.length = 0;
