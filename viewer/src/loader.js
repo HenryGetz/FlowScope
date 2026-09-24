@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /** Default model location relative to the page (viewer/models/, served at /models/). */
-export const DEFAULT_MODEL_URL = 'models/case_01.glb';
+export const DEFAULT_MODEL_URL = 'models/s0011.glb';
 
-/** Model URL: `?model=<url>` override, else `models/case_01.glb` relative. */
+/** Model URL: `?model=<url>` override, else `models/s0011.glb` relative. */
 export function modelURL() {
   const fromQuery = new URLSearchParams(window.location.search).get('model');
   const trimmed = fromQuery ? fromQuery.trim() : '';

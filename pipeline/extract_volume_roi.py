@@ -470,6 +470,14 @@ def main(argv=None) -> int:
         '--case-id', default=None, help='case id recorded in meta.json (default: GLB stem)'
     )
     parser.add_argument(
+        '--ct',
+        default=None,
+        metavar='PATH',
+        help='CT override (NIfTI file or DICOM series dir) when the CT lives '
+        'outside the case root (repo layout: data/raw/totalseg_ct/<case>/ct.nii.gz '
+        '+ data/segmentations/<case>/ masks); default: discovered in --input',
+    )
+    parser.add_argument(
         '--model-center-ras-mm',
         nargs=3,
         type=float,
@@ -484,7 +492,7 @@ def main(argv=None) -> int:
     glb_path = Path(args.output)
     case_id = args.case_id if args.case_id else glb_path.stem
 
-    ct_path = find_ct(case_dir)
+    ct_path = Path(args.ct) if args.ct else find_ct(case_dir)
     ct_img = load_ct(ct_path)
     hu_ct, ct_affine = _hu_and_affine(ct_img)
     ct_shape = tuple(int(s) for s in hu_ct.shape)

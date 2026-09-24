@@ -201,6 +201,14 @@ def parse_args(argv=None):
         '--label-map',
         help='JSON {label: canonical_or_raw_name}; default = heartchambers_highres ids 1..7',
     )
+    parser.add_argument(
+        '--ct',
+        default=None,
+        metavar='PATH',
+        help='--input only: CT override (NIfTI file or DICOM series dir) when the '
+        'CT lives outside the case root (repo layout: data/raw/totalseg_ct/<case>/'
+        'ct.nii.gz + data/segmentations/<case>/ masks); default: discovered in --input',
+    )
     parser.add_argument('--output', default='out/cardiac.glb')
     parser.add_argument('--report', default='out/report.json')
     parser.add_argument(
@@ -1041,7 +1049,13 @@ def main(argv=None) -> int:
         structures.DEFAULT_LABEL_MAP
     )
     volumes: dict = {}
-    ct_path = extract_volume_roi.find_ct(Path(args.input)) if args.input else None
+    if args.ct and not args.input:
+        raise SystemExit('--ct requires --input (it selects the CT for the volume pair)')
+    ct_path = (
+        Path(args.ct)
+        if args.ct
+        else (extract_volume_roi.find_ct(Path(args.input)) if args.input else None)
+    )
     specs = _collect_specs(
         args, label_map, volumes, exclude_paths={ct_path} if ct_path is not None else ()
     )

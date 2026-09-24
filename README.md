@@ -96,13 +96,16 @@ python pipeline/build_cardiac_glb.py \
     --ts-dir data/segmentations/s0011 data/raw/totalseg_ct/s0011/segmentations \
     --output viewer/models/s0011.glb --report out/report_s0011.json
 
-# MPR mode: give it the case root (CT + masks) and it also bakes the quantized
-# CT volume pair beside the GLB — <case>_volume.bin (256^3 uint8, cardiovascular
+# MPR mode: masks + the co-registered CT in one run — also bakes the quantized
+# CT volume pair beside the GLB: <case>_volume.bin (256^3 uint8, cardiovascular
 # HU window -150..+450) + <case>_meta.json (dimensions/spacing/origin/affine plus
-# the GLB recenter anchor for sub-mm slice/mesh co-registration).
+# the GLB recenter anchor for sub-mm slice/mesh co-registration). The repo layout
+# splits the masks (data/segmentations/<case>/) from the CT
+# (data/raw/totalseg_ct/<case>/ct.nii.gz), so the CT is passed with --ct.
 python pipeline/build_cardiac_glb.py \
-    --input data/case_01 \
-    --output viewer/models/case_01.glb --report out/report_case_01.json
+    --input data/segmentations/s0011 \
+    --ct data/raw/totalseg_ct/s0011/ct.nii.gz \
+    --output viewer/models/s0011.glb --report out/report_s0011_mpr.json
 
 # No gated data at hand? Generate a synthetic contrast-CT sample case first:
 python tools/make_sample_case.py            # writes data/case_01/ (CT + 15 masks)
