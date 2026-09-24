@@ -1,0 +1,137 @@
+Rendering patient-specific, CT-derived cardiac models on the Meta Quest 2 via WebXR requires balancing anatomical fidelity against the Snapdragon XR2 Gen 1 mobile SoC. Because the Adreno 650 uses a Tile-Based Deferred Rendering (TBDR) architecture, achieving a stable 72 Hz (13.88 ms) or 90 Hz (11.11 ms) refresh rate requires optimizations across mesh reconstruction, asset delivery, shader pipelines, and runtime memory management.
+
+---
+
+### 1. Hardware Budget and Architectural Constraints
+
+The application must share its 8.0 to 9.5 ms render budget with the Meta Horizon OS compositor and Chromium runtime. Operating within the 3 to 5 W thermal envelope and preventing Adreno 650 memory bus thrashing requires strict asset limits:
+
+* **Visible Geometry:** 150,000 to 200,000 triangles total (hard ceiling at 250,000). Exceeding this boundary overflows on-chip tile memory (GMEM) and stalls the GPU binning engine.
+
+
+* **WebGL Draw Calls:** $\le 30$ optimal calls per frame (hard ceiling at 50) to prevent CPU bottlenecks across the JavaScript-to-driver layer.
+
+
+* **Memory Ceiling:** $\le 256$ MB dedicated texture VRAM and $\le 1.0$ to $1.2$ GB total browser context heap to avoid out-of-memory (OOM) tab terminations.
+
+
+* **Volumetric Approach:** Direct Volume Rendering (DVR/raymarching 3D textures) requires $>42$ billion trilinear samples per second, which saturates memory bandwidth and drops performance to 5–15 FPS. You must extract and render preprocessed polygonal surface meshes.
+
+
+
+---
+
+### 2. Isosurface Extraction, Decimation, and Surface Detail Baking
+
+Raw Marching Cubes isosurfaces contain 3 to 8 million irregular, unindexed polygons with staircase artifacts that will crash mobile browser engines.
+
+* **Semantic Segmentation:** Segment cardiac compartments (ventricles, atria, myocardium, aorta, coronary tree) offline using deep-learning models (e.g., TotalSegmentator / 3D nnU-Net) prior to mesh extraction.
+
+
+* **Curvature-Weighted Decimation:** Apply Quadric Error Metric (QEM) edge-collapse decimation. Enforce dihedral-angle constraints and curvature weighting to preserve critical sub-2 mm structures (e.g., interatrial/interventricular septa, valve leaflets) while pinning coronary artery ostia.
+
+
+* **Isotropic Quad Remeshing:** Convert the decimated mesh into uniform, equilateral triangle pairings. This standardizes vertex density and optimizes the GPU's Post-Transform Cache (PTC).
+
+
+* **Surface Map Baking:** Transfer microscopic anatomical details (ventricular trabeculae carneae, pectinate ridges, coronary sulci) from the unreduced CT isosurface onto the low-poly mesh via a ray-distance cage:
+
+
+* *16-bit Tangent Space Normal Maps:* Accurately capture micro-relief and specular highlights without added geometry.
+
+
+* *Ambient Occlusion (AO) Maps:* Pre-calculate hemispherical light shadowing within deep anatomical recesses, eliminating dynamic shadow passes at runtime.
+
+
+* *Subsurface Thickness Maps:* Enable approximation of tissue translucency along thin atrial and valvular structures.
+
+
+
+
+
+---
+
+### 3. Asset Packaging, Geometry Quantization, and GPU Textures
+
+Standard web assets (OBJ, STL, PNG, JPEG) cause network latency, slow CPU decoding, and severe VRAM bloat. Deliver assets strictly via binary glTF 2.0 (`.glb`) containers.
+
+* **Meshopt vs. Draco:** Use Meshoptimizer (`EXT_meshopt_compression`) instead of Google Draco (`KHR_draco_mesh_compression`). Draco decompression relies on single-threaded CPU WebAssembly routines (10–25 MB/s), stalling the main thread and causing frame drops during asset loads. Meshopt decodes at memory-bus speeds (300–800 MB/s) using SIMD instructions, does not alter buffer topology, and reorders primitives to optimize GPU vertex cache hit rates.
+
+
+* **Attribute Quantization (`KHR_mesh_quantization`):** Quantize vertex data to cut buffer size by over 50%. Store positions as 16-bit signed integers (`SHORT`), normals/tangents as 8-bit signed integers (`BYTE`), and UVs as 16-bit unsigned integers (`UNSIGNED_SHORT`). The Adreno 650 hardware input assembler unpacks these formats natively without shader overhead.
+
+
+* **KTX2 / Basis Universal Textures (`KHR_texture_basisu`):** Web browsers decompress PNGs/JPEGs into uncompressed 32-bit RGBA bitmapped memory (a single 2048×2048 map consumes 16.78 MB VRAM). KTX2 transcodes textures directly into GPU-native ASTC format in VRAM, maintaining an 80% to 87% memory reduction (0.5–1.0 bytes/pixel):
+
+
+* *Normal & Packed ORM Maps:* Use **UASTC** (level 4, with RDO) to avoid block compression artifacts and preserve tangent vectors.
+
+
+* *Base Color / Albedo:* Use **ETC1S** (`--quality 255`) for maximum compression across smooth biological gradients.
+
+
+
+
+
+---
+
+### 4. WebXR Driver and System-Level Integrations
+
+Configure low-level WebGL 2.0 extensions exposed by the Meta Quest Browser:
+
+* **Single-Pass Stereoscopic Multiview (`OCULUS_multiview`):** Standard WebGL submits separate draw calls for each eye. Multiview instances draws simultaneously into a 2D texture array (`TEXTURE_2D_ARRAY`) using `gl_ViewID_OVR` to select eye matrices, reducing CPU driver validation and scene traversal overhead by 25% to 50%.
+
+
+* **Fixed Foveated Rendering (FFR):** Enable FFR on the primary `XRWebGLLayer` or `XRProjectionLayer` at a level of `0.75` to `1.0`. FFR reduces peripheral GMEM binning resolution, cutting fragment shader workloads by 25% to 40%.
+
+
+* *Critical Hazard:* FFR is **completely disabled** if rendering into intermediate off-screen framebuffers (such as custom post-processing passes). Render directly to native WebXR projection attachments.
+
+
+
+
+* **Dynamic Resolution Scaling (DRS):** Monitor GPU execution times and adjust `framebufferScaleFactor` or `requestViewportScale()` dynamically (between 0.75× and 1.5×). Scale down if frame times approach 12.0 ms during close-up inspection of internal structures.
+
+
+
+---
+
+### 5. Shading, Virtual Dissection, and Overdraw Control
+
+Standard microfacet PBR models (Cook-Torrance / GGX) require heavy arithmetic operations and multiple texture samplers, rapidly saturating the mobile GPU.
+
+* **Optimized Shading Models:**
+* *MatCap Pipeline:* Use Spherical Environment Mapping (MatCap) with a single 512×512 texture. This pre-bakes studio lighting, Fresnel rim reflections, and soft-tissue translucency into a lookup that executes in under 15 ALU instructions.
+
+
+* *Wrap-Lighting:* If directional lighting is required, use a modified Lambertian wrap-diffuse model ($w \approx 0.2–0.4$) with Blinn-Phong specular and a single directional light, avoiding dynamic shadow maps.
+
+
+
+
+* **Preserving Early-Z During Slicing / Dissection:** Interactive virtual slicing is common in cardiac inspection. Naive implementations use `discard` in the fragment shader, which **invalidates the Adreno 650 Low-Resolution Z (LRZ) and Early-Z engines** for that tile, forcing expensive fragment evaluation across all occluded interior geometry.
+
+
+* *Solution:* Use **Hardware Vertex Clipping** via GLSL ES 3.0 `gl_ClipDistance[]`. This clips primitives during rasterization assembly prior to fragment processing, leaving Early-Z culling active.
+
+
+
+
+* **Front-to-Back Render Sorting:** Ensure all opaque cardiac layers (pericardium, myocardium, valves) are sorted strictly front-to-back relative to the camera plane. Populating GMEM depth buffers early allows the hardware to reject up to 70% of occluded interior fragments.
+
+
+
+---
+
+### 6. Engine Architecture and Memory Hygiene (Three.js / Babylon.js)
+
+* **Draw Call Batching:** Consolidate independent anatomical segmentations using `gltf-transform join` into a single continuous buffer geometry, distinguishing structures via custom scalar attributes (`aAnatomyID`). If independent visibility toggles are required (e.g., hiding the right atrium), register sub-geometries inside a `THREE.BatchedMesh` to issue a single instanced indirect draw call.
+
+
+* **Zero-Allocation Render Loop:** The V8 JavaScript engine's garbage collection (GC) sweeps pause the main thread for 5 to 25 ms, causing severe tracking judder and frame drops. Never instantiate objects (`new THREE.Vector3()`, `new THREE.Matrix4()`, temporary arrays) within `session.requestAnimationFrame`. Pre-allocate and reuse persistent object pools.
+
+
+* **Spatial Acceleration for Interaction:** Use `three-mesh-bvh` to build an axis-aligned Bounding Volume Hierarchy (AABB) for anatomical probing and hit-testing. This drops query times from linear $O(N)$ brute-force searches to $O(\log N)$ logarithmic evaluations. Generate the BVH offline or inside a Web Worker.
+
+
+* **Hybrid Diagnostic Slicing:** To combine surface meshes with raw CT clarity, place an interactive 2D Multi-Planar Reconstruction (MPR) cutting plane inside the clipped cavity. Map the raw 2D CT slice texture through a diagnostic window/level lookup table while using `gl_ClipDistance` on the outer geometry.

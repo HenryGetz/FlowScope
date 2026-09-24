@@ -1,0 +1,112 @@
+# Understanding the project
+
+## What we think the project is trying to do
+
+The proposed project allows a clinician to examine cardiovascular anatomy in 3D, simulate contrast injections, and visualize where contrast travels throughout the vascular tree. 
+
+The execution strategy separates the challenge into two distinct phases:
+* **Phase 1 (Immediate Scope):** Extract clean cardiac anatomy and deliver an interactive, 6DOF proof-of-concept in untethered virtual reality using lightweight WebXR on devices like the Meta Quest 2.
+* **Phase 2 (Future Scope):** Introduce computational fluid dynamics (CFD), finite-element blood flow modeling, and live contrast transport predictions.
+
+Contrast is injected during catheter-based procedures to render blood vessels radiopaque under fluoroscopy or CT. An interactive tool that predicts delivery based on injector parameters helps clinicians optimize dosing, prevent contrast-induced nephropathy, and evaluate vessel stenoses without trial-and-error physical injections.
+
+**This is our working technical interpretation, not an established specification.** Industry guidance (including precedents from Medtronic) emphasizes resolving geometry extraction and VR rendering before coupling heavy CFD solvers. Coronary arteries and cardiac chambers serve as our primary baseline targets.
+
+---
+
+## How the stakeholder’s products fit
+
+The stakeholder and ACIST maintain clinical hardware spanning contrast injection and diagnostic imaging:
+
+| Products | Clinical Role | Pipeline Relevance |
+| --- | --- | --- |
+| **ACIST Pro** / **ACIST CVi** | Controlled contrast injection | Informs flow rates, injection profiles, and volume parameters |
+| **ACIST HDi** / **Kodama HD IVUS** | High-definition intravascular ultrasound | Provides high-resolution localized cross-sectional vessel geometry |
+| **ACIST RXi** / **Navvus MicroCatheter** | Intravascular pressure measurement | Supplies physiological pressure gradients / boundary conditions |
+| **EmpowerCTA+** / **EmpowerMR** | Radiology contrast delivery | Establishes peripheral and central injection timing protocols |
+
+*(Radiology injectors are distributed under Bracco's SmartInject / BraccoMR brands).*
+
+Tracking contrast utilization at the injector does not record localized 3D concentration fields inside patient anatomy. If the aim is to optimize injector mechanics or manifold fluid dynamics rather than in-vivo hemodynamics, the workflow shifts from patient medical image reconstruction to CAD-based engineering CFD.
+
+---
+
+## Tool Elimination & Scoping Matrix
+
+To preserve developer velocity and compute budgets, competing tools and datasets were evaluated against strict Phase 1 requirements:
+
+| Tool / Dataset | Status | Technical Rationale |
+| --- | --- | --- |
+| **SimVascular** | **Shelf for Phase 2** | Industry guidance (Medtronic) recommends resolving geometry and VR viewing before introducing tetrahedral finite-element meshes or fluid dynamics (CFD). |
+| **VMTK** | **Shelf** | Optimized for tubular vascular centerlines, but lacks automated four-chamber cardiac segmentation. |
+| **dicom2stl** | **Discard** | Relies on Hounsfield Unit (HU) thresholding, which fails across overlapping soft-tissue boundaries between heart chambers. |
+| **PlatiPy** | **Discard** | Deformable atlas registration takes 30–50 minutes per scan on CPU and is significantly heavier than deep learning models. |
+| **ImageCHD / CHD68** | **Discard** | Focuses on severe congenital malformations rather than normal anatomical baselines. |
+| **TCIA LCTSC** | **Discard** | Generates a single coarse outer pericardial envelope rather than discrete internal structures. |
+
+---
+
+## Core Stack & Validated Datasets
+
+Cardiac CT-to-3D segmentation is a solved domain requiring zero custom vision model training, eliminating training infrastructure overhead and cloud compute costs.
+
+### Validated Datasets
+* **Primary Dataset (ImageCAS 14-Structure Extension):** Contains 1,000 contrast-enhanced CCTA scans pre-filtered to exclude metallic hardware, surgical clips, and pacemakers. It includes 14,280 pre-extracted `.stl` meshes, enabling immediate VR pipeline testing without segmenting raw volumes first.
+* **Secondary Dataset (TotalSegmentator CT High-Res):** Features >500 clean, high-resolution scans filtered for pacing leads and beam-hardening artifacts. Annotations align directly with TotalSegmentator’s label schema under an open Apache 2.0 / CC BY 4.0 license.
+
+### Reconstruction & Processing Engines
+* **Primary Segmentation Engine (TotalSegmentator):** Uses the clinical-grade `--task heartchambers_highres` model to isolate individual chambers, myocardium, and thoracic vessels directly from NIfTI or DICOM inputs. Executes in 1–2 minutes on an 8 GB GPU with multithreaded CPU fallback.
+* **Mesh Processing Engine (VTK / PyVista):** Employs multithreaded Flying Edges for initial isosurface extraction, followed by non-shrinking Taubin smoothing to remove voxel staircase artifacts without volume loss, and quadric surface decimation.
+
+---
+
+## Mobile VR Decimation & WebXR Deployment
+
+Raw marching cubes and Flying Edges produce 1.5M to 5M polygons per scan, which overwhelms mobile GPU rasterizers like the untethered Qualcomm Snapdragon XR2 chip in the Meta Quest 2.
+
+* **Decimation Pass:** Run an automated PyVista pass using `mesh.decimate_pro()` to achieve a 90–95% polygon reduction, enforcing an aggregate budget of 100,000–150,000 triangles across all loaded structures.
+* **Asset Packaging:** Convert the processed geometry into binary `.glb` (glTF 2.0) containers with compressed vertex buffers.
+* **WebXR Delivery Engine:** Host the assets in a Three.js WebXR viewer. Loading this application directly inside the native Meta Quest Browser delivers full 6DOF immersive viewing while bypassing Meta Developer account requirements, custom firmware configurations, or APK sideloading.
+
+```text
+ImageCAS STLs (or Raw NIfTI/DICOM)
+  └─► TotalSegmentator (heartchambers_highres)
+        └─► PyVista (Flying Edges + Taubin Smoothing)
+              └─► mesh.decimate_pro() (Target: 100k–150k Polygons)
+                    └─► Export Binary .GLB (glTF 2.0)
+                          └─► Three.js / WebXR (Native Meta Quest Browser)
+
+```
+
+---
+
+## Phase 2: Fluid Simulation & Contrast Transport
+
+Once the anatomical VR pipeline operates reliably, dynamic physics can be layered onto the extracted models.
+
+### Governing Dynamics
+
+Vascular blood flow acts as a moving carrier fluid, while injected contrast behaves as a passive or semi-passive scalar governed by advection-diffusion:
+
+$$\frac{\partial C}{\partial t} + \mathbf{u} \cdot \nabla C = D \nabla^2 C$$
+
+Where $C$ represents local contrast concentration, $\mathbf{u}$ represents blood velocity, and $D$ represents molecular diffusion. At typical arterial velocities, advection heavily dominates diffusion.
+
+### Acceleration Pathways for Interactive Transport
+
+1. **Decoupled Steady-State Transport:** Compute the periodic velocity field $\mathbf{u}$ once over the cardiac cycle. When injection parameters change, recalculate only the scalar transport field $C$.
+2. **0D/1D Reduced-Order Networks:** Abstract vessels into 1D centerline networks using tools like `svZeroDSolver` or `openBF` to compute branch transit times and arrival curves in milliseconds.
+3. **GPU-Accelerated Solvers:** Investigate Lattice Boltzmann Method (LBM) architectures (e.g., OpenLB, HARVEY, or FluidX3D) to run parallelized fluid sweeps on cloud GPUs.
+4. **Surrogate AI Operators:** Train physics-informed neural operators (e.g., GINO, Transolver) on synthetic runs to infer flow fields and pressure drops in real time.
+
+---
+
+## Recommended Phase 1 Deliverables
+
+1. **Geometry Pipeline:** Set up an automated Python script using PyVista that ingests ImageCAS `.stl` files or TotalSegmentator outputs, executes Taubin smoothing, runs `decimate_pro()` to hit <150k triangles, and exports a unified `.glb`.
+2. **WebXR Proof-of-Concept:** Build a lightweight Three.js viewer supporting WebXR sessions with standard orbit, pan, scale, and 6DOF controller rotation.
+3. **Hardware Validation:** Load the WebXR client over a local network or HTTPS URL inside the Meta Quest Browser on Meta Quest 2 to verify 72–90 FPS performance without frame drops.
+4. **Stakeholder Discovery:** Present the working VR anatomy prototype to the stakeholders to verify whether clinical value resides in chamber/vessel structural navigation, downstream microvascular resistance modeling, or injector mechanical profiling.
+
+```
+

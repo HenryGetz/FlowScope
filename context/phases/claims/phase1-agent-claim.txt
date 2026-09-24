@@ -1,0 +1,28 @@
+TLDR — built the full Phase-1 chain on greenfield repo flowscope, all real      
+ data:                                                                           
+                                                                                 
+ Working & verified:                                                             
+ 1. Geometry pipeline (pipeline/build_cardiac_glb.py) — PyVista/VTK: ingest STL  
+    / TotalSegmentator masks / label volumes → Flying Edges → non-shrinking      
+    Taubin (drift ≤0.5%) → decimate_pro budget allocation → one quantized binary 
+    .glb per scan + report. Ran 5 real cases (3 ImageCAS coronary + 2            
+    TotalSegmentator CT) — every one landed in the 100k–150k budget (103k–120k   
+    tris).          
+ 2. WebXR viewer (viewer/, Three.js) — desktop orbit/pan/cale, WebXR session,    
+    6DOF controller grab-rotate (one-hand rotation, two-hand scale), structure   
+    toggles, FPS readout. Verified in browser incl. simulated XR controllers.    
+ 3. Quest delivery stack — LAN HTTPS live at https://192.168.1.229:8444/ (open   
+    in Quest Browser → Enter VR).       
+ 4. Real anatomy on screen — actual ImageCAS coronary artery tree (119,998 tris) 
+    rendering, plus 6-structure heart/great-vessel models from TotalSegmentator  
+    CT data.        
+
+ Not done (blocked, nothing left I can do):                                      
+ - Quest 2 FPS validation — needs your headset on the LAN; everything is staged. 
+ - Stakeholder session — needs the humans; demo is ready.                    
+ - HF 14-structure extension (chambers + coronaries in one dataset) — still 403, 
+   waiting on dataset-author approval; fetch script ready to fire when it lands. 
+
+ Also flagged along the way: brief's decimate_pro vs "quadric" naming conflict   
+ (both implemented), and the datasets' real licenses are non-commercial (CC      
+ BY-NC / BY-NC-ND), not the Apache/CC-BY the brief claimed.

@@ -1,0 +1,81 @@
+### Multi-Modality Whole Heart Segmentation (MM-WHS / CARE-WHS)
+
+* **Direct URL:** [https://mmwhs.grand-challenge.org/](https://www.google.com/search?q=https://mmwhs.grand-challenge.org/&utm_source=gemini) and [https://www.zmic.org.cn/care_2024/track5/](https://www.zmic.org.cn/care_2024/track5/?utm_source=gemini)[cite: 1].
+* **Subject Count & Format:** 60 volumetric CT studies in MM-WHS (20 labeled training scans and 40 held-out evaluation scans), expanded to 104 volumetric CT studies in CARE-WHS++ (40 training, 30 validation, 34 testing)[cite: 1]; provided in compressed 3D NIfTI (`.nii.gz`) and MetaImage (`.mhd`/`.raw`) formats[cite: 1, 2].
+* **Available Segmentation Labels:** 7 substructures: left ventricular blood cavity/pool, right ventricular blood cavity/pool, left atrial blood cavity/pool, right atrial blood cavity/pool, left ventricular myocardium, ascending aorta (truncated at the pulmonary artery bifurcation), and pulmonary artery trunk[cite: 1, 2].
+* **License Type:** Academic (non-commercial scientific research use agreement requiring registration)[cite: 1, 2].
+* **Artifact-Free Baseline Status:** Curated exclusively from treatment-naive diagnostic cohorts imaged prior to open-chest surgery or transcatheter intervention; free from sternal closure wires, surgical vascular clips, prosthetic valve rings, and pacemaker leads[cite: 1, 2].
+
+---
+
+### ImageCAS Whole-Heart 14-Structure Extension (AI-CVM Collection)
+
+* **Direct URL:** [https://ai-cvm.org/cardiac-ct-dataset/](https://ai-cvm.org/cardiac-ct-dataset/?utm_source=gemini) (Zenodo mirror: [https://doi.org/10.5281/zenodo.6802613](https://www.google.com/search?q=https://doi.org/10.5281/zenodo.6802613&utm_source=gemini))[cite: 1].
+* **Subject Count & Format:** 1,000 baseline contrast-enhanced CCTA examinations[cite: 1, 2]; provided in compressed 3D NIfTI (`.nii.gz`) along with 14,280 triangular surface meshes in Stereolithography (`.stl`) format[cite: 1, 2].
+* **Available Segmentation Labels:** 14 substructures: left ventricular blood cavity, left ventricular myocardium, left atrium, right ventricle, right atrium, left atrial appendage (LAA), ascending aorta, pulmonary arteries, individual pulmonary veins, superior vena cava (SVC), inferior vena cava (IVC), coronary arterial tree, epicardial adipose tissue (EAT), and pericardial fat[cite: 1, 2].
+* **License Type:** Academic (Creative Commons Attribution-NonCommercial 4.0 International, CC BY-NC 4.0)[cite: 1, 2].
+* **Artifact-Free Baseline Status:** Enforces strict retrospective exclusion of patients with prior coronary artery bypass grafting, percutaneous coronary revascularization, acute myocardial infarction, implanted pacemakers, or surgical clips[cite: 1].
+
+---
+
+### Public Cardiac CT Dataset (Left Atrial Appendage Focus / STACOM)
+
+* **Direct URL:** [https://github.com/Bjonze/Public-Cardiac-CT-Dataset](https://github.com/Bjonze/Public-Cardiac-CT-Dataset?utm_source=gemini) (indexed on Kaggle)[cite: 2].
+* **Subject Count & Format:** 998 CCTA volumes (including 685 volumes with fully unclipped, complete LAA anatomy)[cite: 2]; distributed in compressed NIfTI (`.nii.gz`) format[cite: 2].
+* **Available Segmentation Labels:** 10 anatomical classes: left ventricle, right ventricle, left atrium, right atrium, left ventricular myocardium, ascending aorta, pulmonary artery, pulmonary veins, left atrial appendage (separated at the anatomical ostium), and the complete coronary artery tree[cite: 2].
+* **License Type:** Permissive (MIT License for segmentation masks and scripts; Apache 2.0 for underlying ImageCAS source scans)[cite: 2].
+* **Artifact-Free Baseline Status:** Drawn from diagnostic outpatient screenings performed prior to cardiovascular interventions; completely devoid of median sternotomy wires, prosthetic valve scatter, and vascular clips[cite: 2].
+
+---
+
+### TotalSegmentator CT (High-Resolution Cardiac Substructure Cohort)
+
+* **Direct URL:** [https://doi.org/10.5281/zenodo.6802613](https://www.google.com/search?q=https://doi.org/10.5281/zenodo.6802613&utm_source=gemini)[cite: 1].
+* **Subject Count & Format:** >500 contrast-enhanced thoracic/cardiac CT examinations within the dedicated high-resolution cardiac subset (out of 1,204 total examinations in the full release)[cite: 1, 2]; provided in compressed 3D NIfTI (`.nii.gz`) format[cite: 1, 2].
+* **Available Segmentation Labels:** 7 to 10 structures: left ventricle, right ventricle, left atrium, right atrium, ventricular myocardium, ascending aorta, descending aorta, pulmonary artery trunk, superior vena cava, and inferior vena cava[cite: 1, 2].
+* **License Type:** Permissive (Apache 2.0 / Creative Commons CC BY 4.0)[cite: 1, 2].
+* **Artifact-Free Baseline Status:** The high-resolution cardiac partition systematically filters out scans exhibiting metallic beam hardening, pacing leads, or severe post-surgical distortions[cite: 2].
+
+---
+
+### ImageCHD and CHD68 Congenital Heart Disease Collections
+
+* **Direct URL:**
+* ImageCHD: [https://www.kaggle.com/datasets/xiaoweixumedicalai/imagechd](https://www.kaggle.com/datasets/xiaoweixumedicalai/imagechd?utm_source=gemini)[cite: 1]
+* CHD68: [https://www.kaggle.com/datasets/xiaoweixumedicalai/chd68-segmentation-dataset-miccai19](https://www.kaggle.com/datasets/xiaoweixumedicalai/chd68-segmentation-dataset-miccai19?utm_source=gemini)[cite: 1]
+
+
+* **Subject Count & Format:** ImageCHD contains 110 contrast-enhanced 3D CT scans (16 congenital defect categories)[cite: 1]; CHD68 contains 68 volumetric contrast-enhanced CT scans (14 malformation categories)[cite: 1]; provided in compressed 3D NIfTI (`.nii.gz`) format[cite: 1].
+* **Available Segmentation Labels:** 7 structures: left ventricle, right ventricle, left atrium, right atrium, ventricular myocardium, aorta, and pulmonary artery trunk[cite: 1].
+* **License Type:** Permissive (Apache 2.0)[cite: 1].
+* **Artifact-Free Baseline Status:** Acquired during initial diagnostic evaluations for primary pre-operative surgical planning; cohort is entirely instrumentation-naive and free from median sternotomy wires, intra-atrial baffle clips, conduit rings, or pacing hardware[cite: 1].
+
+---
+
+### HOCMvalvesSeg Dataset
+
+* **Direct URL:** [https://www.kaggle.com/datasets/xiaoweixumedicalai/hocmvalvesseg](https://www.kaggle.com/datasets/xiaoweixumedicalai/hocmvalvesseg?utm_source=gemini)[cite: 1].
+* **Subject Count & Format:** 27 high-resolution, contrast-enhanced cardiac CT volumes[cite: 1]; provided in compressed 3D NIfTI (`.nii.gz`) format[cite: 1].
+* **Available Segmentation Labels:** 5 regions: left ventricular chamber, left atrium, proximal aorta, aortic valve leaflets, and mitral valve leaflets[cite: 1].
+* **License Type:** Permissive (Apache 2.0)[cite: 1].
+* **Artifact-Free Baseline Status:** Acquired during pre-operative evaluations in treatment-naive hypertrophic obstructive cardiomyopathy patients prior to surgical Morrow septal myectomy; captures native geometry without sternotomy closures, valve annuloplasty rings, or clips[cite: 1].
+
+---
+
+### TCIA Lung CT Segmentation Challenge (LCTSC)
+
+* **Direct URL:** [https://doi.org/10.7937/K9/TCIA.2020.N4OZ-J106](https://www.google.com/search?q=https://doi.org/10.7937/K9/TCIA.2020.N4OZ-J106&utm_source=gemini)[cite: 1].
+* **Subject Count & Format:** 60 thoracic CT studies (36 training, 12 validation, 12 test)[cite: 1]; provided as axial DICOM slice series accompanied by DICOM Radiotherapy Structure Sets (RTSTRUCT), convertible to NIfTI masks[cite: 1].
+* **Available Segmentation Labels:** Pericardial whole-heart envelope (encompassing intracardiac blood pool, myocardium, and pericardial fluid from the level of the inferior aspect of the main pulmonary artery crossing the midline down to the apex)[cite: 1]; also includes esophagus, spinal cord, and lungs[cite: 1].
+* **License Type:** Permissive / Open Academic (Creative Commons Attribution 3.0 Unported, CC BY 3.0)[cite: 1].
+* **Artifact-Free Baseline Status:** Baseline simulation planning CTs acquired prior to thoracic radiotherapy or invasive surgery; free from sternal wires, pacemakers, and surgical clips[cite: 1].
+
+---
+
+### Asymptomatic Four-Chamber Heart Models (Rodero et al.)
+
+* **Direct URL:** [https://doi.org/10.5281/zenodo.4590294](https://www.google.com/search?q=https://doi.org/10.5281/zenodo.4590294&utm_source=gemini)[cite: 2].
+* **Subject Count & Format:** 20 healthy adult subjects[cite: 2]; supplied as 3D volumetric unstructured meshes/tetrahedral representations in VTK ASCII (`.vtk`) format (directly rasterizable to standard NIfTI voxel arrays)[cite: 2].
+* **Available Segmentation Labels:** 6 structures: left ventricular cavity, right ventricular cavity, left atrial cavity, right atrial cavity, ventricular myocardium (ventricular free walls and septum), and great vessel outflow roots (proximal ascending aorta and pulmonary trunk)[cite: 2].
+* **License Type:** Permissive (Creative Commons Attribution 4.0 International, CC BY 4.0)[cite: 2].
+* **Artifact-Free Baseline Status:** Cohort composed of emergency room acute chest pain presentations who were clinically and radiographically confirmed completely negative for CAD or structural heart disease; guaranteed free of previous thoracic surgeries, sternotomy wires, pacemakers, and clips[cite: 2].

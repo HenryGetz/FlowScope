@@ -1,0 +1,230 @@
+### TotalSegmentator (Cardiovascular Models + VTK Pipeline)
+
+* **GitHub URL**: `[https://github.com/wasserth/TotalSegmentator](https://github.com/wasserth/TotalSegmentator)`
+* **Supported Formats**:
+* **Input**: DICOM series directories, NIfTI (`.nii`, `.nii.gz`)
+* **Output**: NIfTI multi-label masks natively; surface meshes (STL, OBJ) generated via embedded VTK/Slicer export
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 8–12 GB for full-resolution (1.5 mm); 4–6 GB using `--fast` mode (3.0 mm).
+* **CPU Fallback**: Highly viable using the `--device cpu` flag. Requires 16–32 GB system RAM; runs roughly 10–25× slower (15–60 minutes per scan).
+
+
+* **Minimal Execution**:
+```bash
+# CLI: Segment heart chambers and thoracic vessels (GPU or CPU fallback)
+TotalSegmentator -i ct_chest.nii.gz -o ./masks --task heartchambers_highres --device cpu
+
+```
+
+
+```python
+# Python: Convert segmentation mask into a smoothed STL via VTK
+import vtk
+
+reader = vtk.vtkNIFTIImageReader()
+reader.SetFileName("./masks/heart_myocardium.nii.gz")
+reader.Update()
+
+# Extract surface via Flying Edges
+extractor = vtk.vtkFlyingEdges3D()
+extractor.SetInputConnection(reader.GetOutputPort())
+extractor.SetValue(0, 0.5)
+
+# Non-shrinking smoothing
+smoother = vtk.vtkWindowedSincPolyDataFilter()
+smoother.SetInputConnection(extractor.GetOutputPort())
+smoother.SetNumberOfIterations(20)
+
+writer = vtk.vtkSTLWriter()
+writer.SetFileName("myocardium.stl")
+writer.SetInputConnection(smoother.GetOutputPort())
+writer.Write()
+
+```
+
+
+
+---
+
+### SimVascular (`sv_auto_lv_modeling`)
+
+* **GitHub URL**: `[https://github.com/SimVascular/SimVascular](https://github.com/SimVascular/SimVascular)`
+* **Supported Formats**:
+* **Input**: DICOM folders, NIfTI, VTK Image Data (`.vti`)
+* **Output**: Surface meshes (`.stl`, `.vtp`), tetrahedral finite-element grids (`.vtu`)
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 4 GB minimum; 8 GB recommended for 2D/3D CNN inference.
+* **CPU Fallback**: Fully viable; inference, OpenCASCADE solid modeling, and TetGen meshing run natively on CPU host memory via SimVascular's Python shell.
+
+
+* **Minimal Python Execution**:
+```python
+import sv
+from sv_auto_lv_modeling.auto_modeling import run_segmentation_and_modeling
+
+# Automated left ventricle and vascular tree surface generation
+run_segmentation_and_modeling(
+    input_image="cardiac_ct.nii.gz",
+    output_dir="./simvascular_output",
+    model_type="ct",
+    export_stl=True
+)
+
+```
+
+
+
+---
+
+### VMTK (The Vascular Modeling Toolkit)
+
+* **GitHub URL**: `[https://github.com/vmtk/vmtk](https://github.com/vmtk/vmtk)`
+* **Supported Formats**:
+* **Input**: DICOM series directories, NIfTI, MetaImage (`.mha`, `.mhd`), VTI
+* **Output**: Surface meshes (STL, Wavefront OBJ, VTP), computational grids (`.vtu`)
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 0 MB (pure host-level execution).
+* **CPU Fallback**: Natively designed for multithreaded CPU processing; requires 8–16 GB system RAM.
+
+
+* **Minimal Execution**:
+```bash
+# CLI: Level-set segmentation and direct STL surface extraction
+vmtklevelsetsegmentation -ifile dicom_folder -ofile aorta_levelset.vti --pipe \
+vmtkmarchingcubes -ifile @.ofile -iarray ImageScalars -ofile surface.stl
+
+```
+
+
+```python
+# Python: High-contrast vascular lumen extraction to STL
+from vmtk import pypes
+
+vmtk_pipeline = (
+    "vmtkimagereader -ifile ct_aorta.nii.gz --pipe "
+    "vmtkmarchingcubes -level 200.0 --pipe "
+    "vmtksurfacesmoothing -passband 0.1 -iterations 30 --pipe "
+    "vmtksurfaceviewer -ofile cardiac_lumen.stl"
+)
+pypes.PypeRun(vmtk_pipeline)
+
+```
+
+
+
+---
+
+### VTK / PyVista (Flying Edges & Marching Cubes Pipeline)
+
+* **GitHub URL**: `[https://github.com/Kitware/VTK](https://github.com/Kitware/VTK)` / `[https://github.com/pyvista/pyvista](https://github.com/pyvista/pyvista)`
+* **Supported Formats**:
+* **Input**: NIfTI (`.nii`, `.nii.gz`), DICOM (via `SimpleITK`, `nibabel`, or `vtkDICOMImageReader`)
+* **Output**: STL, Wavefront OBJ, PLY, GLTF
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 0 MB (pure host-level execution).
+* **CPU Fallback**: Natively CPU-bound; leverages thread-parallel Flying Edges across CPU cores within seconds.
+
+
+* **Minimal Python Execution**:
+```python
+import nibabel as nib
+import pyvista as pv
+
+# Ingest NIfTI volume
+nii = nib.load("chest_contrast.nii.gz")
+data = nii.get_fdata()
+
+# Create uniform grid and extract blood pool / bone isovalue (e.g., 250 HU)
+grid = pv.ImageData(dimensions=data.shape, spacing=nii.header.get_zooms())
+grid.point_data["HU"] = data.flatten(order="F")
+
+mesh = grid.contour(isosurfaces=[250], scalars="HU", method="flying_edges")
+smoothed_mesh = mesh.smooth_taubin(n_iter=30, pass_band=0.05)
+smoothed_mesh.save("blood_pool.stl")
+
+```
+
+
+
+---
+
+### dicom2stl
+
+* **GitHub URL**: `[https://github.com/dave3d/dicom2stl](https://github.com/dave3d/dicom2stl)`
+* **Supported Formats**:
+* **Input**: DICOM series directories, ZIP archives, NRRD, VTK images
+* **Output**: Watertight binary STL
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 0 MB (deterministic SimpleITK/VTK processing).
+* **CPU Fallback**: Natively CPU-bound; processes scans in 10–30 seconds using 2–8 GB system RAM.
+
+
+* **Minimal CLI Execution**:
+```bash
+# CLI: Extract thoracic osseous structures using HU double-thresholding
+python dicom2stl.py -t bone -o thoracic_cage.stl ./dicom_directory
+
+```
+
+
+
+---
+
+### Instant3D
+
+* **GitHub URL**: `[https://github.com/SatoruMuro/Instant3D](https://github.com/SatoruMuro/Instant3D)`
+* **Supported Formats**:
+* **Input**: DICOM directories, NIfTI (`.nii`, `.nii.gz`), NRRD
+* **Output**: STL surface meshes, NIfTI masks, SVG cross-sections, CSV volume reports
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 4–6 GB minimum; 8–16 GB recommended.
+* **CPU Fallback**: Fully supported out-of-the-box; automatically detects when CUDA is unavailable and diverts processing to host CPU (requires $\ge$16 GB host RAM; 15–40 min execution).
+
+
+* **Minimal Execution**:
+```bash
+# Launch the PyQt6 automation interface
+python instant3D.py
+
+```
+
+
+
+---
+
+### PlatiPy (Hybrid Cardiac Multi-Atlas Delineation)
+
+* **GitHub URL**: `[https://github.com/pyplati/platipy](https://github.com/pyplati/platipy)`
+* **Supported Formats**:
+* **Input**: DICOM series, DICOM-RT, NIfTI
+* **Output**: NIfTI, DICOM-RTSTRUCT, STL surfaces via internal VTK routines
+
+
+* **GPU VRAM & CPU Fallback**:
+* **VRAM**: 6 GB minimum; 12–24 GB recommended.
+* **CPU Fallback**: Low-to-moderate practicality; while CPU execution runs, multi-atlas deformable B-spline registration without GPU acceleration takes 30–50 minutes and requires 32–64 GB system RAM.
+
+
+* **Minimal Python Execution**:
+```python
+from platipy.segmentation.cardiac import run_cardiac_segmentation
+import SimpleITK as sitk
+
+img = sitk.ReadImage("thoracic_ct.nii.gz")
+# Segments whole heart, 18 substructures, and outputs contour representations
+substructures = run_cardiac_segmentation(img)
+sitk.WriteImage(substructures["LEFT_VENTRICLE"], "lv_mask.nii.gz")
+
+```

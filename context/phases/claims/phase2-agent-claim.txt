@@ -1,0 +1,155 @@
+# Post–Phase 1 Report
+
+> **Status:** 31/31 items complete | All gates green | Commit `4cab26e` pushed
+
+---
+
+## Track 1 — Scale-Up Geometry Validation ✅ *(with 2 flags)*
+
+* **Artifacts:** 
+  * `tools/batch_build.py`
+  * `tools/aggregate_report.py`
+  * `tools/raw_scale_check.py`
+  * `out/batches/{batch-005,050,100,200}/report.json`
+  * `out/aggregate_report.{json,md}`
+  * `out/raw_scale_validation.json`
+* **Dataset Scope:** 355 real scans, 0 anomalies, 355/355 GLB integrity-clean (9 checks each)
+
+### Measurements
+
+| Metric | Result |
+| :--- | :--- |
+| **Batches** | 5 / 50 / 100 / 200 scans (wave runtimes scale linearly; ≈12 s/case, 4,250 s total) |
+| **Triangles vs. 100k–150k** | Finals: 39,836–120,000 (mean: 96,939)<br>• **207/355** in-window<br>• **148/355** below-window (raw input < 100k → keep-all rule; window unreachable by construction) |
+| **90–95% reduction at 1.5M–5M raw** | **MEASURED:**<br>• 1,567,680 → 120,000 (92.3% reduction)<br>• 2,982,464 → 149,122 (95.0% reduction via `decimate_pro`)<br>*(synthetic-derived: real masks 3× upsampled, labeled)* |
+| **Taubin drift** | • **≤0.53%** on Phase-1 cases<br>• **FLAG:** 206/355 cases exceed 0.5% max-per-structure drift (outlier 100% on degenerate small volumes)<br>• Non-shrinking holds directionally (0.2–0.6% typical), but the ≤0.5% target is **NOT** met at scale<br>• Open FOV-truncated surfaces excluded (null metric) |
+| **GLB size** | 424 KB–1.27 MB (mean: 1.02 MB), all quantized + integrity-clean |
+
+* **Execution Pipeline:** Fire-and-forget for the gated ImageCAS extension:  
+  `tools/hf_fetch.py` → `tools/batch_build.py --case-list …` → `tools/aggregate_report.py` (proven at 50 / 100 / 200).
+
+> 🚩 **FLAG 1 — `heartchambershighres` failure/anomaly rate:**  
+> Could not be measured. The task refuses at its license check (`rc=1`, 47.5 s); the 1–2 min / 8 GB GPU baseline is untestable in this environment (no GPU + no license).  
+> *Staged:* 10 CT volumes (`s0010`–`s0014`, `s0016`, `s0019`, `s0024`, `s0028`, `s0029`) + `tools/run_heartchambers.py` armed for the academic license.
+
+> 🚩 **FLAG 2 — ImageCAS `.stl` files in hand:**  
+> None exist (HF tree contains 0 STLs). Batches used TotalSegmentator (TS) masks + label-derived geometry; STL ingest mode remains probe-verified.
+
+---
+
+## Track 2 — Hardware Pre-Stage ✅ *(headless, zero FPS claims)*
+
+* **Artifacts:**
+  * `tools/hw_precheck.py`
+  * `tools/loadtime_probe.mjs`
+  * `out/track2_metrics.json`
+  * `out/track2_report.md`
+
+### Measurements
+
+| Measurement | Result |
+| :--- | :--- |
+| **Draw calls / buffers** | • 1 draw/mesh + 2-pass for BLEND (heart) → 7 draws for 6-structure scenes<br>• Quantized ratio: 0.375 (9 vs 24 B/vertex)<br>• Per-structure vertex/index bytes verified for all 6 GLBs |
+| **LAN HTTPS load (3×/resource)** | • HTML pages: 17–54 ms<br>• GLB assets: 46–232 ms<br>• Byte counts match disk exactly |
+| **Worst-case combos vs. budget** | • **(d) 6-structure + coronary:** 223,272 tris (48.8% OVER) → split 69k/81k<br>• **(e) 3× coronary:** 359,994 tris (140% OVER) → 50k each<br>*Both flagged for re-budgeting BEFORE the headset session (pipeline window is per-file 100k–150k; sub-100k model budgets require parameterizing the window or running a single combined `--budget 150000` pass).* |
+
+* **Frame Rates:** None reported (regex-verified outputs; verbatim assertion: *"frame rates NOT verified without headset telemetry"*). The 72–90 FPS band is retained strictly as the target session threshold in the pre-headset checklist.
+
+---
+
+## Track 3 — Stakeholder Discovery Materials ✅
+
+* **Artifact:** the value-comparison document in `docs/` (244 lines)
+* **Coverage:**
+  * **3 Value Questions × 4 Pathways (P/S/B)** across every named feed:
+    * ACIST Pro / CVi
+    * HDi / Kodama HD IVUS
+    * RXi / Navvus
+    * EmpowerCTA+ / EmpowerMR (Bracco SmartInject / BraccoMR)
+  * Phase-1 evidence citations.
+  * **Scoping Fork:**
+    * *In-vivo hemodynamics:* Order `2 → 3 → 1 → 4`
+    * *CAD-based injector mechanics:* Order `4 → 3 → 2 → 1`
+    * Evaluated across data, validation, and mis-resolution dimensions.
+  * 3 discovery questions & full recommendation matrix.
+* **Disclaimer:** All hardware claims remain marked as *brief-supplied, unverified*.
+
+---
+
+## Track 4 — Phase 2 Foundations ✅
+
+### 4.1 Surrogate AI Operators (Synthetic-Only)
+* **Artifacts & Corpus:** `phase2/surrogate/*` + `data/synthetic_corpus/` (450 runs: 400 train / 50 eval @ $48^3$, deterministic).
+* **Physics Modeling:** Hagen–Poiseuille + Young–Tsai stenosis + Murray split + TVD transport (qualitative ground truth, not full Navier-Stokes).
+* **Models Trained:**
+  * **GINO (1.41M params, FNO trunk):** Loss 1.65 → 0.51 (no NaNs; conditioning/collapse root-cause fix documented). Held-out relative $L_2$ error ($u/p$): 0.29 / 0.28; $\Delta p$ error: 24.5%. Single-thread CPU latency: 311.5 ms.
+  * **Transolver (109k params, physics attention):** Loss 1.90 → 1.28. Held-out relative $L_2$ error ($u/p$): 0.82 / 0.81; $\Delta p$ error: 64% (capacity-limited). Single-thread CPU latency: 77.8 ms.
+* **Notes & Flags:** Multi-thread execution degraded performance due to oversubscription (documented). Checkpoints preserved. Subsampling to grid-24 and 5/17 CPU epochs constrained final accuracy. $\Delta p$ corpus span (22–915 Pa) covers only the lower segment of the $10^2$–$10^4\text{ Pa}$ brief range (scale analysis demonstrates $10^4\text{ Pa}$ is unreachable within these domain dimensions).
+
+### 4.2 0D/1D Reduced Order Models (ROM)
+* **Artifacts:** `phase2/rom/*` using `svZeroDSolver` (`pysvzerod==2.0` compiled from source; bypasses openBF/Julia dependencies).
+* **Domain:** Executed across 3 real coronary trees (21, 16, and 35 branches; centerlines spanning 659–1,071 mm).
+* **Validation & Performance:**
+  * Solver runtime: 1.26–1.58 s.
+  * Mass balance: 225 mL/min exact, calibrated at 90 mmHg.
+  * Labeled reference cross-check: $\le 0.07\%$ flow discrepancy, 0.6 ms offset.
+  * Branch transit times resolved in milliseconds (case 601: 31–4,291 ms; arrival curves with 203–480 points + generated PNG plots).
+
+### 4.3 Decoupled Transport
+* **Artifacts:** `phase2/transport/*` evaluated across 27 injection configurations ($3 \times 3 \times 3$).
+* **Speedup:** Mean **4.28×** ($2.90\text{–}5.28\times$ at $48^3$; $7.2\text{–}13.6\times$ at $64^3$). Coupled runtime: 1,684 s vs. Decoupled runtime: 447 s.
+* **Accuracy & Linearity Finding:** Frozen-velocity outlet error is 27% median / 51% max. Under Stokes linearity, per-injection velocity is an exact scalar rescale:
+  $$u(Q) = \left(\frac{Q}{Q_b}\right) u_b$$
+  *(Verified numerical residual: $3 \times 10^{-15}$)*. This recovers coupled fidelity at decoupled operational cost.
+* **Physics Integrity:** Poiseuille divergence 3–6%, numerical residuals $10^{-12}$, mass conservation $5 \times 10^{-6}$.
+* **Optimization:** OpenBLAS thread spin-up latency reduced from 55 ms to 20 µs/op.
+
+### 4.4 GPU Lattice Boltzmann Method (LBM) Evaluation
+* **Artifact:** `docs/lbm_solver_evaluation.md` (339 lines, 29 comparative evaluation axes).
+* **Ranked Recommendations:**
+  1. **OpenLB 1.9.x (Primary):** Usable as a service under GPLv2; supports MRT/BGK, Zou–He/FD/convective boundary conditions, native one-way NS→ADE scalar coupling, runtime checkpoints, and CLI parameterization without recompilation (satisfies R4).
+  2. **FluidX3D (Runner-Up):** Peak computational efficiency, but licensing strictly bars commercial and military use; lacks a dedicated scalar-only re-solver. Requires explicit commercial re-licensing and legal review.
+  3. **HARVEY (Watch Item):** Duke proprietary licensing constraints.
+* **Deployment Plan:** Cloud roadmap stages W0–W5 configured for measured geometry scale and R4 gate ($\le 2\text{ min}$, $\le 30\%$ rerun overhead) with decision gates G1–G4.
+
+> 🚩 **FLAG 3 — Headless Environment:**  
+> No LBM code was executed on GPUs (host environment lacks GPU hardware; evaluation-only brief mandate). All performance metrics originate from published literature and vendor documentation (F10).
+
+---
+
+## Track 5 — License Audit ✅ *(Action Required)*
+
+* **Artifact:** `docs/licenseaudit.md` (verbatim text, rights breakdown, and sources per asset).
+* **Audit Breakdown:**
+  * **HF 14-Structure Extension:** `CC-BY-NC-ND-4.0` (prohibits commercial utilization and derivative distribution).
+  * **Base ImageCAS:** `CC BY-NC 4.0` (non-commercial restriction).
+  * **TS CT v2:** `CC BY 4.0` (commercial use permitted).
+  * **TotalSegmentator Core Engine:** `Apache 2.0`.
+  * **`heartchambers_highres` Module:** Proprietary/academic split (free academic non-commercial license; commercial licensing handled via `jakob.wasserthal@usb.ch`).
+
+> 🚩 **FLAG 4 — Licensing Conflict:**  
+> The brief's presumption of uniform "Open Apache 2.0 / CC BY 4.0" holds for **$\le 1$ of the 4** data components. Commercial clinical deployment alongside the stakeholder's clinical hardware violates the terms of both ImageCAS distributions and the high-res heartchambers model.  
+> *Interim posture:* Maintained as internal research-only with required attributions. Three structural remediation paths are documented in `docs/licenseaudit.md` awaiting human compliance approval.
+
+---
+
+## Constraints Not Met *(Flagged, Not Substituted)*
+
+1. **`heartchambershighres` failure/anomaly rate:** Blocked by automated license check failure (Flag 1).
+2. **Taubin drift $\le 0.5\%$ at scale:** Failed empirically (206/355 cases exceeded target; Track 1).
+3. **"TotalSegmentator CT High-Res" as named:** Non-existent upstream asset; replaced with validated TS CT v2 (202 cases) pending upstream vendor clarification.
+4. **ImageCAS STLs in hand:** 0 STLs exist in repository source (Flag 2).
+5. **Cloud-GPU LBM execution:** Kept as evaluation-only due to lack of GPU infrastructure (Flag 3).
+6. **$\Delta p$ target band ($10^2$–$10^4\text{ Pa}$):** Matched lower half only (22–915 Pa) due to physical domain limits.
+7. **Quest 2 FPS & Stakeholder Session:** Blocked pending physical headset telemetry hardware.
+
+---
+
+## Git & Validation Log
+
+* **Pushed Commits:**
+  * `52c94e5` — Tracks 2, 3, and 5
+  * `bf33c79` — Track 1 + ROM implementation
+  * `4cab26e` — Track 4 complete
+* **Upstream Sync:** Rebased cleanly onto parent README commits (`617a6f3`, `84df638`, `a5f4197`).
+* **Verification Smoke Test:** `8/8` smoke runs green, `11/11` reports generated and validated.

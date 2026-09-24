@@ -1,0 +1,84 @@
+# Agent Task: Phase 1 — Cardiac Anatomy Extraction & Untethered VR Proof-of-Concept
+
+## Objective
+Deliver Phase 1 (Immediate Scope) only: extract clean cardiac anatomy and deliver an
+interactive, 6DOF proof-of-concept in untethered virtual reality using lightweight WebXR
+on devices like the Meta Quest 2.
+
+Phase 2 (computational fluid dynamics, finite-element blood flow modeling, live contrast
+transport predictions) is explicitly OUT OF SCOPE. Do not introduce CFD solvers, meshes,
+or transport equations.
+
+## Baseline Targets
+Primary anatomy targets: coronary arteries and cardiac chambers.
+
+## Step 1 — Datasets (use only these validated sets)
+- Primary Dataset: ImageCAS 14-Structure Extension — 1,000 contrast-enhanced CCTA scans,
+  pre-filtered to exclude metallic hardware, surgical clips, and pacemakers; includes
+  14,280 pre-extracted `.stl` meshes. Use these to enable immediate VR pipeline testing
+  without segmenting raw volumes first.
+- Secondary Dataset: TotalSegmentator CT High-Res — >500 clean, high-resolution scans
+  filtered for pacing leads and beam-hardening artifacts. Annotations align directly with
+  TotalSegmentator's label schema under an open Apache 2.0 / CC BY 4.0 license.
+
+## Step 2 — Segmentation (only if raw NIfTI/DICOM is used)
+- Engine: TotalSegmentator, clinical-grade `--task heartchambers_highres` model.
+- Isolate individual chambers, myocardium, and thoracic vessels directly from NIfTI or
+  DICOM inputs.
+- Expected execution: 1–2 minutes on an 8 GB GPU with multithreaded CPU fallback.
+
+## Step 3 — Mesh Processing
+- Engine: VTK / PyVista.
+- Multithreaded Flying Edges for initial isosurface extraction.
+- Non-shrinking Taubin smoothing to remove voxel staircase artifacts without volume loss.
+- Quadric surface decimation.
+
+## Step 4 — Mobile VR Decimation Budget
+- Raw marching cubes / Flying Edges output is 1.5M–5M polygons per scan, which overwhelms
+  mobile GPU rasterizers like the untethered Qualcomm Snapdragon XR2 in the Meta Quest 2.
+- Run an automated PyVista pass using `mesh.decimate_pro()` for 90–95% polygon reduction.
+- Enforce an aggregate budget of 100,000–150,000 triangles across all loaded structures.
+
+## Step 5 — Asset Packaging
+- Convert processed geometry into binary `.glb` (glTF 2.0) containers with compressed
+  vertex buffers.
+
+## Step 6 — WebXR Delivery
+- Host assets in a Three.js WebXR viewer.
+- Support standard orbit, pan, scale, and 6DOF controller rotation.
+- Load the application directly inside the native Meta Quest Browser (bypasses Meta
+  Developer account requirements, custom firmware configurations, and APK sideloading).
+
+## Pipeline Order (do not reorder)
+ImageCAS STLs (or Raw NIfTI/DICOM)
+  → TotalSegmentator (heartchambers_highres)
+    → PyVista (Flying Edges + Taubin Smoothing)
+      → mesh.decimate_pro() (Target: 100k–150k Polygons)
+        → Export Binary .GLB (glTF 2.0)
+          → Three.js / WebXR (Native Meta Quest Browser)
+
+## Prohibited Tools / Datasets in Phase 1
+Do NOT use: SimVascular (shelved for Phase 2), VMTK (shelved), dicom2stl (discarded —
+Hounsfield Unit thresholding fails across overlapping soft-tissue boundaries between heart
+chambers), PlatiPy (discarded — deformable atlas registration takes 30–50 minutes per scan
+on CPU), ImageCHD / CHD68 (discarded — severe congenital malformations, not normal
+anatomical baselines), TCIA LCTSC (discarded — single coarse outer pericardial envelope
+rather than discrete internal structures).
+
+## Phase 1 Deliverables
+1. Geometry Pipeline: automated Python script using PyVista that ingests ImageCAS `.stl`
+   files or TotalSegmentator outputs, executes Taubin smoothing, runs `decimate_pro()` to
+   hit <150k triangles, and exports a unified `.glb`.
+2. WebXR Proof-of-Concept: lightweight Three.js viewer supporting WebXR sessions with
+   standard orbit, pan, scale, and 6DOF controller rotation.
+3. Hardware Validation: load the WebXR client over a local network or HTTPS URL inside the
+   Meta Quest Browser on Meta Quest 2 to verify 72–90 FPS performance without frame drops.
+4. Stakeholder Discovery: present the working VR anatomy prototype to the stakeholders to verify whether
+   clinical value resides in chamber/vessel structural navigation, downstream microvascular
+   resistance modeling, or injector mechanical profiling.
+
+## Report Back
+For each deliverable, report the produced artifacts, the measured triangle counts against
+the 100k–150k budget, and the achieved frame rate range. Flag any step where the validated
+datasets or tool constraints above could not be met rather than substituting a prohibited
+tool.

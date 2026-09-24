@@ -1,0 +1,45 @@
+# High-ROI Realistic Use Cases for FlowScope
+
+At **85% geometric fidelity** and **75% hemodynamic accuracy**, FlowScope cannot be used for high-stakes, millimeter-critical interventions (e.g., definitive borderline $\text{FFR}_{\text{CT}}$ cutoffs at 0.78 vs. 0.82, sub-millimeter TAVR annular sizing, or intraoperative robotic navigation). 
+
+However, because the primary clinical bottleneck in these scenarios is **cognitive spatial extrapolation, turnaround latency, and software accessibility** rather than finite numerical precision, FlowScope delivers high return on investment (ROI) across five core domains.
+
+---
+
+### 1. Rapid Congenital Heart Disease (CHD) Triage (Alternative to 3D Printing)
+* **The Clinical Bottleneck:** Physical 3D printing is widely used to evaluate complex congenital anatomy, but its 24- to 72-hour turnaround time is impractical for neonatal surgical emergencies (e.g., obstructed total anomalous pulmonary venous connection, severe aortic coarctation).
+* **The FlowScope Advantage:** Generates interactive, mobile WebXR models in under 30 minutes directly from contrast CT scans.
+* **Why 85% / 75% Suffices:** Surgical planning in complex CHD is primarily dictated by macro-anatomical routing—such as evaluating whether an unobstructed corridor exists between a ventricular septal defect (VSD) and the aorta for biventricular tunneling versus single-ventricle palliation.
+* **Economic & Operational ROI:** Eliminates thousands of dollars in print lab fabrication costs per case while compressing planning latency from days to minutes.
+
+---
+
+### 2. Decentralized "Heart Team" Collaboration & Case Orientation
+* **The Clinical Bottleneck:** Multidisciplinary conferences (interventional cardiologists, cardiothoracic surgeons, and radiologists) frequently stall because members must interpret disparate 2D PACS views, negotiate proprietary image viewers, or wait for off-site workstation exports.
+* **The FlowScope Advantage:** A lightweight, secure web link enables simultaneous 6DOF multi-user orientation inside a standard browser across headsets, tablets, or laptops. Integrated orthogonal Multi-Planar Reconstruction (MPR) slices let clinicians cross-reference mesh boundaries directly with raw Hounsfield Units.
+* **Why 85% / 75% Suffices:** Pre-triage requires qualitative spatial consensus (e.g., anatomical favorability, catheter trajectory, landing zone orientation). MPR scrubbing allows instantaneous verification against source DICOM data whenever mesh geometry is in question.
+* **Economic & Operational ROI:** Reduces pre-op conference setup overhead, eliminates expensive per-seat enterprise PACS viewer licenses, and shortens cross-specialty decision cycles.
+
+---
+
+### 3. Patient Health Literacy & Shared Informed Consent
+* **The Clinical Bottleneck:** Grayscale 2D cross-sections fail to convey complex congenital anomalies or structural defects to patients and parents. This communication gap contributes to heightened anxiety, lack of compliance, and delays in obtaining surgical consent.
+* **The FlowScope Advantage:** Clinicians can load a patient’s heart on a tablet or standalone headset at the bedside, isolate myocardial walls, and dynamically display flow jetting or retrograde leakage.
+* **Why 85% / 75% Suffices:** Laypeople do not require Navier-Stokes precision; they need intuitive visualizations of directional flow mechanics (e.g., blood shunting across an atrial or ventricular septal defect or accelerating through a coarctation).
+* **Economic & Operational ROI:** Shortens bedside consultation duration, enhances patient satisfaction scores, and materially reduces legal and liability exposure through documented, verifiable informed consent.
+
+---
+
+### 4. Surgical Residency Pedagogy & Interactive Fluid Mechanics
+* **The Clinical Bottleneck:** Trainees rarely encounter complex structural anomalies (e.g., truncus arteriosus, double outlet right ventricle) in person and traditionally learn intracardiac hemodynamics via static textbooks or non-interactive video loops.
+* **The FlowScope Advantage:** Institutions can deploy digital twin libraries across consumer-grade hardware (Meta Quest, Apple Vision Pro, laptops) with zero client footprint. Trainees can place virtual cuts, modify anatomical boundaries, and immediately observe changes in bulk flow vectors.
+* **Why 85% / 75% Suffices:** Educational fluid mechanics emphasizes qualitative and physical principles (e.g., demonstrating that narrowing an outflow tract exponentially increases kinetic energy loss $E_{\text{loss}}$ and generates distal recirculation) rather than clinical decimal-level concordance.
+* **Economic & Operational ROI:** Replaces costly, dedicated surgical simulation hardware with scalable, browser-based spatial modules accessible across entire medical school cohorts.
+
+---
+
+### 5. Coarse In Silico Pre-Filtering for Cardiovascular Device Prototyping
+* **The Clinical Bottleneck:** Early-stage cardiovascular R&D teams (evaluating cannulas, branching Y-grafts, and flow diverters) typically expend hours or days running high-density Navier-Stokes finite-volume simulations on HPC clusters simply to discard unviable initial designs.
+* **The FlowScope Advantage:** Engineers can iterate through geometric take-off angles and spatial orientations directly inside a WebXR browser session with real-time feedback.
+* **Why 85% / 75% Suffices:** Early prototyping requires rapid heuristic filtering: identifying bulk recirculation patterns, severe flow imbalances, and gross stagnation zones. Once non-viable concepts are eliminated, only the top 2–3 candidates are advanced to high-fidelity HPC CFD suites.
+* **Economic & Operational ROI:** Substantially decreases cloud computing bills, minimizes engineering design cycle times, and prevents unnecessary high-performance compute allocations on flawed initial geometry.

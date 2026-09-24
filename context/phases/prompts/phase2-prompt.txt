@@ -1,0 +1,108 @@
+# Agent Task: Post–Phase 1 — Validation Scaling, Pre-Staging, and Phase 2 Foundations
+
+## Context
+Phase 1 (extract clean cardiac anatomy + interactive 6DOF untethered VR proof-of-concept
+via lightweight WebXR on devices like the Meta Quest 2) is complete to the extent possible
+without the headset, stakeholder, and gated dataset. Do NOT restart Phase 1 work. The
+three remaining Phase 1 items (Quest 2 FPS validation at 72–90 FPS, stakeholder
+session, HF 14-structure extension access) are externally blocked — do not attempt to
+work around their blockers.
+
+## Track 1 — Scale-Up Geometry Validation (no new data needed)
+Run existing pipeline (`pipeline/build_cardiac_glb.py`) on large batches from already-
+available data: ImageCAS `.stl` files in hand and the TotalSegmentator CT High-Res
+Secondary Dataset (>500 clean, high-resolution scans, Apache 2.0 / CC BY 4.0 claimed —
+see Track 5). Target batch sizes of 50, 100, then 200 scans.
+
+Measure and report per case and in aggregate:
+- Final triangle count vs. the 100,000–150,000 aggregate budget (Phase 1 landings were
+  103k–120k across 5 cases; the full 1.5M–5M polygon raw output must reach 90–95%
+  reduction via `mesh.decimate_pro()`).
+- Taubin smoothing drift (non-shrinking requirement: drift ≤ 0.5%, no volume loss).
+- TotalSegmentator `--task heartchambers_highres` failure/anomaly rate on NIfTI or DICOM
+  inputs (baseline execution: 1–2 min on 8 GB GPU, multithreaded CPU fallback).
+- Per-scan `.glb` (glTF 2.0, binary, compressed vertex buffers) file size and export
+  integrity.
+
+Deliver a batch-report tool and an aggregate report so the gated ImageCAS 14-Structure
+Extension (1,000 CCTA scans, 14,280 pre-extracted `.stl` meshes) can run fire-and-forget
+when access lands.
+
+## Track 2 — Pre-Stage Hardware Validation (headless only; do not fake FPS results)
+Prepare everything short of the headset session so that validation is pure measurement:
+- Per-structure and per-scan draw-call counts and vertex-buffer sizes of quantized `.glb`
+  output (target hardware: untethered Qualcomm Snapdragon XR2, Meta Quest 2).
+- Load-time measurements of the WebXR app and assets over the LAN HTTPS endpoint.
+- Worst-case aggregate triangle load for multi-structure scenes (e.g., 6-structure
+  heart/great-vessel model + coronary artery tree at ~119,998 tris) vs. the 100k–150k
+  budget; flag any combination that needs re-budgeting BEFORE the headset session.
+- Do not report frame rates as verified without real headset telemetry.
+
+## Track 3 — Pre-Stage Stakeholder Discovery Materials
+Produce a written comparison document for the stakeholders mapping the three value questions defined
+in the Phase 1 deliverables — chamber/vessel structural navigation vs. downstream
+microvascular resistance modeling vs. injector mechanical profiling — to:
+- Which Phase 2 pathway each implies (see Track 4 pathway list).
+- Which ACIST hardware feeds it as pipeline inputs: ACIST Pro / ACIST CVi (controlled
+  contrast injection → flow rates, injection profiles, volume parameters); ACIST HDi /
+  Kodama HD IVUS (high-def intravascular ultrasound → localized cross-sectional vessel
+  geometry); ACIST RXi / Navvus MicroCatheter (intravascular pressure measurement →
+  physiological pressure gradients / boundary conditions); EmpowerCTA+ / EmpowerMR
+  (radiology contrast delivery → peripheral and central injection timing protocols).
+  (Radiology injectors distributed under Bracco's SmartInject / BraccoMR brands.)
+- Include the scoping fork: if the stakeholder's goal is injector mechanics / manifold fluid dynamics
+  rather than in-vivo hemodynamics, the workflow shifts from patient medical-image
+  reconstruction to CAD-based engineering CFD.
+
+## Track 4 — Phase 2 Foundations (fully unblocked; synthetic data only where stated)
+Phase 2 scope: computational fluid dynamics (CFD), finite-element blood flow modeling,
+and live contrast transport predictions. Governing dynamics: contrast as a passive or
+semi-passive scalar governed by advection-diffusion:
+
+    ∂C/∂t + u · ∇C = D ∇²C
+
+Where C = local contrast concentration, u = blood velocity, D = molecular diffusion. At
+typical arterial velocities, advection heavily dominates diffusion. Vascular blood flow
+acts as the moving carrier fluid.
+
+Work the four Acceleration Pathways, prioritized by current unblocked status:
+1. Surrogate AI Operators (START HERE — explicitly synthetic-data-driven): train
+   physics-informed neural operators (e.g., GINO, Transolver) on synthetic runs to infer
+   flow fields and pressure drops in real time. No patient data or gated downloads
+   required. Build training infra and generate synthetic run corpora.
+2. 0D/1D Reduced-Order Networks: abstract vessels into 1D centerline networks using
+   `svZeroDSolver` or `openBF`; prototype on the already-processed vessel trees from the
+   5 real cases to compute branch transit times and arrival curves in milliseconds.
+3. Decoupled Steady-State Transport: prototype computing the periodic velocity field u
+   once over the cardiac cycle so that only the scalar transport field C is recalculated
+   when injection parameters change. Can be prototyped against the advection-diffusion
+   equation above.
+4. GPU-Accelerated Solvers (evaluation only at this stage): benchmark/compare Lattice
+   Boltzmann Method (LBM) architectures — OpenLB, HARVEY, FluidX3D — for parallelized
+   fluid sweeps on cloud GPUs. Produce a selection recommendation.
+
+Tooling note for Phase 2: SimVascular is now in scope ("Shelf for Phase 2" per the tool
+matrix — held specifically until geometry extraction and VR rendering were resolved,
+which they now are). VMTK remains shelved; dicom2stl, PlatiPy, ImageCHD / CHD68, and
+TCIA LCTSC remain discarded with their original rationales intact.
+
+## Track 5 — License Audit (documentation only; needs no external access)
+The project brief claimed open Apache 2.0 / CC BY 4.0 licensing on the datasets, but
+on-the-ground findings report real dataset licenses as non-commercial (CC BY-NC /
+BY-NC-ND). Produce a written license record: per dataset (ImageCAS 14-Structure
+Extension, TotalSegmentator CT High-Res, any others touched), state the actual license
+text found, where it was found, and what the non-commercial restriction implies for
+commercial clinical use alongside stakeholder hardware. Flag this as a discrepancy against the
+brief; do not resolve it unilaterally — it needs a human compliance decision.
+
+## Out of Scope / Do Not Do
+- Do not attempt to circumvent the HF 14-structure extension 403 gate or re-trigger the
+  fetch script repeatedly; keep it armed for when approval lands.
+- Do not substitute any discarded/shelved tool to work around a blocked item.
+- Do not present FPS or stakeholder-acceptance results as validated without the real
+  headset session and real stakeholder session.
+
+## Report Back
+Per track: artifacts produced, measurements captured (triangle counts vs. budget, drift
+%, sizes, timings), failures/anomalies observed, and any point where the constraints
+above could not be met — flag rather than substitute.

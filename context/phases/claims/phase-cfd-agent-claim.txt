@@ -1,0 +1,15 @@
+**FlowScope Phase 2 complete** — 17/17, tree clean, 4 phase commits (`fca9b59`, `cc66d80`, `dc02b71`, `2396a22`).
+
+Delivered & verified end-to-end (`python tools/run_cfd_overnight.py --cases 601 700 798`, 38.5 min, 21/21 stages ok, `out/cfd_errors.log` absent):
+
+| Deliverable | Evidence |
+| --- | --- |
+| `phase2/rom/build_network_graph.py` | C1 graphs 601/700/798; bifurcation splitting; Murray checks ($\gamma$ 2.7/3.0; pass_frac 0.0 on real radii — genuine bifurcation-crown bias, recorded) |
+| `phase2/rom/run_hemodynamics.py` | svZeroDSolver pysvzerod 2.0, 3-element Windkessel ($\tau = 1.75\text{ s}$), profiles A/B/C; 1D mass rel err $8.7\times 10^{-14}$–$6.0\times 10^{-10}$; solve 22.6–39.5 s/case |
+| `phase2/transport/build_carrier.py` | divergence-free carrier, $\nabla\cdot\mathbf{u}$ residual $2.3\text{–}6.4\times 10^{-7} \le 10^{-6}$, $r^3$ flux split exact to $3.8\times 10^{-13}$ |
+| `phase2/transport/solve_advection.py` | conservative FV + TVD; $C \in [0,1]$; $\epsilon_{\text{mass}} = 3.2\times 10^{-15}\text{–}8.6\times 10^{-15} \le 10^{-4}$ (spec bound beaten by 10 orders) |
+| `tools/export_cfd_payload.py` | 9 payloads, 90×50244–50254 uint8, 4.53 MB ≪ 15 MB; GLB↔RAS frame mapping proven (d-r median 0.3 mm) via new transform record |
+| `viewer/js/cfd_playback.js` + wiring | visually confirmed: amber→radiopaque-white iodine TF, timeline/Pause/Loop/0.25–2×/A–C HUD (real clicks verified), distal transit readout decimal-exact (e.g. 11556.0175 ms), `__XRVIEWER__` automation hook |
+| `tools/run_cfd_overnight.py` + `out/cfd_overnight_report.md` | all five mandated sections per case; load-time benchmark live: 8/8 site resources (19–47 ms median) + 12 payload fetches (82–208 ms median) |
+
+**Fix-ups along the way** (all root-caused, not patched over): 3D transport open-boundary imbalance bug ($C_{\max} = 32.7 \to 1.0$), exporter null-transit crash, npm cwd bug in the benchmark.
