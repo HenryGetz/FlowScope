@@ -139,6 +139,7 @@ MAX_SEARCH_ITERS = 6
 MAX_AGGREGATE_PASSES = 8
 REDUCTION_CAP = 0.95
 # (x, y, z) RAS mm -> (x, z, -y) Y-up meters
+_Y_UP_PERM = [0, 2, 1]
 _Y_UP_SIGN = np.array([1.0, 1.0, -1.0])
 _MM_TO_M = 1e-3
 
@@ -867,19 +868,40 @@ def _cap_open_rims(work) -> None:
         w.boundary_loops_capped = len(loops)
 
 
-def _finalize_geometry(work) -> tuple[list[dict], np.ndarray]:
+class _GeometryItems(list):
+    """Finalized items; ``transform`` records the world transform applied to points.
+
+    A ``list`` subclass so consumers that just iterate the meshes
+    (glb_writer.write_glb, the raw-scale validator) are unaffected.
+    """
+
+    transform: dict
+
+
+def _transform_record(center) -> dict:
+    """Invertible record of the RAS-mm -> Y-up-m world transform of _finalize_geometry."""
+    return {
+        'space': 'ras_mm->y_up_m',
+        'perm': list(_Y_UP_PERM),
+        'sign': [float(v) for v in _Y_UP_SIGN],
+        'scale_m_per_mm': float(_MM_TO_M),
+        'center_m': [float(v) for v in np.asarray(center, dtype=np.float64).reshape(3)],
+    }
+
+
+def _finalize_geometry(work) -> _GeometryItems:
     """Step 4: smooth point normals, world transform, recenter on the global bbox.
 
     Normals are smooth per-vertex point normals (compute_normals with
     point_normals=True / cell_normals=False, consistent, splitting off and a
     flat feature angle -- no crease splitting) so PBR lighting follows
     anatomical curvature. Accepts anything with .name and .mesh (the raw-scale
-    validator passes plain namespaces).
-
-    Returns ``(items, center)``: ``center`` is the Y-up-meters bbox center
-    subtracted from every point (the GLB-local origin in pre-recenter world
-    terms). It is preserved for co-registration -- callers map it back to RAS
-    mm as ``(1e3*c[0], -1e3*c[2], 1e3*c[1])`` = ``model_center_ras_mm`` of the
+    validator passes plain namespaces). Returns the items carrying the applied
+    world transform in ``.transform`` (see ``_transform_record``); its
+    ``center_m`` is the Y-up-meters bbox center subtracted from every point
+    (the GLB-local origin in pre-recenter world terms). It is preserved for
+    co-registration -- callers map it back to RAS mm as
+    ``(1e3*c[0], -1e3*c[2], 1e3*c[1])`` = ``model_center_ras_mm`` of the
     volume-pair meta.
     """
     items = []
@@ -897,8 +919,8 @@ def _finalize_geometry(work) -> tuple[list[dict], np.ndarray]:
         items.append(
             {
                 'id': w.name,
-                'points': points[:, [0, 2, 1]] * _Y_UP_SIGN * _MM_TO_M,
-                'normals': normals[:, [0, 2, 1]] * _Y_UP_SIGN,
+                'points': points[:, _Y_UP_PERM] * _Y_UP_SIGN * _MM_TO_M,
+                'normals': normals[:, _Y_UP_PERM] * _Y_UP_SIGN,
                 'indices': indices,
             }
         )
@@ -908,7 +930,9 @@ def _finalize_geometry(work) -> tuple[list[dict], np.ndarray]:
     )
     for it in items:
         it['points'] = it['points'] - center
-    return items, center
+    out = _GeometryItems(items)
+    out.transform = _transform_record(center)
+    return out
 
 
 def _row_for(result, decimator) -> dict:
@@ -1129,9 +1153,13 @@ def main(argv=None) -> int:
         for w in work:
             w.volume_final_mm3 = float(w.mesh.volume) if w.watertight else None
         _cap_open_rims(work)  # render geometry only; metrics stay pre-cap
-        items, center = _finalize_geometry(work)
+        items = _finalize_geometry(work)
+        transform = items.transform
+        center = transform['center_m']
     else:
-        items, center = [], None
+        items = []
+        transform = _transform_record(np.zeros(3))
+        center = None
 
     # the Y-up-meters recenter mapped back to RAS mm: the RAS mm point at the
     # GLB-local origin (volume-pair co-registration)
@@ -1177,6 +1205,7 @@ def main(argv=None) -> int:
                 'structures': rows,
                 'totals': totals,
                 'model_center_ras_mm': model_center_ras_mm,
+                'transform': transform,
             },
             indent=2,
         )

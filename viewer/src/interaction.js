@@ -26,6 +26,11 @@ const TOUCHPAD_Y_AXIS = 3;
 const CLIP_DEADZONE = 0.15;
 const CLIP_NUDGE_RATE = 0.5; // offset01 per second at full deflection
 const CLIP_NUDGE_MAX_STEP = 0.05; // hard per-frame bound (offset01)
+// Timeline scrub (while a grip holds the model): same thumbstick/touchpad Y.
+const SCRUB_RATE = 0.5; // time01 per second at full deflection
+const SCRUB_MAX_STEP = 0.05; // hard per-frame bound (time01)
+const TAP_DOUBLE_MS = 300; // two trigger presses within this => play/pause
+const CLICK_MOVE_PX = 5; // desktop click vs orbit drag: max pointer travel
 
 const _delta = new THREE.Matrix4();
 const _model = new THREE.Matrix4();
@@ -46,6 +51,7 @@ const _pA = new THREE.Vector3();
 const _pB = new THREE.Vector3();
 const _wPos = new THREE.Vector3();
 const _wDir = new THREE.Vector3();
+const _ndc = new THREE.Vector2();
 
 /**
  * 6DOF controller interaction, shared by the desktop page and the XR smoke
@@ -62,10 +68,19 @@ const _wDir = new THREE.Vector3();
  *  - otherwise (empty space) = Slicing Wand: onWandPose(hand world position,
  *    hand forward (-Z) world direction, true) every update while held, and
  *    exactly one (... false) on release (the plane stays put).
- *  - `select` (trigger) ray-picks a structure and toggles its visibility.
+ *  - `select` (trigger) ray-picks a structure and toggles its visibility; two
+ *    trigger presses within TAP_DOUBLE_MS additionally flip playback
+ *    (`onPlayPause()`) while every press still runs the pick (onToggle intact).
+ *  - probe placement (contract D): a desktop click (pointer travel below
+ *    CLICK_MOVE_PX, so orbit drags are exempt) and every XR trigger ray-hit
+ *    offer the hit {point, object, name} to `onProbe(hit)`; a truthy return
+ *    consumes the press (no visibility toggle) — main places the Navvus
+ *    probe when the hit lands on a coronaries structure with clinical data.
  *  - while no hand holds a squeeze mode, thumbstick/touchpad Y of either
  *    controller nudges the cross-section clip offset through
  *    `onClipNudge(delta01)`.
+ *  - while a grip holds the model, the same axes scrub the playback timeline
+ *    through `onScrub(delta01)` (the modifier keeps clip-nudging intact).
  *
  * mprMesh is the MprSlice slice quad (unit PlaneGeometry under its mesh
  * transform); when null the plane-grab branch is skipped. The model group must
@@ -76,12 +91,16 @@ export function createInteraction({
   scene,
   modelRoot,
   mprMesh = null,
+  camera = null,
   onToggle = () => {},
+  onProbe = () => {},
   onClipNudge = () => {},
   onPlaneGrabStart = () => {},
   onPlaneDrag = () => {},
   onPlaneGrabEnd = () => {},
   onWandPose = () => {},
+  onScrub = () => {},
+  onPlayPause = () => {},
 }) {
   const structures = [];
   const raycaster = new THREE.Raycaster();
@@ -122,6 +141,7 @@ export function createInteraction({
       prevGripInv: new THREE.Matrix4(), // inverse grip pose at the last plane drag
       squeezed: false,
       selectActed: false,
+      lastPressAt: 0,
       inputSource: null,
     };
 
@@ -164,13 +184,18 @@ export function createInteraction({
     startSqueeze(hand);
   }
 
-  // Exactly one pick per trigger press (`select` may trail `selectend`).
+  // Exactly one pick per trigger press (`select` may trail `selectend`); a
+  // second press within TAP_DOUBLE_MS additionally flips playback.
   function onSelect(event, hand) {
     const down = buttonDown(event, TRIGGER_BUTTON);
     if (down === false) return;
     if (hand.selectActed) return;
     hand.selectActed = true;
+    const now = performance.now();
+    const doubleTap = now - hand.lastPressAt < TAP_DOUBLE_MS;
+    hand.lastPressAt = doubleTap ? 0 : now;
     pick(hand);
+    if (doubleTap) onPlayPause();
   }
 
   // ---- squeeze arbitration: plane grab / model grab / slicing wand -------
@@ -306,9 +331,10 @@ export function createInteraction({
     };
   }
 
-  /** Per-frame update: clip nudge, plane drags/wands, then the grip configuration. */
+  /** Per-frame update: stick scrub while gripping, clip nudge otherwise, then plane drags/wands. */
   function update(dt) {
-    nudgeClip(dt);
+    if (hands.some((hand) => hand.mode === MODE_MODEL)) scrubTimeline(dt);
+    else nudgeClip(dt);
     for (const hand of hands) {
       if (hand.mode === MODE_PLANE) {
         gripMatrix(hand, _gripA);
@@ -354,16 +380,44 @@ export function createInteraction({
     modelRoot.updateMatrix();
   }
 
-  // ---- cross-section clip nudge ------------------------------------------
+  // ---- stick timeline scrub / cross-section clip nudge --------------------
 
   /** Thumbstick/touchpad Y deflection of a hand (0 when idle or no gamepad). */
-  function clipAxis(hand) {
+  function stickAxis(hand) {
     const gamepad = hand.inputSource && hand.inputSource.gamepad;
     const axes = gamepad && gamepad.axes;
     if (!axes) return 0;
     const thumb = axes.length > THUMBSTICK_Y_AXIS ? axes[THUMBSTICK_Y_AXIS] : 0;
     const pad = axes.length > TOUCHPAD_Y_AXIS ? axes[TOUCHPAD_Y_AXIS] : 0;
     return Math.abs(pad) > Math.abs(thumb) ? pad : thumb;
+  }
+
+  /** Deadzone-corrected deflection of the strongest axis across both hands. */
+  function stickDeflection() {
+    let axis = 0;
+    for (const hand of hands) {
+      const value = stickAxis(hand);
+      if (Math.abs(value) > Math.abs(axis)) axis = value;
+    }
+    const magnitude = (Math.abs(axis) - CLIP_DEADZONE) / (1 - CLIP_DEADZONE);
+    return magnitude <= 0 ? 0 : magnitude * Math.sign(axis);
+  }
+
+  /** Bounded step from a deflection at the given rate over `dt` milliseconds. */
+  function stickStep(dt, rate, maxStep) {
+    const seconds = (Number.isFinite(dt) ? Math.min(Math.max(dt, 0), 100) : 1000 / 60) / 1000;
+    const delta = -stickDeflection() * rate * seconds; // stick up = positive step
+    return Math.max(-maxStep, Math.min(maxStep, delta));
+  }
+
+  /**
+   * While a grip holds the model (the scrub modifier), thumbstick/touchpad Y
+   * scrubs the playback timeline at a bounded per-frame rate via
+   * `onScrub(delta01)` — clip nudging stays on the no-grip path below.
+   */
+  function scrubTimeline(dt) {
+    const delta = stickStep(dt, SCRUB_RATE, SCRUB_MAX_STEP);
+    if (delta !== 0) onScrub(delta);
   }
 
   /**
@@ -374,30 +428,75 @@ export function createInteraction({
    */
   function nudgeClip(dt) {
     if (hands.some((hand) => hand.mode !== null)) return;
-    let axis = 0;
-    for (const hand of hands) {
-      const value = clipAxis(hand);
-      if (Math.abs(value) > Math.abs(axis)) axis = value;
-    }
-    const magnitude = (Math.abs(axis) - CLIP_DEADZONE) / (1 - CLIP_DEADZONE);
-    if (magnitude <= 0) return;
-    const deflection = magnitude * Math.sign(axis);
-    const seconds = (Number.isFinite(dt) ? Math.min(Math.max(dt, 0), 100) : 1000 / 60) / 1000;
     // Gamepad Y is negative toward the top of the stick: up = deeper cut.
-    const delta = -deflection * CLIP_NUDGE_RATE * seconds;
-    onClipNudge(Math.max(-CLIP_NUDGE_MAX_STEP, Math.min(CLIP_NUDGE_MAX_STEP, delta)));
+    const delta = stickStep(dt, CLIP_NUDGE_RATE, CLIP_NUDGE_MAX_STEP);
+    if (delta !== 0) onClipNudge(delta);
   }
 
-  // ---- trigger picking ---------------------------------------------------
+  // ---- trigger / click picking -------------------------------------------
+
+  /** Raycast every visible structure along the current raycaster ray. */
+  function visibleHits() {
+    if (structures.length === 0) return null;
+    const targets = structures
+      .filter((entry) => entry.object.visible)
+      .map((entry) => entry.object);
+    return raycaster.intersectObjects(targets, true);
+  }
+
+  /** Best hit -> { entry, hit } (structure entry owning the hit object). */
+  function bestHit(hits) {
+    if (!hits || hits.length === 0) return null;
+    const entry = entryFor(hits[0].object);
+    if (!entry) return null;
+    return { entry, hit: hits[0] };
+  }
 
   function pick(hand) {
-    const hit = raycastStructures(hand);
-    if (!hit) return null;
-    const entry = entryFor(hit.object);
-    if (!entry) return null;
-    setStructureVisible(entry.name, !entry.object.visible);
-    return entry.name;
+    hand.targetRay.updateWorldMatrix(true, false);
+    _origin.setFromMatrixPosition(hand.targetRay.matrixWorld);
+    _dir.set(0, 0, -1).transformDirection(hand.targetRay.matrixWorld);
+    raycaster.set(_origin, _dir);
+    const found = bestHit(visibleHits());
+    if (!found) return null;
+    if (onProbe({ point: found.hit.point, object: found.hit.object, name: found.entry.name })) {
+      return found.entry.name; // consumed (Navvus probe placement): no toggle
+    }
+    setStructureVisible(found.entry.name, !found.entry.object.visible);
+    return found.entry.name;
   }
+
+  // ---- desktop click probe placement -------------------------------------
+  // A click (pointer travel below CLICK_MOVE_PX, so OrbitControls drags stay
+  // exempt) offers the surface hit to `onProbe` exactly like an XR trigger.
+
+  let pointerDown = false;
+  let downX = 0;
+  let downY = 0;
+  renderer.domElement.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    pointerDown = true;
+    downX = event.clientX;
+    downY = event.clientY;
+  });
+  renderer.domElement.addEventListener('pointerup', (event) => {
+    if (!pointerDown || event.button !== 0) return;
+    pointerDown = false;
+    const dx = event.clientX - downX;
+    const dy = event.clientY - downY;
+    if (dx * dx + dy * dy > CLICK_MOVE_PX * CLICK_MOVE_PX) return; // orbit drag
+    if (!camera) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (!(rect.width > 0) || !(rect.height > 0)) return;
+    _ndc.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(_ndc, camera);
+    const found = bestHit(visibleHits());
+    if (!found) return;
+    onProbe({ point: found.hit.point, object: found.hit.object, name: found.entry.name });
+  });
 
   function entryFor(object) {
     let node = object;

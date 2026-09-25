@@ -1,0 +1,2534 @@
+{
+ "simulation_parameters": {
+  "number_of_cardiac_cycles": 1,
+  "number_of_time_pts_per_cardiac_cycle": 4096,
+  "steady_initial": true,
+  "output_variable_based": true,
+  "output_all_cycles": false,
+  "output_interval": 1,
+  "cardiac_period": 8.0,
+  "absolute_tolerance": 1e-08
+ },
+ "vessels": [
+  {
+   "vessel_id": 0,
+   "vessel_name": "798_b000_s0",
+   "vessel_length": 0.007907395340856785,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3934173.985489663,
+    "C": 1.0514227011263465e-12,
+    "L": 630369.8319448336,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "inlet": "IN_root_0"
+   }
+  },
+  {
+   "vessel_id": 1,
+   "vessel_name": "798_b001_s0",
+   "vessel_length": 0.008518548806704496,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 7746329.733027145,
+    "C": 8.378270664371612e-13,
+    "L": 918084.6176960806,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 2,
+   "vessel_name": "798_b002_s0",
+   "vessel_length": 0.005064419284324866,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3229093.2508206796,
+    "C": 5.948509223380431e-13,
+    "L": 457042.9703938169,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 3,
+   "vessel_name": "798_b003_s0",
+   "vessel_length": 0.011202360422174658,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 5708965.463558281,
+    "C": 1.4717686787841636e-12,
+    "L": 903827.1685459028,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 4,
+   "vessel_name": "798_b003_s1",
+   "vessel_length": 0.011202360422174658,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3660960.5159312906,
+    "C": 1.837895192305827e-12,
+    "L": 723776.0473333263,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 5,
+   "vessel_name": "798_b004_s0",
+   "vessel_length": 0.005612966240200308,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 2204230.4045371674,
+    "C": 8.400673443879404e-13,
+    "L": 397536.14561434556,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 6,
+   "vessel_name": "798_b005_s0",
+   "vessel_length": 0.010765754427029565,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4335643.76525833,
+    "C": 1.5910867528551264e-12,
+    "L": 772148.6981500844,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 7,
+   "vessel_name": "798_b005_s1",
+   "vessel_length": 0.010765754427029565,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4051833.532813325,
+    "C": 1.6458674580683529e-12,
+    "L": 746448.6637962976,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 8,
+   "vessel_name": "798_b005_s2",
+   "vessel_length": 0.010765754427029567,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3755342.6936961813,
+    "C": 1.7096053503240815e-12,
+    "L": 718619.3963583701,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 9,
+   "vessel_name": "798_b005_s3",
+   "vessel_length": 0.010765754427029563,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4650726.728533631,
+    "C": 1.5362441596892073e-12,
+    "L": 799713.741537983,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 10,
+   "vessel_name": "798_b005_s4",
+   "vessel_length": 0.01076575442702957,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 5069222.065757796,
+    "C": 1.4714652060843216e-12,
+    "L": 834919.8878648378,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 11,
+   "vessel_name": "798_b005_s5",
+   "vessel_length": 0.010765754427029563,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 5534051.300197318,
+    "C": 1.4083126013652109e-12,
+    "L": 872359.9885920038,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 12,
+   "vessel_name": "798_b006_s0",
+   "vessel_length": 0.00709958327663787,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3481009.789840487,
+    "C": 9.509345270510534e-13,
+    "L": 561850.7493856372,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 13,
+   "vessel_name": "798_b007_s0",
+   "vessel_length": 0.01017855917287,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 13492610.542134164,
+    "C": 8.291544162425081e-13,
+    "L": 1324472.844797988,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 14,
+   "vessel_name": "798_b007_s1",
+   "vessel_length": 0.01017855917287,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 18942383.113959208,
+    "C": 6.997873743165497e-13,
+    "L": 1569323.124084775,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 15,
+   "vessel_name": "798_b007_s2",
+   "vessel_length": 0.01017855917287,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 16153604.524613192,
+    "C": 7.577896817787544e-13,
+    "L": 1449204.8847640024,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 16,
+   "vessel_name": "798_b007_s3",
+   "vessel_length": 0.01017855917287,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 19261141.159040608,
+    "C": 6.939727278092235e-13,
+    "L": 1582472.1411234308,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 17,
+   "vessel_name": "798_b007_s4",
+   "vessel_length": 0.010178559172869996,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 27753223.60706778,
+    "C": 5.781315802806499e-13,
+    "L": 1899554.6099114998,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 18,
+   "vessel_name": "798_b007_s5",
+   "vessel_length": 0.010178559172870003,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 23936593.808968645,
+    "C": 6.225184616711302e-13,
+    "L": 1764112.353406306,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 19,
+   "vessel_name": "798_b007_s6",
+   "vessel_length": 0.010178559172870003,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 20011951.360506423,
+    "C": 6.808300111625578e-13,
+    "L": 1613020.1231615827,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 20,
+   "vessel_name": "798_b007_s7",
+   "vessel_length": 0.010178559172869996,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12598593.795065101,
+    "C": 8.580693193095403e-13,
+    "L": 1279841.2479555937,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 21,
+   "vessel_name": "798_b007_s8",
+   "vessel_length": 0.010178559172869996,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 10143630.223500691,
+    "C": 9.562835962836822e-13,
+    "L": 1148396.263122503,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 22,
+   "vessel_name": "798_b007_s9",
+   "vessel_length": 0.010178559172869996,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 18045843.207226016,
+    "C": 7.169598254129484e-13,
+    "L": 1531735.0701275368,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_000"
+   }
+  },
+  {
+   "vessel_id": 23,
+   "vessel_name": "798_b008_s0",
+   "vessel_length": 0.009536150742937125,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3967281.539699301,
+    "C": 1.386650787559881e-12,
+    "L": 695160.3252695574,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 24,
+   "vessel_name": "798_b008_s1",
+   "vessel_length": 0.009536150742937125,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3344182.869388455,
+    "C": 1.510318716687283e-12,
+    "L": 638239.2020074549,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 25,
+   "vessel_name": "798_b009_s0",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 5751132.953493063,
+    "C": 1.3674228825486137e-12,
+    "L": 886279.0470259481,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 26,
+   "vessel_name": "798_b009_s1",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 7156155.077674326,
+    "C": 1.2258566158934118e-12,
+    "L": 988629.6925056011,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 27,
+   "vessel_name": "798_b009_s2",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 8457085.311047506,
+    "C": 1.1276366720161945e-12,
+    "L": 1074741.7845676942,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 28,
+   "vessel_name": "798_b009_s3",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 7429851.515537892,
+    "C": 1.2030660730634005e-12,
+    "L": 1007358.0132974072,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 29,
+   "vessel_name": "798_b009_s4",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 7954576.312121301,
+    "C": 1.1627089638833277e-12,
+    "L": 1042322.9603210238,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 30,
+   "vessel_name": "798_b009_s5",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 13007120.001100952,
+    "C": 9.09261857837567e-13,
+    "L": 1332859.438433808,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 31,
+   "vessel_name": "798_b009_s6",
+   "vessel_length": 0.010692610079134184,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 16710782.513447097,
+    "C": 8.021972215584089e-13,
+    "L": 1510748.5000662263,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 32,
+   "vessel_name": "798_b010_s0",
+   "vessel_length": 0.010163923764380169,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 11018772.917778015,
+    "C": 9.155444492280178e-13,
+    "L": 1196049.707447331,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 33,
+   "vessel_name": "798_b010_s1",
+   "vessel_length": 0.010163923764380169,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 21087617.33240534,
+    "C": 6.618084293135616e-13,
+    "L": 1654612.75824182,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 34,
+   "vessel_name": "798_b010_s2",
+   "vessel_length": 0.010163923764380169,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 16273638.576081855,
+    "C": 7.533620118065836e-13,
+    "L": 1453533.1666488855,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 35,
+   "vessel_name": "798_b010_s3",
+   "vessel_length": 0.010163923764380169,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15381201.01397791,
+    "C": 7.749093952310579e-13,
+    "L": 1413115.7492647085,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 36,
+   "vessel_name": "798_b010_s4",
+   "vessel_length": 0.010163923764380165,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 20284500.904041767,
+    "C": 6.747826184326641e-13,
+    "L": 1622799.1663414051,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_001"
+   }
+  },
+  {
+   "vessel_id": 37,
+   "vessel_name": "798_b011_s0",
+   "vessel_length": 0.010325773442683098,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4734479.802236897,
+    "C": 1.4302162426353194e-12,
+    "L": 790222.4128901507,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 38,
+   "vessel_name": "798_b011_s1",
+   "vessel_length": 0.010325773442683098,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4549768.072773729,
+    "C": 1.458959413776873e-12,
+    "L": 774654.1264531802,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 39,
+   "vessel_name": "798_b011_s2",
+   "vessel_length": 0.010325773442683097,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3150742.9912528144,
+    "C": 1.7531995502107006e-12,
+    "L": 644643.6345903353,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 40,
+   "vessel_name": "798_b011_s3",
+   "vessel_length": 0.0103257734426831,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 6285381.551148282,
+    "C": 1.24128645611618e-12,
+    "L": 910498.0761219118,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 41,
+   "vessel_name": "798_b011_s4",
+   "vessel_length": 0.0103257734426831,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 25181816.56035042,
+    "C": 6.20146521503096e-13,
+    "L": 1822454.67969512,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 42,
+   "vessel_name": "798_b011_s5",
+   "vessel_length": 0.010325773442683093,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 16428102.043678878,
+    "C": 7.677929925007601e-13,
+    "L": 1471996.9330911124,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 43,
+   "vessel_name": "798_b011_s6",
+   "vessel_length": 0.010325773442683116,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 13364502.848219639,
+    "C": 8.512584501699298e-13,
+    "L": 1327668.3831853424,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 44,
+   "vessel_name": "798_b011_s7",
+   "vessel_length": 0.010325773442683086,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 14935554.733628359,
+    "C": 8.05243376302231e-13,
+    "L": 1403537.0714875306,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 45,
+   "vessel_name": "798_b011_s8",
+   "vessel_length": 0.0103257734426831,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 11058157.219583077,
+    "C": 9.358289151900245e-13,
+    "L": 1207687.5504327386,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_002"
+   }
+  },
+  {
+   "vessel_id": 46,
+   "vessel_name": "798_b012_s0",
+   "vessel_length": 0.004165345166342288,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 26984908.48574125,
+    "C": 1.5348642498075481e-13,
+    "L": 1198223.646056212,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_003"
+   }
+  },
+  {
+   "vessel_id": 47,
+   "vessel_name": "798_b013_s0",
+   "vessel_length": 0.003111050113626638,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3550388.8833428044,
+    "C": 2.731344621915624e-13,
+    "L": 375615.39088651206,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 48,
+   "vessel_name": "798_b014_s0",
+   "vessel_length": 0.010038752365666863,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15491338.19203632,
+    "C": 7.579299980844729e-13,
+    "L": 1409406.4395486203,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 49,
+   "vessel_name": "798_b014_s1",
+   "vessel_length": 0.010038752365666863,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15165477.555687567,
+    "C": 7.660295420338081e-13,
+    "L": 1394504.2082726676,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_004"
+   }
+  },
+  {
+   "vessel_id": 50,
+   "vessel_name": "798_b015_s0",
+   "vessel_length": 0.0036351210922074425,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 13669566.92318114,
+    "C": 1.758145842641961e-13,
+    "L": 796688.8375576343,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_005"
+   }
+  },
+  {
+   "vessel_id": 51,
+   "vessel_name": "798_b016_s0",
+   "vessel_length": 0.012836872007882314,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 2383208.8391622785,
+    "C": 2.7942272138146476e-12,
+    "L": 625118.8130298712,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "inlet": "IN_root_1"
+   }
+  },
+  {
+   "vessel_id": 52,
+   "vessel_name": "798_b017_s0",
+   "vessel_length": 0.004777926715312365,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4161243.8240607814,
+    "C": 4.801772681626702e-13,
+    "L": 503945.11200625304,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 53,
+   "vessel_name": "798_b018_s0",
+   "vessel_length": 0.005543988204701713,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4001307.845724123,
+    "C": 6.120493141303665e-13,
+    "L": 532309.2890479817,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 54,
+   "vessel_name": "798_b019_s0",
+   "vessel_length": 0.0033968694300382414,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 5392610.698577041,
+    "C": 2.528556707845377e-13,
+    "L": 483716.4696469984,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 55,
+   "vessel_name": "798_b020_s0",
+   "vessel_length": 0.005099303716394203,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3011298.2772043566,
+    "C": 6.223624523079532e-13,
+    "L": 442878.13625869347,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 56,
+   "vessel_name": "798_b021_s0",
+   "vessel_length": 0.0048705432914251025,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4229268.646707734,
+    "C": 4.90215938507607e-13,
+    "L": 512947.89694959373,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 57,
+   "vessel_name": "798_b022_s0",
+   "vessel_length": 0.008154022353460083,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4038991.7914431035,
+    "C": 1.0866140427298186e-12,
+    "L": 648596.1215457453,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 58,
+   "vessel_name": "798_b023_s0",
+   "vessel_length": 0.0018527222262274745,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 11278406.13817232,
+    "C": 7.042803227421104e-14,
+    "L": 516631.56117213645,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 59,
+   "vessel_name": "798_b024_s0",
+   "vessel_length": 0.013659032240058494,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 7767172.827533935,
+    "C": 1.6988395489826504e-12,
+    "L": 1164108.2382234703,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 60,
+   "vessel_name": "798_b025_s0",
+   "vessel_length": 0.009434483949957889,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 5979912.186133875,
+    "C": 1.1114342445227966e-12,
+    "L": 848903.6316011997,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 61,
+   "vessel_name": "798_b025_s1",
+   "vessel_length": 0.009434483949957889,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3600370.2530745957,
+    "C": 1.4323778435391335e-12,
+    "L": 658695.309144218,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 62,
+   "vessel_name": "798_b025_s2",
+   "vessel_length": 0.00943448394995789,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 4161638.525868932,
+    "C": 1.3322907092752562e-12,
+    "L": 708179.1983482244,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 63,
+   "vessel_name": "798_b025_s3",
+   "vessel_length": 0.009434483949957887,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 6209287.127790349,
+    "C": 1.0907125382869959e-12,
+    "L": 865031.374759054,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 64,
+   "vessel_name": "798_b025_s4",
+   "vessel_length": 0.009434483949957887,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 2286602.7804843113,
+    "C": 1.7973630670075098e-12,
+    "L": 524935.9930557621,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 65,
+   "vessel_name": "798_b025_s5",
+   "vessel_length": 0.009434483949957894,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 1538587.7350406654,
+    "C": 2.1911395803777048e-12,
+    "L": 430598.1120101441,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 66,
+   "vessel_name": "798_b025_s6",
+   "vessel_length": 0.00943448394995788,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3129698.8917546584,
+    "C": 1.5363136843785191e-12,
+    "L": 614132.7621142736,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 67,
+   "vessel_name": "798_b025_s7",
+   "vessel_length": 0.009434483949957894,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15448367.10248839,
+    "C": 6.914963410460672e-13,
+    "L": 1364433.2015322745,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_006"
+   }
+  },
+  {
+   "vessel_id": 68,
+   "vessel_name": "798_b026_s0",
+   "vessel_length": 0.011491152828147532,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 6047714.005602503,
+    "C": 1.4856062927246543e-12,
+    "L": 942170.1402618915,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 69,
+   "vessel_name": "798_b026_s1",
+   "vessel_length": 0.011491152828147532,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 8874357.803469418,
+    "C": 1.2263964522297137e-12,
+    "L": 1141306.211906884,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 70,
+   "vessel_name": "798_b026_s2",
+   "vessel_length": 0.01149115282814753,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 9668914.439456252,
+    "C": 1.1749259458131205e-12,
+    "L": 1191303.9236031699,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 71,
+   "vessel_name": "798_b027_s0",
+   "vessel_length": 0.007605832240612988,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 38812425.00788426,
+    "C": 3.157829488484938e-13,
+    "L": 1941827.61736476,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 72,
+   "vessel_name": "798_b028_s0",
+   "vessel_length": 0.013310714850877828,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 18856073.28231816,
+    "C": 1.0488910824684887e-12,
+    "L": 1790516.1057321168,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_007"
+   }
+  },
+  {
+   "vessel_id": 73,
+   "vessel_name": "798_b029_s0",
+   "vessel_length": 0.014926595788442232,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15232806.548155732,
+    "C": 1.3858146467784825e-12,
+    "L": 1704206.6779308983,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 74,
+   "vessel_name": "798_b030_s0",
+   "vessel_length": 0.009963340024366864,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 13081787.998746773,
+    "C": 8.155072504925295e-13,
+    "L": 1290291.8158492038,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 75,
+   "vessel_name": "798_b030_s1",
+   "vessel_length": 0.009963340024366864,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12873559.370314086,
+    "C": 8.220761711828521e-13,
+    "L": 1279981.5491089695,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 76,
+   "vessel_name": "798_b030_s2",
+   "vessel_length": 0.009963340024366862,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 10646369.377103038,
+    "C": 9.039837319124215e-13,
+    "L": 1164005.8265762453,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 77,
+   "vessel_name": "798_b030_s3",
+   "vessel_length": 0.009963340024366866,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 11314852.246606555,
+    "C": 8.76873481721402e-13,
+    "L": 1199993.3320032975,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 78,
+   "vessel_name": "798_b030_s4",
+   "vessel_length": 0.009963340024366866,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12808460.659603756,
+    "C": 8.241626152113049e-13,
+    "L": 1276741.1572125435,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 79,
+   "vessel_name": "798_b030_s5",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 14367722.832030198,
+    "C": 7.781573238112562e-13,
+    "L": 1352223.1287659514,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 80,
+   "vessel_name": "798_b030_s6",
+   "vessel_length": 0.009963340024366872,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 14156578.952826746,
+    "C": 7.839389127834997e-13,
+    "L": 1342250.4150738553,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 81,
+   "vessel_name": "798_b030_s7",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12718488.185239734,
+    "C": 8.270726022328442e-13,
+    "L": 1272249.048312642,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 82,
+   "vessel_name": "798_b030_s8",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308514,
+    "C": 8.211337959816251e-13,
+    "L": 1281450.5214930198,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 83,
+   "vessel_name": "798_b030_s9",
+   "vessel_length": 0.009963340024366872,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308533,
+    "C": 8.211337959816263e-13,
+    "L": 1281450.5214930216,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 84,
+   "vessel_name": "798_b030_s10",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308514,
+    "C": 8.211337959816251e-13,
+    "L": 1281450.5214930198,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 85,
+   "vessel_name": "798_b030_s11",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308514,
+    "C": 8.211337959816251e-13,
+    "L": 1281450.5214930198,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 86,
+   "vessel_name": "798_b030_s12",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308514,
+    "C": 8.211337959816251e-13,
+    "L": 1281450.5214930198,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 87,
+   "vessel_name": "798_b030_s13",
+   "vessel_length": 0.009963340024366886,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.03830855,
+    "C": 8.211337959816273e-13,
+    "L": 1281450.5214930233,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 88,
+   "vessel_name": "798_b030_s14",
+   "vessel_length": 0.009963340024366829,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308477,
+    "C": 8.211337959816226e-13,
+    "L": 1281450.521493016,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 89,
+   "vessel_name": "798_b030_s15",
+   "vessel_length": 0.009963340024366886,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.03830855,
+    "C": 8.211337959816273e-13,
+    "L": 1281450.5214930233,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 90,
+   "vessel_name": "798_b030_s16",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308514,
+    "C": 8.211337959816251e-13,
+    "L": 1281450.5214930198,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 91,
+   "vessel_name": "798_b030_s17",
+   "vessel_length": 0.009963340024366859,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12903125.038308514,
+    "C": 8.211337959816251e-13,
+    "L": 1281450.5214930198,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_008"
+   }
+  },
+  {
+   "vessel_id": 92,
+   "vessel_name": "798_b031_s0",
+   "vessel_length": 0.008657979836849544,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 28655388.165868536,
+    "C": 4.463501234559187e-13,
+    "L": 1780177.6580993398,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 93,
+   "vessel_name": "798_b031_s1",
+   "vessel_length": 0.008657979836849544,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 24063079.92883748,
+    "C": 4.870832557878924e-13,
+    "L": 1631307.395654186,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_009"
+   }
+  },
+  {
+   "vessel_id": 94,
+   "vessel_name": "798_b032_s0",
+   "vessel_length": 0.007865185447196135,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 31711397.22524759,
+    "C": 3.67375096880533e-13,
+    "L": 1784900.8058169137,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_010"
+   }
+  },
+  {
+   "vessel_id": 95,
+   "vessel_name": "798_b033_s0",
+   "vessel_length": 0.010307773180321516,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 16824933.31389295,
+    "C": 7.567014330148105e-13,
+    "L": 1488370.3703910988,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 96,
+   "vessel_name": "798_b033_s1",
+   "vessel_length": 0.010307773180321516,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 16116245.236897403,
+    "C": 7.731598596217423e-13,
+    "L": 1456687.0979084866,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 97,
+   "vessel_name": "798_b033_s2",
+   "vessel_length": 0.010307773180321516,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15473367.45597701,
+    "C": 7.890577915623425e-13,
+    "L": 1427337.7744635642,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 98,
+   "vessel_name": "798_b033_s3",
+   "vessel_length": 0.010307773180321516,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15178057.656963067,
+    "C": 7.966969105938803e-13,
+    "L": 1413651.7628669965,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 99,
+   "vessel_name": "798_b033_s4",
+   "vessel_length": 0.010307773180321519,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 15178057.656963073,
+    "C": 7.966969105938805e-13,
+    "L": 1413651.762866997,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 100,
+   "vessel_name": "798_b033_s5",
+   "vessel_length": 0.010307773180321512,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 13408742.810862916,
+    "C": 8.476317226083614e-13,
+    "L": 1328704.3914142177,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 101,
+   "vessel_name": "798_b033_s6",
+   "vessel_length": 0.010307773180321512,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 6091149.956251782,
+    "C": 1.2576262292368177e-12,
+    "L": 895537.9316597003,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 102,
+   "vessel_name": "798_b033_s7",
+   "vessel_length": 0.010307773180321519,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3353210.8287391597,
+    "C": 1.6950042918849493e-12,
+    "L": 664453.7701313238,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 103,
+   "vessel_name": "798_b033_s8",
+   "vessel_length": 0.010307773180321533,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 2046470.6170376902,
+    "C": 2.1696939373288924e-12,
+    "L": 519083.34754267684,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 104,
+   "vessel_name": "798_b033_s9",
+   "vessel_length": 0.010307773180321505,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 3101701.9988249117,
+    "C": 1.7623866615562716e-12,
+    "L": 639049.3168719242,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 105,
+   "vessel_name": "798_b033_s10",
+   "vessel_length": 0.010307773180321505,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 8749437.933430808,
+    "C": 1.049327742017232e-12,
+    "L": 1073308.1257973937,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 106,
+   "vessel_name": "798_b033_s11",
+   "vessel_length": 0.010307773180321519,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 12139679.98855007,
+    "C": 8.908356999622295e-13,
+    "L": 1264264.5464023065,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 107,
+   "vessel_name": "798_b033_s12",
+   "vessel_length": 0.010307773180321519,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 11900573.212767152,
+    "C": 8.997405458945954e-13,
+    "L": 1251751.9603519898,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_011"
+   }
+  },
+  {
+   "vessel_id": 108,
+   "vessel_name": "798_b034_s0",
+   "vessel_length": 0.008769149844112692,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 18712519.38109386,
+    "C": 5.630203044039322e-13,
+    "L": 1447760.7235516682,
+    "stenosis_coefficient": 0.0
+   }
+  },
+  {
+   "vessel_id": 109,
+   "vessel_name": "798_b034_s1",
+   "vessel_length": 0.008769149844112692,
+   "zero_d_element_type": "BloodVessel",
+   "zero_d_element_values": {
+    "R_poiseuille": 17945465.734786406,
+    "C": 5.749271551220224e-13,
+    "L": 1417777.323642187,
+    "stenosis_coefficient": 0.0
+   },
+   "boundary_conditions": {
+    "outlet": "RCR_out_012"
+   }
+  }
+ ],
+ "junctions": [
+  {
+   "junction_name": "JN_J_000",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    0
+   ],
+   "outlet_vessels": [
+    1
+   ]
+  },
+  {
+   "junction_name": "JN_J_001",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    1
+   ],
+   "outlet_vessels": [
+    2
+   ]
+  },
+  {
+   "junction_name": "JN_J_002",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    2
+   ],
+   "outlet_vessels": [
+    3
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b003_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    3
+   ],
+   "outlet_vessels": [
+    4
+   ]
+  },
+  {
+   "junction_name": "JN_J_003",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    4
+   ],
+   "outlet_vessels": [
+    5
+   ]
+  },
+  {
+   "junction_name": "JN_J_004",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    5
+   ],
+   "outlet_vessels": [
+    6,
+    12
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b005_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    6
+   ],
+   "outlet_vessels": [
+    7
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b005_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    7
+   ],
+   "outlet_vessels": [
+    8
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b005_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    8
+   ],
+   "outlet_vessels": [
+    9
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b005_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    9
+   ],
+   "outlet_vessels": [
+    10
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b005_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    10
+   ],
+   "outlet_vessels": [
+    11
+   ]
+  },
+  {
+   "junction_name": "JN_J_005",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    11
+   ],
+   "outlet_vessels": [
+    13,
+    23
+   ]
+  },
+  {
+   "junction_name": "JN_J_006",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    12
+   ],
+   "outlet_vessels": [
+    25
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    13
+   ],
+   "outlet_vessels": [
+    14
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    14
+   ],
+   "outlet_vessels": [
+    15
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    15
+   ],
+   "outlet_vessels": [
+    16
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    16
+   ],
+   "outlet_vessels": [
+    17
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    17
+   ],
+   "outlet_vessels": [
+    18
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_5",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    18
+   ],
+   "outlet_vessels": [
+    19
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_6",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    19
+   ],
+   "outlet_vessels": [
+    20
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_7",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    20
+   ],
+   "outlet_vessels": [
+    21
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b007_8",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    21
+   ],
+   "outlet_vessels": [
+    22
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b008_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    23
+   ],
+   "outlet_vessels": [
+    24
+   ]
+  },
+  {
+   "junction_name": "JN_J_007",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    24
+   ],
+   "outlet_vessels": [
+    32,
+    37
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b009_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    25
+   ],
+   "outlet_vessels": [
+    26
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b009_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    26
+   ],
+   "outlet_vessels": [
+    27
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b009_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    27
+   ],
+   "outlet_vessels": [
+    28
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b009_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    28
+   ],
+   "outlet_vessels": [
+    29
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b009_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    29
+   ],
+   "outlet_vessels": [
+    30
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b009_5",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    30
+   ],
+   "outlet_vessels": [
+    31
+   ]
+  },
+  {
+   "junction_name": "JN_J_008",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    31
+   ],
+   "outlet_vessels": [
+    46,
+    47
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b010_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    32
+   ],
+   "outlet_vessels": [
+    33
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b010_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    33
+   ],
+   "outlet_vessels": [
+    34
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b010_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    34
+   ],
+   "outlet_vessels": [
+    35
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b010_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    35
+   ],
+   "outlet_vessels": [
+    36
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    37
+   ],
+   "outlet_vessels": [
+    38
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    38
+   ],
+   "outlet_vessels": [
+    39
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    39
+   ],
+   "outlet_vessels": [
+    40
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    40
+   ],
+   "outlet_vessels": [
+    41
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    41
+   ],
+   "outlet_vessels": [
+    42
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_5",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    42
+   ],
+   "outlet_vessels": [
+    43
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_6",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    43
+   ],
+   "outlet_vessels": [
+    44
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b011_7",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    44
+   ],
+   "outlet_vessels": [
+    45
+   ]
+  },
+  {
+   "junction_name": "JN_J_009",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    47
+   ],
+   "outlet_vessels": [
+    48,
+    50
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b014_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    48
+   ],
+   "outlet_vessels": [
+    49
+   ]
+  },
+  {
+   "junction_name": "JN_J_010",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    51
+   ],
+   "outlet_vessels": [
+    52,
+    53
+   ]
+  },
+  {
+   "junction_name": "JN_J_011",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    52
+   ],
+   "outlet_vessels": [
+    54
+   ]
+  },
+  {
+   "junction_name": "JN_J_012",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    53
+   ],
+   "outlet_vessels": [
+    55,
+    56
+   ]
+  },
+  {
+   "junction_name": "JN_J_013",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    54
+   ],
+   "outlet_vessels": [
+    57,
+    58
+   ]
+  },
+  {
+   "junction_name": "JN_J_014",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    55
+   ],
+   "outlet_vessels": [
+    59
+   ]
+  },
+  {
+   "junction_name": "JN_J_015",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    56
+   ],
+   "outlet_vessels": [
+    60
+   ]
+  },
+  {
+   "junction_name": "JN_J_016",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    57
+   ],
+   "outlet_vessels": [
+    68
+   ]
+  },
+  {
+   "junction_name": "JN_J_017",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    58
+   ],
+   "outlet_vessels": [
+    71
+   ]
+  },
+  {
+   "junction_name": "JN_J_018",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    59
+   ],
+   "outlet_vessels": [
+    72,
+    73
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    60
+   ],
+   "outlet_vessels": [
+    61
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    61
+   ],
+   "outlet_vessels": [
+    62
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    62
+   ],
+   "outlet_vessels": [
+    63
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    63
+   ],
+   "outlet_vessels": [
+    64
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    64
+   ],
+   "outlet_vessels": [
+    65
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_5",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    65
+   ],
+   "outlet_vessels": [
+    66
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b025_6",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    66
+   ],
+   "outlet_vessels": [
+    67
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b026_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    68
+   ],
+   "outlet_vessels": [
+    69
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b026_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    69
+   ],
+   "outlet_vessels": [
+    70
+   ]
+  },
+  {
+   "junction_name": "JN_J_019",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    70
+   ],
+   "outlet_vessels": [
+    74,
+    92
+   ]
+  },
+  {
+   "junction_name": "JN_J_020",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    71
+   ],
+   "outlet_vessels": [
+    94
+   ]
+  },
+  {
+   "junction_name": "JN_J_021",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    73
+   ],
+   "outlet_vessels": [
+    95,
+    108
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    74
+   ],
+   "outlet_vessels": [
+    75
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    75
+   ],
+   "outlet_vessels": [
+    76
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    76
+   ],
+   "outlet_vessels": [
+    77
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    77
+   ],
+   "outlet_vessels": [
+    78
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    78
+   ],
+   "outlet_vessels": [
+    79
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_5",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    79
+   ],
+   "outlet_vessels": [
+    80
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_6",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    80
+   ],
+   "outlet_vessels": [
+    81
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_7",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    81
+   ],
+   "outlet_vessels": [
+    82
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_8",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    82
+   ],
+   "outlet_vessels": [
+    83
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_9",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    83
+   ],
+   "outlet_vessels": [
+    84
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_10",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    84
+   ],
+   "outlet_vessels": [
+    85
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_11",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    85
+   ],
+   "outlet_vessels": [
+    86
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_12",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    86
+   ],
+   "outlet_vessels": [
+    87
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_13",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    87
+   ],
+   "outlet_vessels": [
+    88
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_14",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    88
+   ],
+   "outlet_vessels": [
+    89
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_15",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    89
+   ],
+   "outlet_vessels": [
+    90
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b030_16",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    90
+   ],
+   "outlet_vessels": [
+    91
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b031_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    92
+   ],
+   "outlet_vessels": [
+    93
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    95
+   ],
+   "outlet_vessels": [
+    96
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_1",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    96
+   ],
+   "outlet_vessels": [
+    97
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_2",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    97
+   ],
+   "outlet_vessels": [
+    98
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_3",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    98
+   ],
+   "outlet_vessels": [
+    99
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_4",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    99
+   ],
+   "outlet_vessels": [
+    100
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_5",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    100
+   ],
+   "outlet_vessels": [
+    101
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_6",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    101
+   ],
+   "outlet_vessels": [
+    102
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_7",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    102
+   ],
+   "outlet_vessels": [
+    103
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_8",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    103
+   ],
+   "outlet_vessels": [
+    104
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_9",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    104
+   ],
+   "outlet_vessels": [
+    105
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_10",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    105
+   ],
+   "outlet_vessels": [
+    106
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b033_11",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    106
+   ],
+   "outlet_vessels": [
+    107
+   ]
+  },
+  {
+   "junction_name": "JN_k_798_b034_0",
+   "junction_type": "NORMAL_JUNCTION",
+   "inlet_vessels": [
+    108
+   ],
+   "outlet_vessels": [
+    109
+   ]
+  }
+ ],
+ "boundary_conditions": [
+  {
+   "bc_name": "IN_root_0",
+   "bc_type": "FLOW",
+   "bc_values": {
+    "Q": [
+     5.807442229557781e-07,
+     5.807442229557781e-07,
+     5.44447709021042e-07,
+     5.44447709021042e-07,
+     5.44447709021042e-07
+    ],
+    "t": [
+     0.0,
+     1.999999,
+     2.0,
+     7.999999,
+     8.0
+    ]
+   }
+  },
+  {
+   "bc_name": "IN_root_1",
+   "bc_type": "FLOW",
+   "bc_values": {
+    "Q": [
+     3.419255777044222e-06,
+     3.419255777044222e-06,
+     3.205552290978958e-06,
+     3.205552290978958e-06,
+     3.205552290978958e-06
+    ],
+    "t": [
+     0.0,
+     1.999999,
+     2.0,
+     7.999999,
+     8.0
+    ]
+   }
+  },
+  {
+   "bc_name": "RCR_out_000",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 4182750352.4788933,
+    "C": 4.6487222056943364e-11,
+    "Rd": 37644753172.31004,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_001",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 4710141534.8116045,
+    "C": 4.1282081017597664e-11,
+    "Rd": 42391273813.304436,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_002",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 2066721562.1414723,
+    "C": 9.408352242813354e-11,
+    "Rd": 18600494059.273254,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_003",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 16533772497.131779,
+    "C": 1.1760440303516693e-11,
+    "Rd": 148803952474.18604,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_004",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 3123263865.607502,
+    "C": 6.225680980259519e-11,
+    "Rd": 28109374790.467514,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_005",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 11830604552.99299,
+    "C": 1.6435714977494744e-11,
+    "Rd": 106475440976.93694,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_006",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 11990452407.15756,
+    "C": 1.621660616645066e-11,
+    "Rd": 107914071664.41803,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_007",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 4037236298.497434,
+    "C": 4.816276038061289e-11,
+    "Rd": 36335126686.476906,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_008",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 2821934414.9237823,
+    "C": 6.890466462158945e-11,
+    "Rd": 25397409734.314037,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_009",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 4037236298.497434,
+    "C": 4.816276038061289e-11,
+    "Rd": 36335126686.476906,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_010",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 16533772497.131779,
+    "C": 1.1760440303516693e-11,
+    "Rd": 148803952474.18604,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_011",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 1578395560.4855397,
+    "C": 1.2319120080686884e-10,
+    "Rd": 14205560044.36986,
+    "Pd": 666.61184
+   }
+  },
+  {
+   "bc_name": "RCR_out_012",
+   "bc_type": "RCR",
+   "bc_values": {
+    "Rp": 3552726639.1577954,
+    "C": 5.4731045811770984e-11,
+    "Rd": 31974539752.42016,
+    "Pd": 666.61184
+   }
+  }
+ ]
+}

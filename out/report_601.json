@@ -36,5 +36,24 @@
     "glb_bytes": 1056532,
     "quantized": true,
     "decimator": "decimate_pro"
+  },
+  "transform": {
+    "space": "ras_mm->y_up_m",
+    "perm": [
+      0,
+      2,
+      1
+    ],
+    "sign": [
+      1.0,
+      1.0,
+      -1.0
+    ],
+    "scale_m_per_mm": 0.001,
+    "center_m": [
+      -0.012452704117965546,
+      -0.19065288472965553,
+      -0.1600902513491133
+    ]
   }
 }

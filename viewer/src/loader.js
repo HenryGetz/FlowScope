@@ -12,6 +12,26 @@ export function modelURL() {
 }
 
 /**
+ * Directory URL beside the resolved model (usually `viewer/public/assets/`):
+ * the default base for the C5 contrast payloads `case_{case}_{profile}_...`.
+ */
+export function assetsBaseURL() {
+  const url = new URL(modelURL(), document.baseURI);
+  return url.href.endsWith('/') ? url.href : `${url.href.slice(0, url.href.lastIndexOf('/') + 1)}`;
+}
+
+/**
+ * Contrast payload override (C5): `?payload=<url>` pointing at the metadata
+ * JSON, the contrast bin, or a base directory — empty when absent (then
+ * cfd_playback derives the names under `assetsBaseURL()`).
+ */
+export function payloadURL() {
+  const fromQuery = new URLSearchParams(window.location.search).get('payload');
+  const trimmed = fromQuery ? fromQuery.trim() : '';
+  return trimmed;
+}
+
+/**
  * Load a GLB (KHR_mesh_quantization decodes natively in GLTFLoader).
  * Resolves with the GLTF, rejects with an Error describing the failure.
  *
@@ -100,6 +120,9 @@ function decodeNormalizedAttributes(gltfScene) {
     const geometry = node.geometry;
     if (!geometry || !geometry.attributes) return;
     for (const key of Object.keys(geometry.attributes)) {
+      // Playback attributes (cfd_playback.js) must stay out of this Float32
+      // rewrite: they are uint8, un-normalized, and attached after decode.
+      if (key === 'aC0' || key === 'aC1') continue;
       const attr = geometry.attributes[key];
       if (!attr || attr.normalized !== true || typeof attr.getComponent !== 'function') continue;
       if (attr.isInterleavedBufferAttribute) continue;

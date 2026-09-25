@@ -25,6 +25,17 @@ const STYLE = `
 .fs-preset:hover:not(:disabled){background:#274b78}
 .fs-preset:disabled{opacity:.55;cursor:not-allowed}
 .fs-preset.fs-active{background:#2f6399;border-color:rgba(160,210,255,.6)}
+.fs-play{display:flex;align-items:center;gap:7px;margin:4px 0}
+.fs-play input[type=range]{flex:1;min-width:80px;accent-color:#ffb454}
+.fs-play-time{color:#9fb0c4;min-width:54px;text-align:right}
+.fs-btnrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:2px 0 6px}
+.fs-btn{padding:2px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#dfe5ee;font:inherit;cursor:pointer}
+.fs-btn:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.fs-btn.fs-on{background:#5a3a10;border-color:#c98a2e;color:#ffe1ad;font-weight:700}
+.fs-btn:disabled{opacity:.5;cursor:not-allowed}
+.fs-transit{color:#ffcf8a}
+.fs-cath{color:#cfe0f4;margin:2px 0 8px}
+.fs-cath>div{overflow-wrap:anywhere}
 .fs-session{width:100%;margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
 .fs-session:hover:not(:disabled){background:#274b78}
 .fs-session:disabled{opacity:.55;cursor:not-allowed}
@@ -66,11 +77,18 @@ function ensureStyle() {
  * swatch per GLB node name, coherent with the group state both ways), the MPR
  * section (Axial/Coronal/Sagittal preset buttons firing onPreset(name),
  * Window/Level sliders firing onWindowChange/onLevelChange in HU), the
- * Cross-section slider (0-100, fires onClipChange(offset01)) and the session
- * button (starts the configured immersive `mode` — immersive-ar by default,
- * `?xr=vr` on the loading link; fires onEnter()/onExit()). Also mirrors the
- * stats into the in-XR head-locked quad and hosts the
- * on-screen error banner. The MPR rows are disabled until setVolumeReady(true).
+ * Cross-section slider (0-100, fires onClipChange(offset01)), the Contrast
+ * playback HUD (scrub timeline + Play/Pause + Loop + speed 0.25/0.5/1/2 +
+ * profile A/B/C + distal transit-time readout, driven by setPlayback and the
+ * onPlay* callbacks), the Mode segmented control (data-fs="mode-a" Contrast
+ * Angiography / data-fs="mode-b" Hemodynamic Ischemia Map, contract D), the
+ * Navvus probe readout mirror (data-fs="cath-readout", setReadout) and the
+ * session button (starts the configured immersive `mode` — immersive-ar by
+ * default, `?xr=vr` on the loading link; fires onEnter()/onExit()). Also
+ * mirrors the stats (plus contrast time/transit when a payload is active)
+ * into the in-XR head-locked quad and hosts the on-screen error banner. The
+ * MPR rows are disabled until setVolumeReady(true). Also manages the pullback
+ * console (data-fs="pullback" canvas, shared with the in-XR texture plane).
  */
 export function createUI(
   container,
@@ -80,6 +98,12 @@ export function createUI(
     onToggleVisible,
     onToggleGroup = () => {},
     onClipChange = () => {},
+    onMode = () => {},
+    onPlayToggle = () => {},
+    onPlayLoop = () => {},
+    onPlaySpeed = () => {},
+    onPlayProfile = () => {},
+    onPlayScrub = () => {},
     onWindowChange = () => {},
     onLevelChange = () => {},
     onPreset = () => {},
@@ -99,6 +123,11 @@ export function createUI(
       <div data-fs="frame"></div>
       <div data-fs="tris"></div>
       <div data-fs="gpu"></div>
+    </div>
+    <div class="fs-section">Mode</div>
+    <div class="fs-btnrow">
+      <button class="fs-btn fs-on" type="button" data-fs="mode-a">Contrast Angiography</button>
+      <button class="fs-btn" type="button" data-fs="mode-b">Hemodynamic Ischemia Map</button>
     </div>
     <div class="fs-section">Groups</div>
     <div class="fs-groups"></div>
@@ -125,6 +154,32 @@ export function createUI(
       <input data-fs="clip" type="range" min="0" max="100" step="1" value="0" />
       <span class="fs-clip-pct" data-fs="clip-pct">0%</span>
     </div>
+    <div class="fs-section">Contrast</div>
+    <div class="fs-play">
+      <input data-fs="play-scrub" type="range" min="0" max="1000" step="1" value="0" disabled />
+      <span class="fs-play-time" data-fs="play-time">&mdash;</span>
+    </div>
+    <div class="fs-btnrow">
+      <button class="fs-btn" type="button" data-fs="play-toggle" disabled>Play</button>
+      <label class="fs-row"><input data-fs="play-loop" type="checkbox" checked disabled /><span class="fs-name">Loop</span></label>
+    </div>
+    <div class="fs-btnrow">
+      <button class="fs-btn" type="button" data-fs="play-speed" value="0.25">0.25&times;</button>
+      <button class="fs-btn" type="button" data-fs="play-speed" value="0.5">0.5&times;</button>
+      <button class="fs-btn fs-on" type="button" data-fs="play-speed" value="1">1&times;</button>
+      <button class="fs-btn" type="button" data-fs="play-speed" value="2">2&times;</button>
+    </div>
+    <div class="fs-btnrow">
+      <button class="fs-btn fs-on" type="button" data-fs="play-profile" value="A">A</button>
+      <button class="fs-btn" type="button" data-fs="play-profile" value="B">B</button>
+      <button class="fs-btn" type="button" data-fs="play-profile" value="C">C</button>
+    </div>
+    <div class="fs-clip">
+      <span class="fs-name">Transit</span>
+      <span class="fs-transit" data-fs="transit">&mdash;</span>
+    </div>
+    <div class="fs-section">Navvus Probe</div>
+    <div class="fs-cath" data-fs="cath-readout">&mdash;</div>
     <button class="fs-session" type="button">Enter AR</button>
   `;
   container.appendChild(panel);
@@ -147,6 +202,12 @@ export function createUI(
   const levelSlider = panel.querySelector('[data-fs="level"]');
   const levelPct = panel.querySelector('[data-fs="level-pct"]');
   const sessionButton = panel.querySelector('.fs-session');
+  const modeAButton = panel.querySelector('[data-fs="mode-a"]');
+  const modeBButton = panel.querySelector('[data-fs="mode-b"]');
+  const cathEl = panel.querySelector('[data-fs="cath-readout"]');
+  /** The one pullback canvas (DOM console + in-XR CanvasTexture source). */
+  const pullbackCanvas = container.querySelector('[data-fs="pullback"]');
+  const consoleEl = pullbackCanvas ? pullbackCanvas.parentElement : null;
   const checkboxes = new Map();
   const rowGroups = new Map();
   /** group -> { checkbox, members: [{ name, checkbox }] } */
@@ -212,6 +273,62 @@ export function createUI(
     });
   }
 
+  // ---- visualization mode (contract D, segmented control) ----------------
+  modeAButton.addEventListener('click', () => onMode('A'));
+  modeBButton.addEventListener('click', () => onMode('B'));
+
+  // ---- contrast playback (state-driven render, see setPlayback) -----------
+  const playScrub = panel.querySelector('[data-fs="play-scrub"]');
+  const playTime = panel.querySelector('[data-fs="play-time"]');
+  const playToggle = panel.querySelector('[data-fs="play-toggle"]');
+  const playLoop = panel.querySelector('[data-fs="play-loop"]');
+  const transitEl = panel.querySelector('[data-fs="transit"]');
+  const speedButtons = Array.from(panel.querySelectorAll('[data-fs="play-speed"]'));
+  const profileButtons = Array.from(panel.querySelectorAll('[data-fs="play-profile"]'));
+  /** Latest playback readout (null until a payload is active). */
+  let playState = null;
+
+  playScrub.addEventListener('input', () => {
+    onPlayScrub(Number(playScrub.value) / 1000);
+  });
+  playToggle.addEventListener('click', () => onPlayToggle());
+  playLoop.addEventListener('change', () => onPlayLoop(playLoop.checked));
+  for (const button of speedButtons) {
+    button.addEventListener('click', () => onPlaySpeed(Number(button.value)));
+  }
+  for (const button of profileButtons) {
+    button.addEventListener('click', () => onPlayProfile(button.value));
+  }
+
+  /** Render the Contrast HUD from the stored readout (also driven by tick). */
+  function renderPlayback() {
+    const available = !!(playState && playState.available);
+    playScrub.disabled = !available;
+    playToggle.disabled = !available;
+    playLoop.disabled = !available;
+    for (const button of speedButtons) button.disabled = !available;
+    for (const button of profileButtons) button.disabled = !available;
+    if (!available) {
+      playScrub.value = '0';
+      playTime.textContent = '—';
+      playToggle.textContent = 'Play';
+      transitEl.textContent = '—';
+      return;
+    }
+    playScrub.value = String(Math.round(Math.min(1, Math.max(0, playState.time01)) * 1000));
+    playTime.textContent = `${playState.t_s.toFixed(2)} s`;
+    playToggle.textContent = playState.playing ? 'Pause' : 'Play';
+    playLoop.checked = !!playState.loop;
+    for (const button of speedButtons) {
+      button.classList.toggle('fs-on', Number(button.value) === playState.speed);
+    }
+    for (const button of profileButtons) {
+      button.classList.toggle('fs-on', button.value === playState.profile);
+    }
+    transitEl.textContent =
+      playState.transitMs == null ? '—' : `${Math.round(playState.transitMs)} ms`;
+  }
+
   /** `gpu X.X ms` when a GPU timer sample exists, else `gpu n/a`. */
   function gpuLabel(gpuMs) {
     return gpuMs == null ? 'gpu n/a' : `gpu ${gpuMs.toFixed(1)} ms`;
@@ -225,12 +342,19 @@ export function createUI(
     frameEl.textContent = `frame ${frameMs.toFixed(1)} ms`;
     trisEl.textContent = `triangles ${tris.toLocaleString('en-US')}`;
     gpuEl.textContent = gpuText;
-    stage.setStatsText([
+    renderPlayback();
+    const stats = [
       `FPS ${fps.toFixed(1)}`,
       `frame ${frameMs.toFixed(1)} ms`,
       `triangles ${tris}`,
       gpuText,
-    ]);
+    ];
+    if (playState && playState.available) {
+      let line = `contrast t ${playState.t_s.toFixed(2)} s`;
+      if (playState.transitMs != null) line += `  transit ${Math.round(playState.transitMs)} ms`;
+      stats.push(line);
+    }
+    stage.setStatsText(stats);
   }
   setInterval(tick, 250);
   tick();
@@ -367,6 +491,41 @@ export function createUI(
       sessionState = { supported: !!supported, reason: reason || '' };
       renderSessionButton();
     },
+    /** Store the playback readout (or null) and refresh the Contrast HUD. */
+    setPlayback(state) {
+      playState = state;
+      renderPlayback();
+    },
+    setMode(mode) {
+      const next = mode === 'B' ? 'B' : 'A';
+      modeAButton.classList.toggle('fs-on', next === 'A');
+      modeBButton.classList.toggle('fs-on', next === 'B');
+    },
+    /**
+     * DOM mirror of the Navvus diagnostic card (contract D fields): styled
+     * text lines plus a `data-readout` JSON attribute for automation.
+     */
+    setReadout(readout, lines) {
+      cathEl.textContent = '';
+      if (!readout) {
+        cathEl.textContent = '—';
+        delete cathEl.dataset.readout;
+        return;
+      }
+      for (const line of lines) {
+        const row = document.createElement('div');
+        row.textContent = line.text;
+        if (line.color) row.style.color = line.color;
+        if (line.bold) row.style.fontWeight = '700';
+        cathEl.appendChild(row);
+      }
+      cathEl.dataset.readout = JSON.stringify(readout);
+    },
+    /** Pullback console visibility (desktop twin of the XR texture plane). */
+    setPullbackVisible(visible) {
+      if (consoleEl) consoleEl.hidden = !visible;
+    },
+    pullbackCanvas,
     /** Reflect the running session. */
     setActive(running) {
       active = !!running;
