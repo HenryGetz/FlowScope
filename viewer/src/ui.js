@@ -34,6 +34,7 @@ const STYLE = `
 .fs-btn.fs-on{background:#5a3a10;border-color:#c98a2e;color:#ffe1ad;font-weight:700}
 .fs-btn:disabled{opacity:.5;cursor:not-allowed}
 .fs-transit{color:#ffcf8a}
+.fs-transit-raw{color:#9fb0c4;font-size:10px;margin-left:6px}
 .fs-cath{color:#cfe0f4;margin:2px 0 8px}
 .fs-cath>div{overflow-wrap:anywhere}
 .fs-session{width:100%;margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid rgba(120,180,255,.35);background:#1d3a5f;color:#eaf2ff;font:inherit;font-weight:700;cursor:pointer}
@@ -79,8 +80,9 @@ function ensureStyle() {
  * Window/Level sliders firing onWindowChange/onLevelChange in HU), the
  * Cross-section slider (0-100, fires onClipChange(offset01)), the Contrast
  * playback HUD (scrub timeline + Play/Pause + Loop + speed 0.25/0.5/1/2 +
- * profile A/B/C + distal transit-time readout, driven by setPlayback and the
- * onPlay* callbacks), the Mode segmented control (data-fs="mode-a" Contrast
+ * profile A/B/C + calibrated tree transit readout — `X.XX s (cal)` with TFC,
+ * the raw transit only as a small secondary annotation (contract H), driven
+ * by setPlayback and the onPlay* callbacks), the Mode segmented control (data-fs="mode-a" Contrast
  * Angiography / data-fs="mode-b" Hemodynamic Ischemia Map, contract D), the
  * Navvus probe readout mirror (data-fs="cath-readout", setReadout) and the
  * session button (starts the configured immersive `mode` — immersive-ar by
@@ -300,6 +302,28 @@ export function createUI(
     button.addEventListener('click', () => onPlayProfile(button.value));
   }
 
+  /**
+   * Global transit label (contract H): the calibrated tree transit headlines
+   * (`X.XX s (cal)` with TFC = round(x * fps)); the raw value is a small
+   * secondary annotation only (e.g. `raw 11.6 s`) and a raw 15 s-scale value
+   * never headlines the label.
+   */
+  function renderTransit() {
+    const calS =
+      playState && Number.isFinite(playState.transitCalibratedS) ? playState.transitCalibratedS : null;
+    const rawS = playState && Number.isFinite(playState.transitRawS) ? playState.transitRawS : null;
+    const fps =
+      playState && Number.isFinite(playState.transitTfcFps) ? playState.transitTfcFps : 30;
+    transitEl.textContent =
+      calS === null ? '—' : `${calS.toFixed(2)} s (cal) · TFC ${Math.round(calS * fps)} f`;
+    if (rawS !== null) {
+      const note = document.createElement('span');
+      note.className = 'fs-transit-raw';
+      note.textContent = `raw ${rawS.toFixed(1)} s`;
+      transitEl.appendChild(note);
+    }
+  }
+
   /** Render the Contrast HUD from the stored readout (also driven by tick). */
   function renderPlayback() {
     const available = !!(playState && playState.available);
@@ -312,7 +336,7 @@ export function createUI(
       playScrub.value = '0';
       playTime.textContent = '—';
       playToggle.textContent = 'Play';
-      transitEl.textContent = '—';
+      renderTransit();
       return;
     }
     playScrub.value = String(Math.round(Math.min(1, Math.max(0, playState.time01)) * 1000));
@@ -325,8 +349,7 @@ export function createUI(
     for (const button of profileButtons) {
       button.classList.toggle('fs-on', button.value === playState.profile);
     }
-    transitEl.textContent =
-      playState.transitMs == null ? '—' : `${Math.round(playState.transitMs)} ms`;
+    renderTransit();
   }
 
   /** `gpu X.X ms` when a GPU timer sample exists, else `gpu n/a`. */
@@ -351,7 +374,15 @@ export function createUI(
     ];
     if (playState && playState.available) {
       let line = `contrast t ${playState.t_s.toFixed(2)} s`;
-      if (playState.transitMs != null) line += `  transit ${Math.round(playState.transitMs)} ms`;
+      // contract H: calibrated tree transit only — the raw value may appear
+      // as a small secondary annotation (panel label above), never here.
+      const calS = Number.isFinite(playState.transitCalibratedS)
+        ? playState.transitCalibratedS
+        : null;
+      if (calS !== null) {
+        const fps = Number.isFinite(playState.transitTfcFps) ? playState.transitTfcFps : 30;
+        line += `  transit ${calS.toFixed(2)} s (cal) · TFC ${Math.round(calS * fps)} f`;
+      }
       stats.push(line);
     }
     stage.setStatsText(stats);

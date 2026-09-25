@@ -233,28 +233,69 @@ function branchReadout(branch) {
 }
 
 /**
+ * Slowest finite `valueOf(row)` among the `major`/`distal` flagged rows (the
+ * established distal transit-time selection, root -> distal convective delay),
+ * falling back to every row when none is flagged. Null when no row yields a
+ * finite value; rows without one (JSON null on negligible-mean-flow branches)
+ * never win the selection. Ties keep the first row (payload order).
+ */
+function slowestDistalRow(rows, valueOf) {
+  const list = (rows || []).filter((row) => row && valueOf(row) !== null);
+  const prioritized = list.filter((row) => row.major || row.distal);
+  const pool = prioritized.length > 0 ? prioritized : list;
+  if (pool.length === 0) return null;
+  let best = pool[0];
+  for (const row of pool) {
+    if (valueOf(row) > valueOf(best)) best = row;
+  }
+  return best;
+}
+
+/**
  * Distal transit-time readout source (metadata `branches`): prioritize
  * `major`/`distal` flagged branches and report the slowest `transit_ms`
- * (root -> distal convective delay) among them. Rows without a finite
- * `transit_ms` (JSON null on negligible-mean-flow branches) never win the
- * selection; `readout` renders every nullable field of the selected row
- * (see branchReadout) so nulls surface as `n/a`, never `null ms`/NaN.
+ * (root -> distal convective delay) among them. `readout` renders every
+ * nullable field of the selected row (see branchReadout) so nulls surface as
+ * `n/a`, never `null ms`/NaN. `transitCalibratedMs` is the contract H
+ * counterpart — the same selection over the calibrated `transit_calibrated_ms`
+ * column, the global header fallback when no clinical payload is loaded.
  */
 function selectTransit(branches) {
-  const list = (branches || []).filter((b) => b && Number.isFinite(b.transit_ms));
-  const prioritized = list.filter((b) => b.major || b.distal);
-  const pool = prioritized.length > 0 ? prioritized : list;
-  if (pool.length === 0) {
-    return { transitMs: null, transitBranch: null, readout: branchReadout(null) };
-  }
-  let best = pool[0];
-  for (const branch of pool) {
-    if (branch.transit_ms > best.transit_ms) best = branch;
+  const best = slowestDistalRow(branches, (b) => numOrNull(b.transit_ms));
+  const calibrated = slowestDistalRow(branches, (b) => numOrNull(b.transit_calibrated_ms));
+  const transitCalibratedMs = calibrated ? numOrNull(calibrated.transit_calibrated_ms) : null;
+  if (!best) {
+    return {
+      transitMs: null,
+      transitBranch: null,
+      transitCalibratedMs,
+      readout: branchReadout(null),
+    };
   }
   return {
-    transitMs: best.transit_ms,
+    transitMs: numOrNull(best.transit_ms),
     transitBranch: best.name || null,
+    transitCalibratedMs,
     readout: branchReadout(best),
+  };
+}
+
+/**
+ * Calibrated tree transit (contract H) from the clinical payload's
+ * `branches[]` rows: the slowest distal `transit_calibrated_s` (signals-scale
+ * calibrated transit) with its raw pair from `transit_s` (alias of the
+ * pre-calibration `t_arr_s`). Both fields stay null on payloads that predate
+ * the calibrated columns — the caller then falls back to the contrast
+ * metadata `transit_calibrated_ms`.
+ */
+function clinicalTreeTransit(json) {
+  const rows = (json && json.branches) || [];
+  const rawOf = (row) => numOrNull(row.transit_s) ?? numOrNull(row.t_arr_s);
+  const calibratedRow = slowestDistalRow(rows, (row) => numOrNull(row.transit_calibrated_s));
+  const rawRow = slowestDistalRow(rows, rawOf);
+  return {
+    calibratedS: calibratedRow ? numOrNull(calibratedRow.transit_calibrated_s) : null,
+    rawS: rawRow ? rawOf(rawRow) : null,
   };
 }
 
@@ -301,7 +342,14 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
   let frameK = -1;
   let transitMs = null;
   let transitBranch = null;
+  let transitCalibratedMs = null;
   let transitReadout = branchReadout(null);
+  /**
+   * Contract H tree transit read from the clinical payload (attachVFFR):
+   * `{calibratedS, rawS, tfcFps}` — the preferred source of the global
+   * header transit, ahead of the contrast metadata fallback.
+   */
+  let clinicalTransit = { calibratedS: null, rawS: null, tfcFps: null };
   let lastEmit = '';
 
   // ---- shader / attributes (attach post-decode, never through the loader) --
@@ -415,13 +463,22 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
    * coronaries-group meshes matching `spec.vertices` (one mesh with that count,
    * or all of them concatenated in traversal order), else any single mesh with
    * exactly `spec.vertices` positions. Returns false (and warns) when nothing
-   * matches — the probe readout keeps working without the attribute.
+   * matches — the probe readout keeps working without the attribute. Also
+   * records the clinical payload's calibrated tree transit (contract H) for
+   * the Contrast HUD header — done first so the header keeps working even
+   * when the attribute itself cannot be attached.
    *
    * @param {Float32Array} vffr dequantized `vertex_vffr_u8` (see loadClinical)
    * @param {object} spec contract D payload (for `vertices`/`meshes`)
    * @returns {boolean} attribute attached
    */
   function attachVFFR(vffr, spec) {
+    const tree = clinicalTreeTransit(spec);
+    clinicalTransit = {
+      calibratedS: tree.calibratedS,
+      rawS: tree.rawS,
+      tfcFps: numOrNull(spec && spec.tfc && spec.tfc.fps) || DEFAULT_TFC_FPS,
+    };
     const total = Number(spec && spec.vertices) || vffr.length;
     if (!vffr || vffr.length !== total) {
       console.warn('[cfd_playback] vFFR length does not match clinical vertices:', total);
@@ -607,9 +664,32 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
 
   // ---- readout ------------------------------------------------------------
 
+  /**
+   * Global tree transit for the HUD header (contract H): the clinical
+   * payload's calibrated `transit_calibrated_s` (attachVFFR) first, else the
+   * contrast metadata's `transit_calibrated_ms`; null when neither exists
+   * (the header then renders no headline instead of a raw 15 s-scale value).
+   */
+  function headerCalibratedS() {
+    if (clinicalTransit.calibratedS !== null) return clinicalTransit.calibratedS;
+    return transitCalibratedMs === null ? null : transitCalibratedMs / 1000;
+  }
+
+  /**
+   * Raw tree transit (s) paired with `headerCalibratedS` — a small secondary
+   * annotation only (e.g. `raw 11.6 s`), never the headline transit.
+   */
+  function headerRawS() {
+    if (clinicalTransit.rawS !== null) return clinicalTransit.rawS;
+    return transitMs === null ? null : transitMs / 1000;
+  }
+
   function emit() {
     const duration_s = payload ? payload.duration : 0;
     const t_s = payload ? payload.t0 + clamp01(time01) * duration_s : 0;
+    const transitCalibratedS = headerCalibratedS();
+    const transitRawS = headerRawS();
+    const transitTfcFps = clinicalTransit.tfcFps || DEFAULT_TFC_FPS;
     const signature = [
       !!payload,
       playing,
@@ -619,6 +699,9 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
       profile,
       transitMs,
       transitBranch,
+      transitCalibratedS,
+      transitRawS,
+      transitTfcFps,
       transitReadout.arrival,
       transitReadout.peak,
       transitReadout.frames,
@@ -636,6 +719,9 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
       transitMs,
       transitBranch,
       transitReadout,
+      transitCalibratedS,
+      transitRawS,
+      transitTfcFps,
       t_s,
       duration_s,
     });
@@ -650,6 +736,7 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
     const transit = selectTransit(next.meta.branches);
     transitMs = transit.transitMs;
     transitBranch = transit.transitBranch;
+    transitCalibratedMs = transit.transitCalibratedMs;
     transitReadout = transit.readout;
     frameK = -1;
     applyActivation();
@@ -807,7 +894,9 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
     materials.length = 0;
     transitMs = null;
     transitBranch = null;
+    transitCalibratedMs = null;
     transitReadout = branchReadout(null);
+    clinicalTransit = { calibratedS: null, rawS: null, tfcFps: null };
     emit();
   }
 
@@ -824,6 +913,9 @@ export function createCfdPlayback({ scene, stage, gltf, assetsBase, onReadout = 
       transitMs,
       transitBranch,
       transitReadout,
+      transitCalibratedS: headerCalibratedS(),
+      transitRawS: headerRawS(),
+      transitTfcFps: clinicalTransit.tfcFps || DEFAULT_TFC_FPS,
       t_s: payload ? payload.t0 + clamp01(time01) * duration_s : 0,
       duration_s,
     };
@@ -1116,13 +1208,23 @@ export function createClinicalModel(json) {
   /**
    * Navvus readout fields for the probe (contract D card): vessel label /
    * branch_id, local lumen `d_mm` + stenosis `%AS` (lesion containing s, else
-   * 0 / the local `d_mm` profile), `Pa` (pullback `P_rest_mmHg` proximal),
-   * `Pd` (local `P_hyper_mmHg`), trans-lesion `dP` (`lesions[].dp_hyper_mmHg`
-   * inside a lesion), vFFR (local `vFFR` profile, else the branch row) and
-   * the distal bolus transit `t_arr_s` / `tfc_frames` from the branch row.
-   * Missing fields render as null (`n/a`). The profile columns (`d_mm`,
-   * `P_hyper_mmHg`, `vFFR`) are indexed through `sAbsFor` — the probe's
-   * edge-local `s_mm` mapped into the pullback's path-absolute frame.
+   * 0 / the local `d_mm` profile), the Pa/Pd/dP/vFFR quartet and the distal
+   * bolus transit `t_arr_s` / `tfc_frames` (calibrated pair
+   * `transit_calibrated_s` / `tfc_calibrated_frames`) from the branch row.
+   *
+   * The quartet resolves through the contract H chain at this single site
+   * (the Navvus card canvas and its `data-fs="cath-readout"` mirror both
+   * render this readout): (1) the mapped pullback station columns — Pa is
+   * the pullback's proximal `P_rest_mmHg`, Pd the local `P_hyper_mmHg`, dP
+   * the local `delta_p_mmHg` (= Pa - Pd) and vFFR the local `vFFR`; (2) the
+   * branch/lesion row quartet (`p_aorta_mmHg` / `p_distal_mmHg` /
+   * `delta_p_mmHg` / `vffr`, legacy `Pa` / `Pd` / `dP` / `dp_hyper_mmHg`
+   * aliases, the lesion row first inside a lesion); (3) derivation from what
+   * is known — `dP = Pa - Pd`, `vFFR = Pd / Pa`. Fields render `n/a` only
+   * when every source is absent. The profile columns (`d_mm`,
+   * `P_hyper_mmHg`, `vFFR`, `delta_p_mmHg`) are indexed through `sAbsFor` —
+   * the probe's edge-local `s_mm` mapped into the pullback's path-absolute
+   * frame (works for any `pullbacks[]` entry, side paths included).
    */
   function readoutFor(probe, pullback) {
     const branch = probe.branch || {};
@@ -1134,8 +1236,44 @@ export function createClinicalModel(json) {
     const dProfile = local(pullback && pullback.d_mm);
     const dLesion = lesion ? numOrNull(lesion.d_min_mm) : null;
     const dBranch = numOrNull(branch.d_mm);
-    const vProfile = local(pullback && pullback.vFFR);
-    const vBranch = numOrNull(branch.vffr);
+    // (1) mapped pullback station columns
+    const sPa = hasPullback ? firstFinite(pullback.P_rest_mmHg) : null;
+    const sPd = local(pullback && pullback.P_hyper_mmHg);
+    const sDp = local(pullback && pullback.delta_p_mmHg);
+    const sV = local(pullback && pullback.vFFR);
+    // (2) branch/lesion row quartet (contract E names + legacy aliases)
+    const rowNum = (names) => {
+      for (const node of lesion ? [lesion, branch] : [branch]) {
+        for (const name of names) {
+          const value = numOrNull(node[name]);
+          if (value !== null) return value;
+        }
+      }
+      return null;
+    };
+    const rPa = rowNum(['p_aorta_mmHg', 'Pa']);
+    const rPd = rowNum(['p_distal_mmHg', 'Pd']);
+    const rDp = rowNum(['delta_p_mmHg', 'dP', 'dp_hyper_mmHg']);
+    const rV = rowNum(['vffr']);
+    // (3) derivation: dP = Pa - Pd, vFFR = Pd / Pa
+    const pa_mmHg = sPa !== null ? sPa : rPa;
+    const pd_mmHg = sPd !== null ? sPd : rPd;
+    const dp_mmHg =
+      sDp !== null
+        ? sDp
+        : rDp !== null
+          ? rDp
+          : pa_mmHg !== null && pd_mmHg !== null
+            ? +(pa_mmHg - pd_mmHg).toFixed(1)
+            : null;
+    const vffr =
+      sV !== null
+        ? sV
+        : rV !== null
+          ? rV
+          : pa_mmHg !== null && pd_mmHg !== null && pa_mmHg > 0
+            ? +(pd_mmHg / pa_mmHg).toFixed(2)
+            : null;
     return {
       label: branch.label || null,
       branch_id: probe.branch_id,
@@ -1143,17 +1281,35 @@ export function createClinicalModel(json) {
       d_mm: dProfile !== null ? dProfile : dLesion !== null ? dLesion : dBranch,
       as_pct: lesion ? numOrNull(lesion.as_pct) || 0 : 0,
       lesion_id: lesion ? lesion.lesion_id : null,
-      pa_mmHg: hasPullback ? firstFinite(pullback.P_rest_mmHg) : null,
-      pd_mmHg: local(pullback && pullback.P_hyper_mmHg),
-      dp_mmHg: lesion ? numOrNull(lesion.dp_hyper_mmHg) : null,
-      vffr: vProfile !== null ? vProfile : vBranch,
+      pa_mmHg,
+      pd_mmHg,
+      dp_mmHg,
+      vffr,
       t_arr_s: numOrNull(branch.t_arr_s),
       tfc_frames: numOrNull(branch.tfc_frames),
+      transit_calibrated_s: numOrNull(branch.transit_calibrated_s),
+      tfc_calibrated_frames: numOrNull(branch.tfc_calibrated_frames),
       tfc_fps: tfcFps,
     };
   }
 
   return { probeAt, readoutFor, pullbackFor, pullbackById };
+}
+
+/**
+ * Card transit line for one readout: the calibrated tree-to-node transit
+ * `transit_calibrated_s` / `tfc_calibrated_frames` when the branch row has
+ * them (contract H: raw values must not headline where calibrated ones
+ * belong), else the raw distal bolus transit `t_arr_s` / `tfc_frames`.
+ */
+function transitCardLine(r) {
+  const calibratedS = numOrNull(r.transit_calibrated_s);
+  if (calibratedS !== null) {
+    const fps = numOrNull(r.tfc_fps) || DEFAULT_TFC_FPS;
+    const frames = numOrNull(r.tfc_calibrated_frames) ?? Math.round(calibratedS * fps);
+    return `t_arr ${calibratedS.toFixed(2)} s (cal) · TFC ${frames} f @ ${fps} fps`;
+  }
+  return `t_arr ${fmtNum(r.t_arr_s, 2)} s · TFC ${fmtNum(r.tfc_frames, 0)} f @ ${fmtNum(r.tfc_fps, 0)} fps`;
 }
 
 /**
@@ -1178,11 +1334,7 @@ export function cathCardLines(readout) {
       bold: true,
       color: vffr === null ? null : vffr <= VFFR_THRESHOLD ? VFFR_COLOR_RED : VFFR_COLOR_GREEN,
     },
-    {
-      text:
-        `t_arr ${fmtNum(r.t_arr_s, 2)} s · TFC ${fmtNum(r.tfc_frames, 0)} f ` +
-        `@ ${fmtNum(r.tfc_fps, 0)} fps`,
-    },
+    { text: transitCardLine(r) },
   ];
 }
 
