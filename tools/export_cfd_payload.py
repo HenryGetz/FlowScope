@@ -417,6 +417,10 @@ def _branches_meta(hemo: dict, graph: dict, profile: str) -> list[dict]:
                 # division guards Q_EPS_MLS/Q_MEAN_MIN_MLS upstream) pass through
                 # as JSON null — never a float coercion of None, never 0.0.
                 'transit_ms': None if rec['transit_ms'] is None else float(rec['transit_ms']),
+                # add-only: kappa-calibrated transit (ms), null when the C2
+                # signals record carries none (older hemodynamics.json).
+                'transit_calibrated_ms': (None if rec.get('transit_calibrated_ms') is None
+                                          else float(rec['transit_calibrated_ms'])),
                 't_arrival_ms': (None if rec['t_arrival_s'] is None
                                  else float(rec['t_arrival_s']) * 1e3),
                 't_peak_ms': (None if rec['t_peak_s'] is None

@@ -19,14 +19,30 @@ vertices the viewer raycasts in — despite the legacy ``_ras`` names. RAS-mm ma
 runs through ``_model_to_ras``; graph ``points_mm`` (RAS mm) are mapped INTO the
 model frame with the forward map that ``_model_to_ras`` inverts.
 
-Per-vertex vFFR: every vertex is associated to the nearest 1 mm centerline station
-(cKDTree, like the contrast exporter's sampling) and takes that station's vFFR from
-the rxi pullback when its edge lies on a path (interp at the station), else the
-branch's hyperemic distal vFFR. Quantization:
-``u8 = round((clip(vffr, 0.4, 1.0) - 0.4) / 0.6 * 255)``.
+Per-vertex vFFR: every vertex is first associated to its OWN branch (the graph
+edge whose centerline polyline is exactly nearest, point-to-segment) and then to
+the nearest 1 mm centerline station of that branch only (per-branch cKDTree, like
+the contrast exporter's sampling) — a side-branch vertex can never be stolen by a
+neighbouring branch's ostial station, and every graph edge contributes stations
+(no unassigned indices). The station's vFFR comes from the rxi pullback when its
+edge lies on a path (interp at the station), else the branch's hyperemic distal
+vFFR. Per-branch vertex counts are printed as the association proof.
+Quantization: ``u8 = round((clip(vffr, 0.4, 1.0) - 0.4) / 0.6 * 255)``.
 
-Rounding: coords 1e-6 m, pressures 0.01 mmHg, vFFR/Pd/Pa 0.001, geometry/times 0.001.
-Hard failure over 2 MB per emitted file.
+Contract E (standardized node fields): every branches[]/lesions[] row carries the
+quartet ``p_aorta_mmHg`` (clinical.pa_mmHg), ``p_distal_mmHg`` (branch: solved
+hyperemic p_dist_mmHg, rest fallback; lesion: the Pd behind its vffr =
+vffr * pa), ``delta_p_mmHg`` (branch: pa - p_distal; lesion: Young-Tsai
+dp_hyper_mmHg) and ``vffr``; per-branch rows add ``transit_s`` (alias of
+``t_arr_s``), ``transit_calibrated_s`` (signals.A transit_calibrated_ms),
+``tfc_calibrated_frames`` and ``u_m_s`` (clinical.hyper.branches u_m_s).
+Contract G: ``pullbacks[]`` carries every rxi path — primary ``paths[]`` then
+``side_paths[]`` — each flagged with ``primary`` and columnar
+``s_mm/d_mm/P_rest_mmHg/P_hyper_mmHg/vFFR/delta_p_mmHg`` where
+``delta_p_mmHg[i] = p_aorta_mmHg - P_hyper_mmHg[i]``.
+
+Rounding: coords 1e-6 m, pressures 0.01 mmHg, vFFR/Pd/Pa 0.001, geometry/times
+0.001, velocity 1e-6 m/s. Hard failure over 2 MB per emitted file.
 """
 
 from __future__ import annotations
@@ -167,6 +183,32 @@ def _resample(edge: dict, s: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return xyz, np.interp(sc, arc, _edge_radius(edge))
 
 
+def _nearest_branch(x_mm: np.ndarray, edges: list[dict], chunk: int = 2048
+                    ) -> tuple[np.ndarray, np.ndarray]:
+    """Exact per-vertex own-branch association: for each vertex the index of the
+    graph edge whose centerline polyline (point-to-segment) is nearest, plus that
+    distance in mm. Chunked over vertices to bound the temporaries."""
+    best_d = np.full(x_mm.shape[0], np.inf, dtype=np.float64)
+    best_i = np.zeros(x_mm.shape[0], dtype=np.int64)
+    for i, edge in enumerate(edges):
+        pts = np.asarray(edge['points_mm'], dtype=np.float64)
+        a, b = pts[:-1], pts[1:]
+        ab = b - a
+        ab2 = np.maximum(np.einsum('ij,ij->i', ab, ab), 1e-18)
+        for lo in range(0, x_mm.shape[0], chunk):
+            x = x_mm[lo:lo + chunk]
+            t = np.clip(np.einsum('nsc,sc->ns', x[:, None, :] - a[None], ab) / ab2,
+                        0.0, 1.0)
+            proj = a[None] + t[:, :, None] * ab[None]
+            d = np.sqrt(((x[:, None, :] - proj) ** 2).sum(axis=2)).min(axis=1)
+            bd = best_d[lo:lo + chunk]   # views: the updates land in best_d/best_i
+            bi = best_i[lo:lo + chunk]
+            sel = d < bd
+            bd[sel] = d[sel]
+            bi[sel] = i
+    return best_i, best_d
+
+
 class _EdgeIndex:
     """Graph-edge lookup with exact / casefold / alnum fallbacks."""
 
@@ -233,23 +275,23 @@ def _case_payload(case: str, args, t0: float) -> dict:
     vertices = int(v_m.shape[0])
     x_mm = _model_to_ras(v_m, transform)
 
-    # ---- 1 mm centerline stations over every edge + per-station vFFR
+    # ---- 1 mm centerline stations over every graph edge + per-station vFFR
     rows = _branches_meta(hemo, graph, 'A')   # C2 branch naming (contract C5 helper)
     flag_index = _edge_flags(graph)
     paths = rxi.get('paths') or []
+    side_paths = rxi.get('side_paths') or []
+    all_paths = [(path, True) for path in paths] + [(path, False) for path in side_paths]
     path_of_edge: dict[str, tuple[dict, float]] = {}
-    for path in paths:
+    for path, _primary in all_paths:
         offset = 0.0
         for name in path.get('branch_ids') or []:
             path_of_edge.setdefault(name, (path, offset))
             offset += float(edge_index.get(name)['length_mm'])
 
-    st_xyz, st_vffr, branch_geom = [], [], {}
-    for row in rows:
-        name = row['name']
-        edge = edge_index.get(name)
-        length = float(edge['length_mm'])
-        s = _stations(length)
+    edge_stations, branch_geom = [], {}
+    for edge in edges:
+        name = edge['name']
+        s = _stations(float(edge['length_mm']))
         xyz, radius = _resample(edge, s)
         hit = path_of_edge.get(name)
         if hit is not None:
@@ -261,17 +303,40 @@ def _case_payload(case: str, args, t0: float) -> dict:
                              left=v_arr[0], right=v_arr[-1])
         else:
             vffr = np.full(s.size, _hyper_vffr(clin, name))
-        st_xyz.append(xyz)
-        st_vffr.append(vffr)
-        branch_geom[name] = (s, xyz, radius, edge, row)
+        edge_stations.append((xyz, vffr))
+        branch_geom[name] = (s, xyz, radius, edge)
 
-    st_xyz = np.concatenate(st_xyz, axis=0)
-    st_vffr = np.concatenate(st_vffr, axis=0)
-    tree = cKDTree(st_xyz)
-    _, nearest = tree.query(x_mm, k=1)
-    v_vert = np.clip(st_vffr[nearest], VFFR_MIN, VFFR_MAX)
+    # Vertex association: every vertex is bound to its OWN branch first (exact
+    # point-to-segment distance over every graph edge) and only then to that
+    # branch's nearest 1 mm station (per-branch cKDTree). A side-branch vertex
+    # can never be stolen by a neighbouring branch's ostial station, and since
+    # all edges contribute stations there is no unassigned index either.
+    branch_of_vertex, _dist = _nearest_branch(x_mm, edges)
+    v_vert = np.empty(vertices, dtype=np.float64)
+    assoc_counts = []
+    for i, edge in enumerate(edges):
+        sel = np.nonzero(branch_of_vertex == i)[0]
+        assoc_counts.append((edge['name'], int(sel.size)))
+        if sel.size == 0:
+            continue
+        st_xyz, st_vffr = edge_stations[i]
+        tree = cKDTree(st_xyz)
+        _, nearest = tree.query(x_mm[sel], k=1)
+        v_vert[sel] = st_vffr[nearest]
+    print('  vertex->branch: '
+          + ', '.join(f'{name}={count}' for name, count in assoc_counts))
+    v_vert = np.clip(v_vert, VFFR_MIN, VFFR_MAX)
     u8 = np.rint((v_vert - VFFR_MIN) / (VFFR_MAX - VFFR_MIN) * 255.0).astype(np.uint8)
     vertex_vffr_u8 = base64.b64encode(u8.tobytes()).decode('ascii')
+
+    # ---- contract E: mean aortic pressure (clinical.pa_mmHg; derivation from
+    # the solved mean inlet pressure when the clinical block lacks the key)
+    pa = clin.get('pa_mmHg')
+    if not isinstance(pa, (int, float)):
+        pa = (hemo.get('physiology') or {}).get('p_mean_mmHg')
+    if not isinstance(pa, (int, float)):
+        _fail(f'{hemo_path}: clinical.pa_mmHg: expected a number')
+    p_aorta = _round(pa, 2)
 
     # ---- lesions (contract A geometry + contract B hyperemic metrics)
     clin_lesions = clin.get('lesions') or {}
@@ -291,6 +356,7 @@ def _case_payload(case: str, args, t0: float) -> dict:
         edge = edge_index.get(lesion['branch_id'])
         xyz, _ = _resample(edge, np.asarray([float(lesion['s_mm'])]))
         loc = _ras_to_model(xyz, transform)[0]
+        dp_hyper = _round(metrics['dp_hyper_mmHg'], 2)
         lesions.append({
             'lesion_id': lesion['lesion_id'],
             'branch_id': lesion['branch_id'],
@@ -300,29 +366,53 @@ def _case_payload(case: str, args, t0: float) -> dict:
             'dia_reduction_pct': _round(lesion['dia_reduction_pct'], 3),
             'd_ref_mm': _round(lesion['d_ref_mm'], 3),
             'd_min_mm': _round(lesion['d_min_mm'], 3),
-            'dp_hyper_mmHg': _round(metrics['dp_hyper_mmHg'], 2),
+            'dp_hyper_mmHg': dp_hyper,
+            'p_aorta_mmHg': p_aorta,
+            # the Pd sampled >= 20 mm distal of the lesion, i.e. the same solver
+            # value behind its vffr (vffr = Pd / Pa)
+            'p_distal_mmHg': _round(float(metrics['vffr']) * pa, 2),
+            'delta_p_mmHg': dp_hyper,
             'vffr': _vffr_scalar(metrics['vffr']),
             'location_xyz_ras': [_round(v, 6) for v in loc],
         })
 
-    # ---- branches (C2 naming via _branches_meta, C1 geometry + flags)
+    # ---- branches (C2 naming via _branches_meta, C1 geometry + flags +
+    # contract E standardized quartet and calibrated transit fields)
     branches = []
     for row in rows:
         name = row['name']
-        s, xyz, radius, _edge, _ = branch_geom[name]
+        edge = edge_index.get(name)
+        s, xyz, radius, _edge = branch_geom[edge['name']]
         rest_rec = ((clin.get('rest') or {}).get('branches') or {}).get(name)
         if rest_rec is None or not isinstance(rest_rec.get('pd_pa'), (int, float)):
             _fail(f'{hemo_path}: clinical.rest.branches[{name}].pd_pa: expected a number')
+        hyper_rec = ((clin.get('hyper') or {}).get('branches') or {}).get(name) or {}
+        p_dist = hyper_rec.get('p_dist_mmHg')
+        if not isinstance(p_dist, (int, float)):
+            p_dist = rest_rec.get('p_dist_mmHg')   # contract E fallback: rest p_dist
+        p_distal = None if not isinstance(p_dist, (int, float)) else _round(p_dist, 2)
+        u_m_s = hyper_rec.get('u_m_s')
         flags = _lookup_flags(flag_index, name)
         t_arr = (None if row['transit_ms'] is None else _round(row['transit_ms'] * 1e-3, 3))
+        t_cal = (None if row.get('transit_calibrated_ms') is None
+                 else _round(row['transit_calibrated_ms'] * 1e-3, 3))
         xyz_model = _ras_to_model(xyz, transform)
         branches.append({
             'branch_id': name,
             'label': name,
+            'p_aorta_mmHg': p_aorta,
+            'p_distal_mmHg': p_distal,
+            'delta_p_mmHg': (None if p_distal is None
+                             else _round(p_aorta - p_distal, 2)),
             'vffr': _vffr_scalar(_hyper_vffr(clin, name)),
             'pd_pa_rest': _round(rest_rec['pd_pa'], 3),
             't_arr_s': t_arr,
+            'transit_s': t_arr,
+            'transit_calibrated_s': t_cal,
             'tfc_frames': None if t_arr is None else _frames(t_arr),
+            'tfc_calibrated_frames': None if t_cal is None else _frames(t_cal),
+            'u_m_s': (None if not isinstance(u_m_s, (int, float))
+                      else _round(u_m_s, 6)),
             'd_mm': _round(float(np.mean(2.0 * radius)), 3),
             'major': bool(flags.get('major', False)),
             'distal': bool(flags.get('distal', False)),
@@ -330,20 +420,23 @@ def _case_payload(case: str, args, t0: float) -> dict:
             'centerline_s_mm': [_round(v, 3) for v in s],
         })
 
-    # ---- pullbacks (contract C columns) + TFC landmarks
-    pullbacks = [
-        {
+    # ---- pullbacks (contract C/G columns; every rxi path — primary paths[] then
+    # side_paths[] — with the primary flag; delta_p_mmHg = pa - P_hyper per station)
+    pullbacks = []
+    for path, primary in all_paths:
+        p_hyper = [_round(row['P_hyper_mmHg'], 2) for row in path['pullback']]
+        pullbacks.append({
             'path_id': path['path_id'],
             'label': path['label'],
             'branch_ids': path['branch_ids'],
+            'primary': bool(primary),
             's_mm': [_round(row['s_mm'], 3) for row in path['pullback']],
             'd_mm': [_round(row['d_mm'], 3) for row in path['pullback']],
             'P_rest_mmHg': [_round(row['P_rest_mmHg'], 2) for row in path['pullback']],
-            'P_hyper_mmHg': [_round(row['P_hyper_mmHg'], 2) for row in path['pullback']],
+            'P_hyper_mmHg': p_hyper,
             'vFFR': [_vffr_scalar(row['vFFR']) for row in path['pullback']],
-        }
-        for path in paths
-    ]
+            'delta_p_mmHg': [_round(p_aorta - v, 2) for v in p_hyper],
+        })
 
     generated = datetime.now(timezone.utc).isoformat()
     return {
