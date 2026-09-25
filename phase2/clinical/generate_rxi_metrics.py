@@ -13,6 +13,14 @@ Output (one per case):
 Method (contract C):
   * paths    : the 3 longest root-to-tip edge chains of the C1 DAG (walk over
                parent_edge/child_edges), branch_ids proximal -> distal.
+  * side_paths (contract F): every remaining root-to-tip chain (path_4..N),
+               same item shape as ``paths[]``; their pullback rows add the
+               contract E column ``delta_p_mmHg = Pa - P_hyper_mmHg`` at source
+               precision.  ``paths[]`` stays byte-stable (its rows keep exactly
+               s_mm/d_mm/P_rest_mmHg/P_hyper_mmHg/vFFR) and dp_ds / landmarks /
+               transit_anomaly / tfc remain primary-only.  The union of
+               ``branch_ids`` over paths[] + side_paths[] must equal every graph
+               edge name (asserted).
   * pullback : 1 mm stations from the ostium to the distal tip (plus exact
                tip and edge-junction stations). P_rest/P_hyper redistribute each
                edge's solved C2 drop (its coupled stenosis loss is already inside
@@ -215,13 +223,12 @@ def _root_to_tip_chains(edges: list[dict]) -> list[list[dict]]:
     return chains
 
 
-def _pick_paths(chains: list[list[dict]], n_paths: int) -> list[list[dict]]:
-    """The longest root-to-tip chains; ties broken deterministically by branch names."""
+def _order_chains(chains: list[list[dict]]) -> list[list[dict]]:
+    """Root-to-tip chains longest-first; ties broken deterministically by branch names."""
     def total(chain):
         return sum(float(e['length_mm']) for e in chain)
 
-    ordered = sorted(chains, key=lambda c: (-total(c), tuple(e['name'] for e in c)))
-    return ordered[:n_paths]
+    return sorted(chains, key=lambda c: (-total(c), tuple(e['name'] for e in c)))
 
 
 def _stations(length_mm: float) -> np.ndarray:
@@ -435,7 +442,7 @@ def _station_transit_s(sig_branches: dict, branch: str) -> float:
 
 def _build_path(path_no: int, chain: list[dict], clin: dict, lesions: list[dict],
                 edge_index: _NameIndex, sig_branches: dict, pa_mmHg: float,
-                vc: dict) -> tuple[dict, dict, list, dict]:
+                vc: dict, primary: bool = True) -> tuple[dict, dict, list, dict]:
     branch_ids = [e['name'] for e in chain]
     lengths = np.asarray([float(e['length_mm']) for e in chain], dtype=np.float64)
     offsets = np.concatenate([[0.0], np.cumsum(lengths)])
@@ -524,26 +531,35 @@ def _build_path(path_no: int, chain: list[dict], clin: dict, lesions: list[dict]
 
     vffr = p_state['hyper'] / pa_mmHg  # P in (0, Pa] asserted -> vFFR in (0, 1]
 
-    pullback = [
-        {
+    pullback = []
+    for i, s in enumerate(stations):
+        row = {
             's_mm': _round(s, 3),
             'd_mm': _round(d_mm[i], 3),
             'P_rest_mmHg': float(p_state['rest'][i]),
             'P_hyper_mmHg': float(p_state['hyper'][i]),
             'vFFR': _round(vffr[i], 3),
         }
-        for i, s in enumerate(stations)
-    ]
+        if not primary:
+            # contract F/E: side-path rows carry delta_p_mmHg = Pa - P_hyper at
+            # source precision; primary rows stay byte-stable (report contract)
+            row['delta_p_mmHg'] = float(pa_mmHg - p_state['hyper'][i])
+        pullback.append(row)
     k_min = int(np.argmin(vffr))
     record = {
         'path_id': path_id,
-        'label': f'primary trunk {path_no} (root->tip, L={total:.1f} mm)',
+        'label': f'{"primary trunk" if primary else "side path"} {path_no} '
+                 f'(root->tip, L={total:.1f} mm)',
         'branch_ids': branch_ids,
         'length_mm': _round(total, 3),
         'min_vffr': _round(vffr[k_min], 3),
         'min_vffr_s_mm': _round(stations[k_min], 3),
         'pullback': pullback,
     }
+    if not primary:
+        # contract F: side_paths[] carry the pullback item only — dp_ds and the
+        # TFC timing blocks (landmarks / transit_anomaly / tfc) stay primary-only
+        return record, {}, [], {}
 
     # --- dp_ds from the hyperemic pullback (mmHg/cm)
     ds_mm = np.diff(stations)
@@ -659,7 +675,9 @@ def _case_rxi(case: str, args) -> dict:
                 _fail(f'{lesions_path}: lesion entry missing {key!r}')
 
     chains = _root_to_tip_chains(edges)
-    paths = _pick_paths(chains, 3)
+    ordered = _order_chains(chains)
+    paths = ordered[:3]
+    side_chains = ordered[3:]
     if not paths:
         _fail(f'{graph_path}: no root-to-tip chains')
 
@@ -672,6 +690,29 @@ def _case_rxi(case: str, args) -> dict:
         dp_ds.update(grads)
         landmarks.extend(lms)
         transit_anomaly.update(anomaly)
+
+    # contract F: side_paths[] cover every remaining root-to-tip chain
+    # (path_4..N); only the pullback item is kept (dp_ds/TFC blocks primary-only)
+    side_records = []
+    for path_no, chain in enumerate(side_chains, start=len(paths) + 1):
+        rec, _grads, _lms, _anomaly = _build_path(
+            path_no, chain, clin, lesions, edge_index, sig_branches, pa_mmHg, vc,
+            primary=False,
+        )
+        side_records.append(rec)
+
+    # hard assert: paths[] + side_paths[] together name every graph edge exactly
+    covered: set = set()
+    for rec in path_records + side_records:
+        covered.update(rec['branch_ids'])
+    graph_names = {e['name'] for e in edges}
+    missing = sorted(graph_names - covered)
+    unknown = sorted(covered - graph_names)
+    if missing or unknown:
+        _fail(f'{graph_path}: paths[]+side_paths[] branch_ids do not equal the graph '
+              f'edge names'
+              + (f'; uncovered edges: {missing}' if missing else '')
+              + (f'; non-graph branch_ids: {unknown}' if unknown else ''))
 
     generated = datetime.now(timezone.utc).isoformat()
     return {
@@ -686,6 +727,7 @@ def _case_rxi(case: str, args) -> dict:
         },
         'generated': generated,
         'paths': path_records,
+        'side_paths': side_records,
         'dp_ds': dp_ds,
         'landmarks': landmarks,
         'transit_anomaly': transit_anomaly,
@@ -703,9 +745,12 @@ def main(argv=None) -> int:
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f'case_{case}_rxi.json'
         out_path.write_text(json.dumps(doc, indent=2) + '\n')
-        print(f'{out_path}: {len(doc["paths"])} paths, '
-              f'{sum(len(p["pullback"]) for p in doc["paths"])} pullback stations, '
-              f'{len(doc["landmarks"])} landmarks')
+        covered = {b for p in doc['paths'] + doc['side_paths'] for b in p['branch_ids']}
+        n_stations = sum(len(p['pullback']) for p in doc['paths'] + doc['side_paths'])
+        print(f'{out_path}: {len(doc["paths"])} primary + '
+              f'{len(doc["side_paths"])} side paths, '
+              f'edge-coverage 100% ({len(covered)} graph edges), '
+              f'{n_stations} pullback stations, {len(doc["landmarks"])} landmarks')
     return 0
 
 
