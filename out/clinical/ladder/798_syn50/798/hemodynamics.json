@@ -5,8 +5,8 @@
   "name": "phase2/rom/run_hemodynamics.py",
   "version": "0.1.0",
   "command": "phase2/rom/run_hemodynamics.py --cases 798 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_798_lesions_syn50.json --out-dir out/clinical/ladder/798_syn50",
-  "generated": "2026-09-24T18:54:18.793005+00:00",
-  "runtime_s": 1142.1575
+  "generated": "2026-09-25T05:17:37.159778+00:00",
+  "runtime_s": 387.464
  },
  "case": "798",
  "backend": "svzerodsolver (pysvzerod 2.0)",
@@ -519040,13 +519040,13 @@
     "cross_check": {
      "rest": {
       "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-      "wall_time_s": 13.5886,
+      "wall_time_s": 3.1235,
       "max_abs_outlet_pressure_diff_mmHg": 0.0,
       "abs_total_inflow_diff_mLs": 0.0
      },
      "hyper": {
       "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-      "wall_time_s": 3.8767,
+      "wall_time_s": 1.5605,
       "max_abs_outlet_pressure_diff_mmHg": 0.0,
       "abs_total_inflow_diff_mLs": 0.0
      }
@@ -519081,26 +519081,26 @@
   }
  },
  "timings": {
-  "solve_s": 124.949,
-  "transport_1d_s": 935.501,
+  "solve_s": 47.0674,
+  "transport_1d_s": 327.8048,
   "per_profile": {
    "A": {
-    "solve_s": 359.5009,
-    "transport_1d_s": 317.5597,
+    "solve_s": 126.0764,
+    "transport_1d_s": 110.4082,
     "backend": "svzerodsolver"
    },
    "B": {
-    "solve_s": 291.6529,
-    "transport_1d_s": 245.7023,
+    "solve_s": 130.0045,
+    "transport_1d_s": 113.0949,
     "backend": "svzerodsolver"
    },
    "C": {
-    "solve_s": 411.7408,
-    "transport_1d_s": 372.2391,
+    "solve_s": 119.9349,
+    "transport_1d_s": 104.3016,
     "backend": "svzerodsolver"
    }
   },
-  "total_s": 1142.1575
+  "total_s": 387.464
  },
  "inflow": {
   "mode": "replace",

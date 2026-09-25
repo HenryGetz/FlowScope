@@ -1,8 +1,8 @@
 # FlowScope clinical hemodynamics report
 
-- generated: 2026-09-24T19:27:14.492346+00:00
+- generated: 2026-09-25T05:29:01.334307+00:00
 - command: `tools/run_clinical_batch.py --cases 601 700 798`
-- runtime_s: 6912.09
+- runtime_s: 2686.33
 - out_dir: out
 - cases: 601 700 798
 - synthetic lesion ladder (dia_reduction %): 50 70 90
@@ -17,14 +17,14 @@
 
 | stage | status | exit code | runtime (s) | log | reason |
 |---|---|---|---|---|---|
-| stenosis | ok | 0 | 0.915 | out/clinical_logs/601_stenosis.log | — |
-| hemodynamics | ok | 0 | 281.926 | out/clinical_logs/601_hemodynamics.log | — |
-| stenosis_ladder | ok | 0 | 0.878 | out/clinical_logs/601_stenosis_ladder.log | — |
-| hemodynamics_syn50 | ok | 0 | 238.765 | out/clinical_logs/601_hemodynamics_syn50.log | — |
-| hemodynamics_syn70 | ok | 0 | 311.484 | out/clinical_logs/601_hemodynamics_syn70.log | — |
-| hemodynamics_syn90 | ok | 0 | 248.289 | out/clinical_logs/601_hemodynamics_syn90.log | — |
-| rxi_metrics | ok | 0 | 2.649 | out/clinical_logs/601_rxi_metrics.log | — |
-| export_payload | ok | 0 | 2.867 | out/clinical_logs/601_export_payload.log | — |
+| stenosis | ok | 0 | 0.885 | out/clinical_logs/601_stenosis.log | — |
+| hemodynamics | ok | 0 | 237.362 | out/clinical_logs/601_hemodynamics.log | — |
+| stenosis_ladder | ok | 0 | 0.621 | out/clinical_logs/601_stenosis_ladder.log | — |
+| hemodynamics_syn50 | ok | 0 | 223.673 | out/clinical_logs/601_hemodynamics_syn50.log | — |
+| hemodynamics_syn70 | ok | 0 | 147.555 | out/clinical_logs/601_hemodynamics_syn70.log | — |
+| hemodynamics_syn90 | ok | 0 | 152.149 | out/clinical_logs/601_hemodynamics_syn90.log | — |
+| rxi_metrics | ok | 0 | 2.148 | out/clinical_logs/601_rxi_metrics.log | — |
+| export_payload | ok | 0 | 7.893 | out/clinical_logs/601_export_payload.log | — |
 
 ### Clinical summary
 
@@ -47,14 +47,14 @@
 
 | stage | status | exit code | runtime (s) | log | reason |
 |---|---|---|---|---|---|
-| stenosis | ok | 0 | 0.929 | out/clinical_logs/700_stenosis.log | — |
-| hemodynamics | ok | 0 | 231.844 | out/clinical_logs/700_hemodynamics.log | — |
-| stenosis_ladder | ok | 0 | 0.842 | out/clinical_logs/700_stenosis_ladder.log | — |
-| hemodynamics_syn50 | ok | 0 | 274.939 | out/clinical_logs/700_hemodynamics_syn50.log | — |
-| hemodynamics_syn70 | ok | 0 | 384.132 | out/clinical_logs/700_hemodynamics_syn70.log | — |
-| hemodynamics_syn90 | ok | 0 | 590.76 | out/clinical_logs/700_hemodynamics_syn90.log | — |
-| rxi_metrics | ok | 0 | 5.008 | out/clinical_logs/700_rxi_metrics.log | — |
-| export_payload | ok | 0 | 5.328 | out/clinical_logs/700_export_payload.log | — |
+| stenosis | ok | 0 | 0.408 | out/clinical_logs/700_stenosis.log | — |
+| hemodynamics | ok | 0 | 107.263 | out/clinical_logs/700_hemodynamics.log | — |
+| stenosis_ladder | ok | 0 | 0.412 | out/clinical_logs/700_stenosis_ladder.log | — |
+| hemodynamics_syn50 | ok | 0 | 114.474 | out/clinical_logs/700_hemodynamics_syn50.log | — |
+| hemodynamics_syn70 | ok | 0 | 105.823 | out/clinical_logs/700_hemodynamics_syn70.log | — |
+| hemodynamics_syn90 | ok | 0 | 117.01 | out/clinical_logs/700_hemodynamics_syn90.log | — |
+| rxi_metrics | ok | 0 | 1.381 | out/clinical_logs/700_rxi_metrics.log | — |
+| export_payload | ok | 0 | 5.496 | out/clinical_logs/700_export_payload.log | — |
 
 ### Clinical summary
 
@@ -77,14 +77,14 @@
 
 | stage | status | exit code | runtime (s) | log | reason |
 |---|---|---|---|---|---|
-| stenosis | ok | 0 | 2.014 | out/clinical_logs/798_stenosis.log | — |
-| hemodynamics | ok | 0 | 1201.56 | out/clinical_logs/798_hemodynamics.log | — |
-| stenosis_ladder | ok | 0 | 3.543 | out/clinical_logs/798_stenosis_ladder.log | — |
-| hemodynamics_syn50 | ok | 0 | 1145.32 | out/clinical_logs/798_hemodynamics_syn50.log | — |
-| hemodynamics_syn70 | ok | 0 | 1034.16 | out/clinical_logs/798_hemodynamics_syn70.log | — |
-| hemodynamics_syn90 | ok | 0 | 928.088 | out/clinical_logs/798_hemodynamics_syn90.log | — |
-| rxi_metrics | ok | 0 | 2.947 | out/clinical_logs/798_rxi_metrics.log | — |
-| export_payload | ok | 0 | 4.918 | out/clinical_logs/798_export_payload.log | — |
+| stenosis | ok | 0 | 0.523 | out/clinical_logs/798_stenosis.log | — |
+| hemodynamics | ok | 0 | 387.827 | out/clinical_logs/798_hemodynamics.log | — |
+| stenosis_ladder | ok | 0 | 0.518 | out/clinical_logs/798_stenosis_ladder.log | — |
+| hemodynamics_syn50 | ok | 0 | 388.983 | out/clinical_logs/798_hemodynamics_syn50.log | — |
+| hemodynamics_syn70 | ok | 0 | 340.949 | out/clinical_logs/798_hemodynamics_syn70.log | — |
+| hemodynamics_syn90 | ok | 0 | 328.716 | out/clinical_logs/798_hemodynamics_syn90.log | — |
+| rxi_metrics | ok | 0 | 2.173 | out/clinical_logs/798_rxi_metrics.log | — |
+| export_payload | ok | 0 | 9.988 | out/clinical_logs/798_export_payload.log | — |
 
 ### Clinical summary
 
@@ -194,9 +194,9 @@
 
 ### payload < 2 MB per case
 
-- PASS: case 601 — viewer/models/clinical/case_601_clinical.json: 195484 bytes (0.186 MB); viewer/public/clinical/case_601_clinical.json: 195484 bytes (0.186 MB) (value: 195484 bytes; expected: < 2097152 bytes (2 MB))
-- PASS: case 700 — viewer/models/clinical/case_700_clinical.json: 165690 bytes (0.158 MB); viewer/public/clinical/case_700_clinical.json: 165690 bytes (0.158 MB) (value: 165690 bytes; expected: < 2097152 bytes (2 MB))
-- PASS: case 798 — viewer/models/clinical/case_798_clinical.json: 243843 bytes (0.233 MB); viewer/public/clinical/case_798_clinical.json: 243843 bytes (0.233 MB) (value: 243843 bytes; expected: < 2097152 bytes (2 MB))
+- PASS: case 601 — viewer/models/clinical/case_601_clinical.json: 251452 bytes (0.24 MB); viewer/public/clinical/case_601_clinical.json: 251452 bytes (0.24 MB) (value: 251452 bytes; expected: < 2097152 bytes (2 MB))
+- PASS: case 700 — viewer/models/clinical/case_700_clinical.json: 228857 bytes (0.218 MB); viewer/public/clinical/case_700_clinical.json: 228857 bytes (0.218 MB) (value: 228857 bytes; expected: < 2097152 bytes (2 MB))
+- PASS: case 798 — viewer/models/clinical/case_798_clinical.json: 373625 bytes (0.356 MB); viewer/public/clinical/case_798_clinical.json: 373625 bytes (0.356 MB) (value: 373625 bytes; expected: < 2097152 bytes (2 MB))
 
 ### vFFR decision rule applied consistently per case
 

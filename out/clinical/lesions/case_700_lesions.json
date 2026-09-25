@@ -6,10 +6,10 @@
     "name": "phase2/clinical/stenosis_analyzer.py",
     "version": "0.1.0",
     "command": "phase2/clinical/stenosis_analyzer.py --cases 700 --graph-dir out/rom/graphs --out-dir out/clinical/lesions",
-    "generated": "2026-09-24T17:50:14.163951+00:00",
-    "runtime_s": 0.07279432378709316
+    "generated": "2026-09-25T04:57:08.142775+00:00",
+    "runtime_s": 0.02253291103988886
   },
-  "generated": "2026-09-24T17:50:14.163951+00:00",
+  "generated": "2026-09-25T04:57:08.142775+00:00",
   "source_graph": "out/rom/graphs/700_graph.json",
   "params": {
     "window_mm": 6.0,

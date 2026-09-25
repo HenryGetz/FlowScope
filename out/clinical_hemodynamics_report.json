@@ -5,8 +5,8 @@
     "name": "tools/run_clinical_batch.py",
     "version": "0.1.0",
     "command": "tools/run_clinical_batch.py --cases 601 700 798",
-    "generated": "2026-09-24T19:27:14.492346+00:00",
-    "runtime_s": 6912.087
+    "generated": "2026-09-25T05:29:01.334307+00:00",
+    "runtime_s": 2686.33
   },
   "out_dir": "out",
   "cases_requested": [
@@ -46,7 +46,7 @@
         "rxi_metrics": true,
         "export_payload": true
       },
-      "runtime_s": 1087.773,
+      "runtime_s": 772.286,
       "ladder_placement": {
         "branch": "601_b001",
         "s_mm": 71.746,
@@ -58,7 +58,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/stenosis_analyzer.py --cases 601 --graph-dir out/rom/graphs --out-dir out/clinical/lesions",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 0.915,
+          "runtime_s": 0.885,
           "log": "out/clinical_logs/601_stenosis.log",
           "reason": null
         },
@@ -67,7 +67,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 601 --graph-dir out/rom/graphs --out-dir out/rom/hemodynamics --lesions out/clinical/lesions/case_601_lesions.json",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 281.926,
+          "runtime_s": 237.362,
           "log": "out/clinical_logs/601_hemodynamics.log",
           "reason": null
         },
@@ -76,7 +76,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/stenosis_analyzer.py --cases 601 --graph-dir out/rom/graphs --out-dir out/clinical/lesions --ladder 50 70 90 --branch 601_b001 --s 71.746",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 0.878,
+          "runtime_s": 0.621,
           "log": "out/clinical_logs/601_stenosis_ladder.log",
           "reason": null
         },
@@ -85,7 +85,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 601 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_601_lesions_syn50.json --out-dir out/clinical/ladder/601_syn50",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 238.765,
+          "runtime_s": 223.673,
           "log": "out/clinical_logs/601_hemodynamics_syn50.log",
           "reason": null
         },
@@ -94,7 +94,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 601 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_601_lesions_syn70.json --out-dir out/clinical/ladder/601_syn70",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 311.484,
+          "runtime_s": 147.555,
           "log": "out/clinical_logs/601_hemodynamics_syn70.log",
           "reason": null
         },
@@ -103,7 +103,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 601 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_601_lesions_syn90.json --out-dir out/clinical/ladder/601_syn90",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 248.289,
+          "runtime_s": 152.149,
           "log": "out/clinical_logs/601_hemodynamics_syn90.log",
           "reason": null
         },
@@ -112,7 +112,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/generate_rxi_metrics.py --cases 601 --graph-dir out/rom/graphs --hemo-dir out/rom/hemodynamics --lesions-dir out/clinical/lesions --out-dir out/clinical/rxi",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 2.649,
+          "runtime_s": 2.148,
           "log": "out/clinical_logs/601_rxi_metrics.log",
           "reason": null
         },
@@ -121,7 +121,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_clinical_payload.py --cases 601 --report-dir out --graph-dir out/rom/graphs --hemo-dir out/rom/hemodynamics --rxi-dir out/clinical/rxi --lesions-dir out/clinical/lesions --glb-dir viewer/public/assets --models-out viewer/models/clinical --public-out viewer/public/clinical",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 2.867,
+          "runtime_s": 7.893,
           "log": "out/clinical_logs/601_export_payload.log",
           "reason": null
         }
@@ -441,13 +441,13 @@
             "cross_check": {
               "rest": {
                 "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-                "wall_time_s": 3.4301,
+                "wall_time_s": 2.3381,
                 "max_abs_outlet_pressure_diff_mmHg": 0.0,
                 "abs_total_inflow_diff_mLs": 0.0
               },
               "hyper": {
                 "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-                "wall_time_s": 1.5426,
+                "wall_time_s": 1.4477,
                 "max_abs_outlet_pressure_diff_mmHg": 0.0,
                 "abs_total_inflow_diff_mLs": 0.0
               }
@@ -2346,15 +2346,15 @@
           {
             "slot": "viewer/models/clinical",
             "path": "viewer/models/clinical/case_601_clinical.json",
-            "bytes": 195484,
-            "mb": 0.186,
+            "bytes": 251452,
+            "mb": 0.24,
             "unavailable_reason": null
           },
           {
             "slot": "viewer/public/clinical",
             "path": "viewer/public/clinical/case_601_clinical.json",
-            "bytes": 195484,
-            "mb": 0.186,
+            "bytes": 251452,
+            "mb": 0.24,
             "unavailable_reason": null
           }
         ],
@@ -2402,11 +2402,11 @@
           "description": "viewer payload < 2 MB per file",
           "status": "PASS",
           "value": {
-            "max_bytes": 195484,
-            "max_mb": 0.186
+            "max_bytes": 251452,
+            "max_mb": 0.24
           },
           "expected": "< 2097152 bytes (2 MB)",
-          "detail": "viewer/models/clinical/case_601_clinical.json: 195484 bytes (0.186 MB); viewer/public/clinical/case_601_clinical.json: 195484 bytes (0.186 MB)"
+          "detail": "viewer/models/clinical/case_601_clinical.json: 251452 bytes (0.24 MB); viewer/public/clinical/case_601_clinical.json: 251452 bytes (0.24 MB)"
         },
         {
           "id": "decision_rule",
@@ -2441,7 +2441,7 @@
         "rxi_metrics": true,
         "export_payload": true
       },
-      "runtime_s": 1493.782,
+      "runtime_s": 452.267,
       "ladder_placement": {
         "branch": "700_b000",
         "s_mm": 73.867,
@@ -2453,7 +2453,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/stenosis_analyzer.py --cases 700 --graph-dir out/rom/graphs --out-dir out/clinical/lesions",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 0.929,
+          "runtime_s": 0.408,
           "log": "out/clinical_logs/700_stenosis.log",
           "reason": null
         },
@@ -2462,7 +2462,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 700 --graph-dir out/rom/graphs --out-dir out/rom/hemodynamics --lesions out/clinical/lesions/case_700_lesions.json",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 231.844,
+          "runtime_s": 107.263,
           "log": "out/clinical_logs/700_hemodynamics.log",
           "reason": null
         },
@@ -2471,7 +2471,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/stenosis_analyzer.py --cases 700 --graph-dir out/rom/graphs --out-dir out/clinical/lesions --ladder 50 70 90 --branch 700_b000 --s 73.867",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 0.842,
+          "runtime_s": 0.412,
           "log": "out/clinical_logs/700_stenosis_ladder.log",
           "reason": null
         },
@@ -2480,7 +2480,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 700 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_700_lesions_syn50.json --out-dir out/clinical/ladder/700_syn50",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 274.939,
+          "runtime_s": 114.474,
           "log": "out/clinical_logs/700_hemodynamics_syn50.log",
           "reason": null
         },
@@ -2489,7 +2489,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 700 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_700_lesions_syn70.json --out-dir out/clinical/ladder/700_syn70",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 384.132,
+          "runtime_s": 105.823,
           "log": "out/clinical_logs/700_hemodynamics_syn70.log",
           "reason": null
         },
@@ -2498,7 +2498,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 700 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_700_lesions_syn90.json --out-dir out/clinical/ladder/700_syn90",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 590.76,
+          "runtime_s": 117.01,
           "log": "out/clinical_logs/700_hemodynamics_syn90.log",
           "reason": null
         },
@@ -2507,7 +2507,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/generate_rxi_metrics.py --cases 700 --graph-dir out/rom/graphs --hemo-dir out/rom/hemodynamics --lesions-dir out/clinical/lesions --out-dir out/clinical/rxi",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 5.008,
+          "runtime_s": 1.381,
           "log": "out/clinical_logs/700_rxi_metrics.log",
           "reason": null
         },
@@ -2516,7 +2516,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_clinical_payload.py --cases 700 --report-dir out --graph-dir out/rom/graphs --hemo-dir out/rom/hemodynamics --rxi-dir out/clinical/rxi --lesions-dir out/clinical/lesions --glb-dir viewer/public/assets --models-out viewer/models/clinical --public-out viewer/public/clinical",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 5.328,
+          "runtime_s": 5.496,
           "log": "out/clinical_logs/700_export_payload.log",
           "reason": null
         }
@@ -2796,13 +2796,13 @@
             "cross_check": {
               "rest": {
                 "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-                "wall_time_s": 3.4877,
+                "wall_time_s": 1.4903,
                 "max_abs_outlet_pressure_diff_mmHg": 0.0,
                 "abs_total_inflow_diff_mLs": 0.0
               },
               "hyper": {
                 "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-                "wall_time_s": 1.0624,
+                "wall_time_s": 0.5608,
                 "max_abs_outlet_pressure_diff_mmHg": 0.0,
                 "abs_total_inflow_diff_mLs": 0.0
               }
@@ -4456,15 +4456,15 @@
           {
             "slot": "viewer/models/clinical",
             "path": "viewer/models/clinical/case_700_clinical.json",
-            "bytes": 165690,
-            "mb": 0.158,
+            "bytes": 228857,
+            "mb": 0.218,
             "unavailable_reason": null
           },
           {
             "slot": "viewer/public/clinical",
             "path": "viewer/public/clinical/case_700_clinical.json",
-            "bytes": 165690,
-            "mb": 0.158,
+            "bytes": 228857,
+            "mb": 0.218,
             "unavailable_reason": null
           }
         ],
@@ -4512,11 +4512,11 @@
           "description": "viewer payload < 2 MB per file",
           "status": "PASS",
           "value": {
-            "max_bytes": 165690,
-            "max_mb": 0.158
+            "max_bytes": 228857,
+            "max_mb": 0.218
           },
           "expected": "< 2097152 bytes (2 MB)",
-          "detail": "viewer/models/clinical/case_700_clinical.json: 165690 bytes (0.158 MB); viewer/public/clinical/case_700_clinical.json: 165690 bytes (0.158 MB)"
+          "detail": "viewer/models/clinical/case_700_clinical.json: 228857 bytes (0.218 MB); viewer/public/clinical/case_700_clinical.json: 228857 bytes (0.218 MB)"
         },
         {
           "id": "decision_rule",
@@ -4551,7 +4551,7 @@
         "rxi_metrics": true,
         "export_payload": true
       },
-      "runtime_s": 4322.546,
+      "runtime_s": 1459.677,
       "ladder_placement": {
         "branch": "798_b030",
         "s_mm": 89.67,
@@ -4563,7 +4563,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/stenosis_analyzer.py --cases 798 --graph-dir out/rom/graphs --out-dir out/clinical/lesions",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 2.014,
+          "runtime_s": 0.523,
           "log": "out/clinical_logs/798_stenosis.log",
           "reason": null
         },
@@ -4572,7 +4572,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 798 --graph-dir out/rom/graphs --out-dir out/rom/hemodynamics --lesions out/clinical/lesions/case_798_lesions.json",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 1201.556,
+          "runtime_s": 387.827,
           "log": "out/clinical_logs/798_hemodynamics.log",
           "reason": null
         },
@@ -4581,7 +4581,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/stenosis_analyzer.py --cases 798 --graph-dir out/rom/graphs --out-dir out/clinical/lesions --ladder 50 70 90 --branch 798_b030 --s 89.670",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 3.543,
+          "runtime_s": 0.518,
           "log": "out/clinical_logs/798_stenosis_ladder.log",
           "reason": null
         },
@@ -4590,7 +4590,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 798 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_798_lesions_syn50.json --out-dir out/clinical/ladder/798_syn50",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 1145.319,
+          "runtime_s": 388.983,
           "log": "out/clinical_logs/798_hemodynamics_syn50.log",
           "reason": null
         },
@@ -4599,7 +4599,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 798 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_798_lesions_syn70.json --out-dir out/clinical/ladder/798_syn70",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 1034.161,
+          "runtime_s": 340.949,
           "log": "out/clinical_logs/798_hemodynamics_syn70.log",
           "reason": null
         },
@@ -4608,7 +4608,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/rom/run_hemodynamics.py --cases 798 --graph-dir out/rom/graphs --lesions out/clinical/lesions/case_798_lesions_syn90.json --out-dir out/clinical/ladder/798_syn90",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 928.088,
+          "runtime_s": 328.716,
           "log": "out/clinical_logs/798_hemodynamics_syn90.log",
           "reason": null
         },
@@ -4617,7 +4617,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python phase2/clinical/generate_rxi_metrics.py --cases 798 --graph-dir out/rom/graphs --hemo-dir out/rom/hemodynamics --lesions-dir out/clinical/lesions --out-dir out/clinical/rxi",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 2.947,
+          "runtime_s": 2.173,
           "log": "out/clinical_logs/798_rxi_metrics.log",
           "reason": null
         },
@@ -4626,7 +4626,7 @@
           "command": "/home/wavy/ai/flowscope/.venv/bin/python tools/export_clinical_payload.py --cases 798 --report-dir out --graph-dir out/rom/graphs --hemo-dir out/rom/hemodynamics --rxi-dir out/clinical/rxi --lesions-dir out/clinical/lesions --glb-dir viewer/public/assets --models-out viewer/models/clinical --public-out viewer/public/clinical",
           "status": "ok",
           "exit_code": 0,
-          "runtime_s": 4.918,
+          "runtime_s": 9.988,
           "log": "out/clinical_logs/798_export_payload.log",
           "reason": null
         }
@@ -5010,13 +5010,13 @@
             "cross_check": {
               "rest": {
                 "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-                "wall_time_s": 10.5885,
+                "wall_time_s": 2.3733,
                 "max_abs_outlet_pressure_diff_mmHg": 0.0,
                 "abs_total_inflow_diff_mLs": 0.0
               },
               "hyper": {
                 "method": "pysvzerod steady window (constant PRESSURE roots / RESISTANCE = Windkessel DC terminals), settled means over the second half of the window vs the Picard solution",
-                "wall_time_s": 4.3102,
+                "wall_time_s": 1.3176,
                 "max_abs_outlet_pressure_diff_mmHg": 0.0,
                 "abs_total_inflow_diff_mLs": 0.0
               }
@@ -7232,15 +7232,15 @@
           {
             "slot": "viewer/models/clinical",
             "path": "viewer/models/clinical/case_798_clinical.json",
-            "bytes": 243843,
-            "mb": 0.233,
+            "bytes": 373625,
+            "mb": 0.356,
             "unavailable_reason": null
           },
           {
             "slot": "viewer/public/clinical",
             "path": "viewer/public/clinical/case_798_clinical.json",
-            "bytes": 243843,
-            "mb": 0.233,
+            "bytes": 373625,
+            "mb": 0.356,
             "unavailable_reason": null
           }
         ],
@@ -7288,11 +7288,11 @@
           "description": "viewer payload < 2 MB per file",
           "status": "PASS",
           "value": {
-            "max_bytes": 243843,
-            "max_mb": 0.233
+            "max_bytes": 373625,
+            "max_mb": 0.356
           },
           "expected": "< 2097152 bytes (2 MB)",
-          "detail": "viewer/models/clinical/case_798_clinical.json: 243843 bytes (0.233 MB); viewer/public/clinical/case_798_clinical.json: 243843 bytes (0.233 MB)"
+          "detail": "viewer/models/clinical/case_798_clinical.json: 373625 bytes (0.356 MB); viewer/public/clinical/case_798_clinical.json: 373625 bytes (0.356 MB)"
         },
         {
           "id": "decision_rule",
