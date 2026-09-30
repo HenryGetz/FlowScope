@@ -3,66 +3,187 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FlowScope — Cardiac WebXR</title>
+    <title>FlowScope — choose a view</title>
     <style>
+      :root {
+        color-scheme: dark;
+      }
       html,
       body {
-        height: 100%;
         margin: 0;
+        min-height: 100%;
         background: #0a0d12;
-      }
-      #app {
-        position: fixed;
-        inset: 0;
-      }
-      #app canvas {
-        display: block;
-      }
-      #boot {
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        z-index: 5;
-        background: rgba(13, 16, 22, 0.88);
         color: #dfe5ee;
-        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        padding: 10px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
+        font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
-      /* ACIST RXi-style pullback console (contract D): the one canvas is the
-         desktop DOM overlay and the source of the in-XR texture plane. */
-      #fs-console {
-        position: fixed;
-        right: 12px;
-        bottom: 12px;
-        z-index: 10;
-        background: rgba(13, 16, 22, 0.88);
-        padding: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+      main {
+        max-width: 940px;
+        margin: 0 auto;
+        padding: 44px 20px 32px;
       }
-      #fs-console[hidden] {
-        display: none;
+      h1 {
+        font-size: 20px;
+        letter-spacing: 0.02em;
+        margin: 0 0 4px;
       }
-      #fs-console canvas {
+      .sub {
+        color: #94a3b8;
+        margin: 0 0 26px;
+      }
+      .cards {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      }
+      a.card {
         display: block;
-        width: 420px;
+        padding: 12px;
+        background: rgba(13, 16, 22, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        color: inherit;
+        text-decoration: none;
+      }
+      a.card:hover,
+      a.card:focus-visible {
+        border-color: #0284c7;
+        background: rgba(2, 132, 199, 0.08);
+      }
+      a.card img {
+        display: block;
+        width: 100%;
         height: auto;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
         border-radius: 6px;
+        background: #0f141b;
+        margin-bottom: 10px;
+      }
+      .card h2 {
+        font-size: 14px;
+        margin: 0 0 6px;
+      }
+      .card p {
+        margin: 0;
+        color: #94a3b8;
+      }
+      .tag {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        font-size: 11px;
+        vertical-align: 1px;
+        white-space: nowrap;
+      }
+      .tag.anatomy {
+        background: rgba(5, 150, 105, 0.18);
+        color: #6ee7b7;
+      }
+      .tag.mpr {
+        background: rgba(168, 85, 247, 0.18);
+        color: #d8b4fe;
+      }
+      .tag.cfd {
+        background: rgba(2, 132, 199, 0.18);
+        color: #7dd3fc;
+      }
+      footer {
+        margin-top: 26px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        color: #64748b;
+      }
+      footer p {
+        margin: 0 0 8px;
+      }
+      code {
+        color: #cbd5e1;
+      }
+      a {
+        color: #7dd3fc;
       }
     </style>
   </head>
   <body>
-    <div id="app"></div>
-    <div id="overlay">
-      <div id="boot">Loading <code>models/s0011.glb</code>&hellip;</div>
-      <div id="fs-console" hidden>
-        <canvas data-fs="pullback" width="560" height="315"></canvas>
+    <main>
+      <h1>FlowScope</h1>
+      <p class="sub">
+        Cardiac CT to WebXR. Every card is the same viewer with a different model and payload —
+        each one also has the co-registered CT slice plane.
+      </p>
+      <div class="cards">
+        <a class="card" href="app.html">
+          <img src="thumbs/anatomy.jpg" width="720" height="405" alt="Segmented heart: myocardium shell, chambers and great vessels" />
+          <h2>Cardiac anatomy<span class="tag anatomy">segmented</span></h2>
+          <p>
+            13 TotalSegmentator structures, 106,822 triangles — chambers, myocardium shell, great
+            vessels, coronary tree, venae cavae, pulmonary artery and veins.
+          </p>
+        </a>
+
+        <a class="card" href="app.html?mpr=axial&amp;clip=0.5">
+          <img src="thumbs/ct-slice.jpg" width="720" height="405" alt="Grayscale CT slice cutting through the heart mesh" />
+          <h2>CT slice viewer<span class="tag mpr">MPR</span></h2>
+          <p>
+            The source CT as an in-scene slice plane: Axial / Coronal / Sagittal snaps, 0–100 %
+            Cross-section travel, Window / Level in HU, and hardware mesh clipping on the same
+            plane. Opens on the axial plane.
+          </p>
+        </a>
+
+        <a
+          class="card"
+          href="app.html?model=assets/coronary_601.glb&amp;case=601&amp;clinical=models/clinical/case_601_clinical.json"
+        >
+          <img src="thumbs/case-601.jpg" width="720" height="405" alt="Contrast bolus spreading through a coronary tree" />
+          <h2>Case 601<span class="tag cfd">flow sim</span></h2>
+          <p>
+            Contrast transport (profiles A/B/C, 90 frames, 4.5 MB), vFFR ischemia map, Navvus
+            pullback console and the CT slice. 21 centreline branches.
+          </p>
+        </a>
+
+        <a
+          class="card"
+          href="app.html?model=assets/coronary_700.glb&amp;case=700&amp;clinical=models/clinical/case_700_clinical.json"
+        >
+          <img src="thumbs/case-700.jpg" width="720" height="405" alt="Contrast bolus spreading through a coronary tree" />
+          <h2>Case 700<span class="tag cfd">flow sim</span></h2>
+          <p>
+            Contrast transport (profiles A/B/C, 90 frames, 4.5 MB), vFFR ischemia map, Navvus
+            pullback console and the CT slice. 16 centreline branches.
+          </p>
+        </a>
+
+        <a
+          class="card"
+          href="app.html?model=assets/coronary_798.glb&amp;case=798&amp;clinical=models/clinical/case_798_clinical.json"
+        >
+          <img src="thumbs/case-798.jpg" width="720" height="405" alt="Contrast bolus spreading through a coronary tree" />
+          <h2>Case 798<span class="tag cfd">flow sim</span></h2>
+          <p>
+            Contrast transport (profiles A/B/C, 90 frames, 4.5 MB), vFFR ischemia map, Navvus
+            pullback console and the CT slice. 35 centreline branches.
+          </p>
+        </a>
       </div>
-    </div>
-    <script type="module" src="/src/main.js"></script>
+      <footer>
+        <p>
+          <strong>Enter AR / Enter VR</strong> needs a secure context: open this page on the
+          <code>https://</code> endpoint and accept the self-signed certificate once. Append
+          <code>&amp;xr=vr</code> to any view for the opaque VR world instead of AR passthrough.
+        </p>
+        <p>
+          Deep-link params: <code>?view=anterior|lateral|lao</code>,
+          <code>?mpr=axial|coronal|sagittal</code>, <code>?clip=0..1</code>,
+          <code>?window=</code>/<code>?level=</code> (HU).
+        </p>
+        <p>
+          Developer harness: <a href="xr-smoke.html">XR smoke page</a> (emulated Quest 3 runtime
+          for scripted grab/scale/MPR checks).
+        </p>
+      </footer>
+    </main>
   </body>
 </html>

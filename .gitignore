@@ -4,7 +4,9 @@ __pycache__/
 node_modules/
 dist/
 certs/
-viewer/public/
+viewer/public/*
+# landing-page thumbnails are small + committed, unlike the served models/assets
+!viewer/public/thumbs/
 data/raw
 data/segmentations
 data/synthetic_corpus_dev/
