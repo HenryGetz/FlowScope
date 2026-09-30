@@ -102,10 +102,27 @@ python pipeline/build_cardiac_glb.py \
 # the GLB recenter anchor for sub-mm slice/mesh co-registration). The repo layout
 # splits the masks (data/segmentations/<case>/) from the CT
 # (data/raw/totalseg_ct/<case>/ct.nii.gz), so the CT is passed with --ct.
+# NOTE: --input is a single case root, so it must see EVERY mask the GLB should
+# carry. data/segmentations/s0011 alone yields 10 structures; the whole-heart
+# `heart` envelope, `heart_atrial_appendage_left` and `pulmonary_veins` live in
+# data/raw/totalseg_ct/s0011/segmentations and have to sit in the root as well
+# (that is how the 13-structure GLB is built — highres masks win over the
+# coarser files for shared ids).
 python pipeline/build_cardiac_glb.py \
     --input data/segmentations/s0011 \
     --ct data/raw/totalseg_ct/s0011/ct.nii.gz \
     --output viewer/models/s0011.glb --report out/report_s0011_mpr.json
+
+# Volume pair for a GLB that was built earlier (mesh untouched): extract_volume_roi
+# writes <stem>_volume.bin / <stem>_meta.json beside --output. It needs the RAS mm
+# point that maps to the GLB-local origin; build reports record it as
+# model_center_ras_mm, or derive it from the report transform as
+# (1e3*cx, -1e3*cz, 1e3*cy) of transform.center_m — the recipe used for the
+# ImageCAS coronary cases (CT + label.nii.gz in data/raw/imagecas/<case>/):
+python pipeline/extract_volume_roi.py \
+    --input data/raw/imagecas/700 \
+    --output viewer/public/assets/coronary_700.glb --case-id 700 \
+    --model-center-ras-mm -24.982490727657456 164.14125132481234 97.21332208289918
 
 # No gated data at hand? Generate a synthetic contrast-CT sample case first:
 python tools/make_sample_case.py            # writes data/case_01/ (CT + 15 masks)
@@ -122,7 +139,36 @@ npm run serve:https  # serves dist/ + /models/ on https://0.0.0.0:8443
 
 ```
 
-Put on the headset, browse to `https://<YOUR-LAN-IP>:8443`, bypass the self-signed cert warning, and hit **Enter AR** — Quest 3 full-color passthrough, the heart floats over your actual room. Add `?xr=vr` to the URL for the opaque VR world instead.
+Plain HTTP works too when WebXR is not needed (desktop viewing, screenshots):
+
+```bash
+python3 -m http.server 8095 --bind 0.0.0.0 --directory viewer/dist   # http://<host>:8095/
+```
+
+Both serve the same `dist/`; only the HTTPS endpoint gives a secure context, so **Enter AR / Enter
+VR** stays disabled over HTTP.
+
+`https://<YOUR-LAN-IP>:8443/` is the landing hub: thumbnail cards for the segmented anatomy view,
+the CT slice viewer and the three solved CFD cases (601/700/798). The viewer itself lives at
+`app.html` and takes its target from the query string — `?model=<glb>&case=<id>&clinical=<payload
+json>`, with `?model=models/s0011.glb` the default:
+
+```
+app.html                                              # segmented anatomy
+app.html?mpr=axial&clip=0.5                           # CT slice plane preset
+app.html?model=assets/coronary_700.glb&case=700&clinical=models/clinical/case_700_clinical.json
+```
+
+Deep-link params (all optional, unknown values ignored): `?view=anterior|lateral|lao`,
+`?mpr=axial|coronal|sagittal`, `?clip=0..1`, `?window=`/`?level=` (HU), plus `?xr=vr|ar` for the
+session type. The MPR keys need a `<stem>_volume.bin`/`<stem>_meta.json` pair beside the model —
+without one the viewer runs with the slice plane disabled and says so in the console. Every view
+shipped here has a pair baked.
+
+Put on the headset, open the hub on the **`https://`** endpoint (WebXR needs a secure context —
+plain HTTP renders but disables Enter AR), bypass the self-signed cert warning, and hit **Enter
+AR** — Quest 3 full-color passthrough, the heart floats over your actual room. Add `?xr=vr` to
+the URL for the opaque VR world instead.
 
 ---
 

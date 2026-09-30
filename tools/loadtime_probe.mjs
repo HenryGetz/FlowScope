@@ -40,7 +40,7 @@ const RESOURCES = [
   { name: 'page_root', url: '/', kind: 'page_html' },
   {
     name: 'page_model_coronary_601',
-    url: '/?model=assets/coronary_601.glb',
+    url: '/app.html?model=assets/coronary_601.glb',
     kind: 'page_html',
   },
   { name: 'coronary_601', url: '/assets/coronary_601.glb', kind: 'glb', glb: 'out/coronary_601.glb' },
