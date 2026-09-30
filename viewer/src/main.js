@@ -4,6 +4,7 @@ import { loadModel, loadVolume, collectStructures, modelURL, assetsBaseURL, payl
 import {
   createCfdPlayback,
   initialCaseId,
+  caseOverride,
   initialProfile,
   loadClinical,
   clinicalOverride,
@@ -16,7 +17,7 @@ import { createInteraction } from './interaction.js';
 import { createUI } from './ui.js';
 import { structureGroup, GROUPS } from './structures.js';
 import { sessionMode, xrAvailability, enterXR, exitXR } from './xr.js';
-import { assertSharedParent } from './coordinates.js';
+import { assertSharedParent, PLANE_PRESETS } from './coordinates.js';
 import { MprSlice } from './mprSlice.js';
 import { ClippingSync } from './clippingSync.js';
 import { createTelemetry } from './telemetry.js';
@@ -577,6 +578,32 @@ function applyLoadDefaults() {
 }
 
 /**
+ * Load-time presets from the URL: `?view=` (camera), `?mpr=` (slice plane
+ * preset), `?clip=` (cross-section offset 0..1), `?window=`, `?level=` (HU).
+ * Applied once the model is live — the MPR keys additionally need the volume
+ * pair, and every unknown/absent value is ignored so deep links stay optional.
+ */
+function applyUrlPresets() {
+  const query = new URLSearchParams(window.location.search);
+  const number = (key) => {
+    const raw = query.get(key);
+    if (raw === null || raw.trim() === '') return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  };
+  const view = (query.get('view') || '').trim().toLowerCase();
+  if (Object.hasOwn(VIEW_DIRECTIONS, view)) setCameraView(view);
+  const plane = (query.get('mpr') || '').trim().toLowerCase();
+  if (mpr && Object.hasOwn(PLANE_PRESETS, plane)) applyPreset(plane);
+  const clip = number('clip');
+  if (mpr && clip !== null) setClipOffset(clip);
+  const width = number('window');
+  if (mpr && width !== null) applyWindow(width);
+  const level = number('level');
+  if (mpr && level !== null) applyLevel(level);
+}
+
+/**
  * Cross-section offset in 0..1: plane position over the ROI extent along the
  * plane normal (0 = near bound, 1 = far bound). Drives ClippingSync when a
  * volume pair is loaded and nothing otherwise.
@@ -876,6 +903,7 @@ Promise.all([loadModel(modelURL()), loadVolume(modelURL())])
     }
     ui.setVolumeReady(!!mpr);
     applyLoadDefaults();
+    applyUrlPresets();
     loadFrameMark = stage.renderedFrames;
     modelLoaded = true;
     ui.clearBoot();
@@ -896,27 +924,32 @@ Promise.all([loadModel(modelURL()), loadVolume(modelURL())])
 
 /**
  * Kick off the C5 contrast payload load. A missing/unfetchable payload
- * degrades to a notice only: no playback, but groups, picking and clipping
- * keep working on the untouched anatomy.
+ * degrades to a console notice only: no playback, but groups, picking and
+ * clipping keep working on the untouched anatomy. The error banner is
+ * reserved for a payload the user asked for explicitly (`?case=` /
+ * `?payload=`): the case id derived from the model filename is a guess.
  */
 function loadContrastPayload() {
   const caseId = initialCaseId();
   const profile = initialProfile();
   const override = payloadURL();
+  const explicit = caseOverride() || !!override;
   if (!caseId && !override) {
-    ui.showError(
-      `No CFD contrast payload for model "${modelURL()}".\n` +
-        'Open with ?case=<id> or ?payload=<url> to enable contrast playback.\n' +
-        'The viewer remains fully usable without it.',
+    console.warn(
+      '[main] no CFD contrast payload for model',
+      modelURL(),
+      '— open with ?case=<id> or ?payload=<url> to enable contrast playback',
     );
     return;
   }
   playback.load(caseId, profile).catch((err) => {
-    console.error(err);
-    ui.showError(
-      `Could not load the CFD contrast payload for case "${caseId || override}" (profile ${profile}).\n` +
-        `The viewer remains fully usable without it. (${err.message})`,
-    );
+    console.warn('[main] contrast payload unavailable:', err);
+    if (explicit) {
+      ui.showError(
+        `Could not load the CFD contrast payload for case "${caseId || override}" (profile ${profile}).\n` +
+          `The viewer remains fully usable without it. (${err.message})`,
+      );
+    }
     ui.setPlayback(null);
   });
 }

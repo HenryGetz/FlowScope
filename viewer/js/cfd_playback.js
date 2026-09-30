@@ -136,6 +136,17 @@ export function initialCaseId() {
   return match ? match[1] : '';
 }
 
+/**
+ * True when `?case=` named the case explicitly. The model-URL digit fallback
+ * in initialCaseId() is a guess (e.g. `s0011.glb` -> "001"), so a payload miss
+ * on a derived id is a console notice, never the error banner — mirroring
+ * `clinicalOverride()`.
+ */
+export function caseOverride() {
+  const fromQuery = new URLSearchParams(window.location.search).get('case');
+  return !!(fromQuery && fromQuery.trim());
+}
+
 /** Profile for `load()` when absent: `?profile=<A|B|C>` else 'A'. */
 export function initialProfile() {
   const fromQuery = new URLSearchParams(window.location.search).get('profile');
